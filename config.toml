@@ -1,0 +1,29 @@
+baseURL                = "https://younsl.github.io"
+title                  = "younsl"
+theme                  = "etch"
+languageCode           = "en-US"
+enableInlineShortcodes = true
+pygmentsCodeFences     = true
+pygmentsUseClasses     = true
+disableKinds           = ["taxonomy", "term"]
+
+[params]
+  description = "younsl"
+  copyright   = ""
+  dark        = "on"
+  highlight   = true
+
+[article]
+  showComments      = true
+  showAdvertisement = true
+
+[menu]
+
+[permalinks]
+  posts = "/:title/"
+
+[markup.goldmark.renderer]
+  unsafe = true
+
+  [markup.tableOfContents]
+    ordered = true
