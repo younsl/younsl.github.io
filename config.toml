@@ -26,4 +26,4 @@ disableKinds           = ["taxonomy", "term"]
   unsafe = true
 
   [markup.tableOfContents]
-    ordered = true
+    ordered = false
