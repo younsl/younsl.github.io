@@ -19,9 +19,9 @@ tags: ["dev"]
   - [neofetch 설치](#neofetch-설치)
   - [imagemagick 설치](#imagemagick-설치)
   - [소스 이미지 준비](#소스-이미지-준비)
-  - [neofetch 설정](#neofetch-설정)
-    - [이미지 소스 설정](#이미지-소스-설정)
-    - [메모리 표기 설정](#메모리-표기-설정)
+  - [이미지 소스 설정](#이미지-소스-설정)
+    - [`image_source` 값 설정 시 주의사항](#image_source-값-설정-시-주의사항)
+  - [메모리 표기 설정](#메모리-표기-설정)
   - [iTerm2 최적화 설정](#iterm2-최적화-설정)
     - [첫번째 설정](#첫번째-설정)
     - [두번째 설정](#두번째-설정)
@@ -121,8 +121,6 @@ neofetch에서 사용할 이미지 파일을 인터넷에서 검색한 후 다�
 
 &nbsp;
 
-### neofetch 설정
-
 이후 neofetch 경로 안에 띄울 이미지를 보관할 전용 디렉토리를 만듭니다.
 
 ```bash
@@ -155,12 +153,12 @@ $ vi ~/.config/neofetch/config.conf
 
 &nbsp;
 
-#### 이미지 소스 설정
+### 이미지 소스 설정
 
-아래와 같이 `config.conf` 파일을 수정합니다.  
-중요 설정은 5개로 다음과 같습니다.
+Neofetch 설정파일 `config.conf`에서 이미지 관련 설정을 먼저 아래와 같이 설정합니다.
 
 ```bash
+# ~/.config/neofetch/config.conf
 # default value is "ascii"
 image_backend="iterm2"
 
@@ -177,15 +175,23 @@ image_source="/사용할/이미지/절대/경로.jpg"
 image_size="auto"
 ```
 
-`image_source` 값 설정 시 주의사항은 다음과 같습니다.
+각 설정값에 대한 상세 설명입니다.
 
-- `image_source` 값의 경우 무조건 절대경로를 써야 합니다.  
-- `~/.config/neofetch/images/test.jpg` 같이 `~` 상대경로를 사용하면 이미지 로드에 실패합니다.  
-- `$HOME` 환경변수를 사용하는 것은 가능합니다.
+1. **이미지를 그릴 백엔드** : `image_backend` 값을 `ascii` (기본값)에서 `iterm2`로 변경합니다.
+2. **이미지 소스 경로** : `image_source` 값을 이미지 파일이 위치한 절대경로로 변경합니다.
+3. **이미지 크기** : 이미지가 출력될 크기를 지정합니다. `auto` (기본값)로 설정된 경우 이미지는 터미널 전체의 절반을 차지하게 됩니다. 픽셀 절대값 `400px` 또는 퍼센트 비율 `30%` 로도 설정이 가능합니다.
 
 &nbsp;
 
-#### 메모리 표기 설정
+#### `image_source` 값 설정 시 주의사항
+
+- `image_source` 값의 경우 무조건 절대경로를 써야 합니다.
+- `~/.config/neofetch/images/test.jpg` 같이 상대경로 `~`를 사용하면 이미지 로드에 실패합니다.  
+- 이미지 파일 경로에 `$HOME` 환경변수가 포함되는 건 가능합니다.
+
+&nbsp;
+
+### 메모리 표기 설정
 
 메모리 사용률 표기 관련하여 2가지 설정을 변경합니다.
 
@@ -193,6 +199,7 @@ image_size="auto"
 2. **메모리 단위 표기** : `memory_unit`을 `mib` (기본값)에서 `gib`로 변경해서 사람이 좀 더 이해하기 쉽게 변경합니다.
 
 ```bash
+# ~/.config/neofetch/config.conf
 # Show memory pecentage in output.
 #
 # Default: 'off'
@@ -219,7 +226,7 @@ memory_percent="on"
 memory_unit="gib"
 ```
 
-`memory_percent`와 `memory_unit` 설정이 적용되면 터미널에서는 다음과 같이 출력됩니다.
+`memory_percent`와 `memory_unit` 설정을 적용한 결과입니다.
 
 ![메모리 설정 적용결과](./2.png)
 
@@ -316,7 +323,8 @@ iTerm2를 최초로 실행하거나 탭을 새로 생성할 때마다 제가 지
 
 &nbsp;
 
-**참고**: 위 터미널에서 사진 아래쪽에 같이 출력되는 명언이나 구절은 `fortune`을 zsh에 설정해서 사용할 수 있습니다.
+**참고**:  
+위 터미널에서 사진 아래쪽에 같이 출력되는 명언이나 구절은 `fortune`이라는 툴을 사용했습니다. `fortune`도 `neofetch`와 동일하게 zsh에 설정해서 사용할 수 있습니다.
 
 &nbsp;
 
