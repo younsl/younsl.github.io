@@ -2,7 +2,7 @@
 title: Home
 ---
 
-[About](/about/)
+[`About`](/about/)
 
 <!--
   [ Blog 글 작성 규칙 ]
