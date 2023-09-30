@@ -1,6 +1,7 @@
 
 # younsl.github.io
 
+[![Deploy Hugo site to Pages](https://github.com/younsl/younsl.github.io/actions/workflows/hugo.yml/badge.svg)](https://github.com/younsl/younsl.github.io/actions/workflows/hugo.yml)
 [![Badge - Last commit](https://img.shields.io/github/last-commit/younsl/younsl.github.io.svg)](https://github.com/younsl/younsl.github.io/commits/main)
 ![Badge - Github stars](https://img.shields.io/github/stars/younsl/younsl.github.io.svg?label=stars)
 ![Badge - Github forks](https://img.shields.io/github/forks/younsl/younsl.github.io.svg?label=forks)
