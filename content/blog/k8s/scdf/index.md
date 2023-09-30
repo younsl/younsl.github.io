@@ -52,7 +52,7 @@ SCDF 사용자가 Kubernetes 환경에서 Task를 실행하게 되면 SCDF Deplo
 
 Spring Cloud Data Flow 서버는 Kubernetes에 헬름차트로 설치했습니다. Skipper는 활성화하지 않은 상태입니다.
 
-![SCDF 구성](./1.png)
+![SCDF 구성](./2.png)
 
 - **SCDF Version** : v2.11.0
   - [bitnami 공식 helm chart](https://github.com/bitnami/charts/tree/main/bitnami/spring-cloud-dataflow/)를 사용해서 설치했습니다.
