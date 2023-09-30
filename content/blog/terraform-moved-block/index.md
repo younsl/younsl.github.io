@@ -8,23 +8,7 @@ keywords: []
 tags: ["devops", "iac", "terraform"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [배경지식](#배경지식)
-  - [`moved {}` 블록](#moved--블록)
-  - [`moved` 블록의 등장배경과 장점](#moved-블록의-등장배경과-장점)
-    - [`terraform state mv`가 가진 3가지 문제점](#terraform-state-mv가-가진-3가지-문제점)
-- [제약사항](#제약사항)
-- [환경](#환경)
-  - [로컬 환경](#로컬-환경)
-- [사용방법](#사용방법)
-  - [module 이름 변경](#module-이름-변경)
-  - [moved 블록 선언](#moved-블록-선언)
-  - [plan](#plan)
-  - [apply](#apply)
-- [참고자료](#참고자료)
+{{< toc >}}
 
 &nbsp;
 

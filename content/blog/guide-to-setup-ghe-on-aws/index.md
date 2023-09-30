@@ -8,34 +8,7 @@ keywords: []
 tags: ["aws", "ghe"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [참고자료](#참고자료)
-- [가이드](#가이드)
-  - [Github Enterprise EC2의 인스턴스 타입 선정](#github-enterprise-ec2의-인스턴스-타입-선정)
-    - [EC2 인스턴스 타입 선정](#ec2-인스턴스-타입-선정)
-    - [AMI](#ami)
-  - [Github Actions](#github-actions)
-    - [아티팩트 저장소](#아티팩트-저장소)
-  - [actions-sync](#actions-sync)
-    - [actions-sync 설치](#actions-sync-설치)
-    - [actions-sync 사용법](#actions-sync-사용법)
-    - [트러블슈팅 가이드](#트러블슈팅-가이드)
-    - [증상](#증상)
-    - [원인](#원인)
-    - [해결방법](#해결방법)
-    - [상세 해결기록](#상세-해결기록)
-  - [TLS 인증서 설치](#tls-인증서-설치)
-    - [인증서 발급 시 네트워크 구성 체크리스트](#인증서-발급-시-네트워크-구성-체크리스트)
-  - [SMTP](#smtp)
-  - [이중화 구성](#이중화-구성)
-    - [이중화 상태 체크 명령어](#이중화-상태-체크-명령어)
-    - [Failover 조치하기](#failover-조치하기)
-  - [Github for Jira 연동](#github-for-jira-연동)
-    - [연동 시 장점](#연동-시-장점)
-  - [릴리즈 노트](#릴리즈-노트)
+{{< toc >}}
 
 &nbsp;
 

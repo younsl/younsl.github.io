@@ -8,6 +8,10 @@ keywords: []
 tags: ["database", "oracle"]
 ---
 
+{{< toc >}}
+
+&nbsp;
+
 ## 개요
 
 Oracle DB에서 아카이브 로그(Archive Log)를 사용하도록 모드를 변경한다.

@@ -8,6 +8,10 @@ keywords: []
 tags: ["monitoring", "datadog"]
 ---
 
+{{< toc >}}
+
+&nbsp;
+
 ## 개요
 
 EC2 인스턴스에 설치된 데이터독 에이전트에서 `Unable to get disk metrics ... [Error 13] Permission denied` 에러가 지속 발생할 때 해결하는 방법을 소개합니다.

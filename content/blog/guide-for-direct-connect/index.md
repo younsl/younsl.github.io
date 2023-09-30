@@ -8,23 +8,7 @@ keywords: []
 tags: ["aws", "networking"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [네트워크 구성 사례](#네트워크-구성-사례)
-  - [Direct Connect (DX)](#direct-connect-dx)
-    - [Direct Connect Locations](#direct-connect-locations)
-    - [Virtual Interface](#virtual-interface)
-    - [VIF 타입 주의사항](#vif-타입-주의사항)
-  - [Transit Gateway](#transit-gateway)
-  - [VPC Endpoint 통합](#vpc-endpoint-통합)
-  - [Route 53 Inbound Resolver](#route-53-inbound-resolver)
-  - [SSM Session Manager](#ssm-session-manager)
-  - [SSM Session Manager 중앙집중식 로깅](#ssm-session-manager-중앙집중식-로깅)
-  - [하나의 ALB에서 여러 도메인 라우팅](#하나의-alb에서-여러-도메인-라우팅)
-  - [QueryPie](#querypie)
-  - [Central Egress](#central-egress)
+{{< toc >}}
 
 &nbsp;
 

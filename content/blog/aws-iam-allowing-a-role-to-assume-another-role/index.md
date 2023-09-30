@@ -8,19 +8,7 @@ keywords: []
 tags: ["aws"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [해결방법](#해결방법)
-  - [IAM Role이 같은 AWS 계정에 있을 때](#iam-role이-같은-aws-계정에-있을-때)
-    - [Role B에 설정된 신뢰 관계 (Same-account)](#role-b에-설정된-신뢰-관계-same-account)
-    - [Principal](#principal)
-  - [IAM Role이 서로 다른 AWS 계정에 있을 때](#iam-role이-서로-다른-aws-계정에-있을-때)
-    - [Role B에 설정된 신뢰 관계 (Cross-account)](#role-b에-설정된-신뢰-관계-cross-account)
-    - [Role A에 설정된 Policy](#role-a에-설정된-policy)
-- [결론](#결론)
-- [참고자료](#참고자료)
+{{< toc >}}
 
 &nbsp;
 

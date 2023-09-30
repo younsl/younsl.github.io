@@ -43,7 +43,7 @@ Vault는 HashiCorp 사가 개발한 크로스플랫폼 패스워드 및 인증 �
 
 아래는 볼트의 아키텍처입니다.
 
-![Vault architecture](./0.png "Vault 동작방식")
+![Vault architecture](./1.png "Vault 동작방식")
 
 ‘Manage Secrets and Protect Sensitive Data, Secure dynamic infrastructure across clouds and environments’ 라는 컨셉으로 다양하게 변화하는 Cloud 환경에서 민감하게 제어되어야 하는 Secrets (Token, 암호, 인증서, SSH Key 등)을 안전하게 보관하고 제어할 수 있도록 해주는 저장소 서비스라고 이해하면 될 듯 합니다.
 
@@ -170,7 +170,7 @@ Development mode should NOT be used in production installations!
 
 로컬 Vault 웹서버 주소인 <http://127.0.0.1:8200>으로 접속합니다.
 
-![Vault main](./1.png "Vault 로그인 화면")
+![Vault main](./2.png "Vault 로그인 화면")
 
 - **Method** : Token
 - **Token** : environment
@@ -179,14 +179,14 @@ Development mode should NOT be used in production installations!
 
 &nbsp;
 
-![Secret](./2.png "로그인 후 Vault 메인 화면")
+![Secret](./3.png "로그인 후 Vault 메인 화면")
 
 Vault에 로그인 되었습니다.  
 Create secret 버튼을 클릭합니다.
 
 &nbsp;
 
-![Create secret](./3.png "Secret 생성 화면")
+![Create secret](./4.png "Secret 생성 화면")
 
 - `aws_access_key_id`
 - `aws_secret_access_key`
@@ -196,7 +196,7 @@ Create secret 버튼을 클릭합니다.
 
 &nbsp;
 
-![Secret 목록](./4.png "Secret 생성 결과")
+![Secret 목록](./5.png "Secret 생성 결과")
 
 Secret data가 새롭게 생성된 걸 확인할 수 있습니다.
 

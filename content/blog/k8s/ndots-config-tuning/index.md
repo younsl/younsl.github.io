@@ -8,24 +8,7 @@ keywords: []
 tags: ["dev", "kubernetes"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [배경지식](#배경지식)
-  - [CoreDNS](#coredns)
-  - [kube-dns와 CoreDNS](#kube-dns와-coredns)
-  - [CoreDNS 주소 포맷](#coredns-주소-포맷)
-    - [Service의 A Record](#service의-a-record)
-    - [Pod의 A Record](#pod의-a-record)
-- [환경](#환경)
-  - [EKS 클러스터](#eks-클러스터)
-  - [CoreDNS](#coredns-1)
-- [ndots 설정방법](#ndots-설정방법)
-  - [1. spec 수정](#1-spec-수정)
-  - [2. 설정 적용](#2-설정-적용)
-  - [3. ndots 설정 확인](#3-ndots-설정-확인)
-- [참고자료](#참고자료)
+{{< toc >}}
 
 &nbsp;
 

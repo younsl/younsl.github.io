@@ -8,23 +8,7 @@ keywords: []
 tags: ["certification", "aws"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [배경](#배경)
-  - [왜 자격증을 취득하는가](#왜-자격증을-취득하는가)
-- [학습방법](#학습방법)
-- [응시 결과](#응시-결과)
-  - [AWS Certified Cloud Practitioner - Foundation](#aws-certified-cloud-practitioner---foundation)
-  - [AWS Certified SysOps Administrator - Associate](#aws-certified-sysops-administrator---associate)
-    - [실습형 문제 출제에 대한 참고](#실습형-문제-출제에-대한-참고)
-  - [AWS Certified Developer - Associate](#aws-certified-developer---associate)
-- [시험 팁](#시험-팁)
-  - [자격증 할인 쿠폰](#자격증-할인-쿠폰)
-  - [원격 시험](#원격-시험)
-  - [문제 배점](#문제-배점)
-- [결론](#결론)
+{{< toc >}}
 
 &nbsp;
 

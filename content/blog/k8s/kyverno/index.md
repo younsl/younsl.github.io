@@ -8,26 +8,7 @@ keywords: []
 tags: ["devops", "kubernetes"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [배경지식](#배경지식)
-  - [Kyverno](#kyverno)
-  - [Admission Controllers](#admission-controllers)
-- [Kyverno 운영 가이드](#kyverno-운영-가이드)
-  - [정책 마켓플레이스](#정책-마켓플레이스)
-  - [정책 타입](#정책-타입)
-  - [정책 모드](#정책-모드)
-  - [Kyverno 컨트롤러](#kyverno-컨트롤러)
-  - [고가용성](#고가용성)
-  - [설치방식](#설치방식)
-    - [필요 차트](#필요-차트)
-    - [설치 순서](#설치-순서)
-  - [정책 운영 팁](#정책-운영-팁)
-    - [Validate Rule](#validate-rule)
-- [더 나아가서](#더-나아가서)
-  - [정책 현황 시각화](#정책-현황-시각화)
+{{< toc >}}
 
 &nbsp;
 

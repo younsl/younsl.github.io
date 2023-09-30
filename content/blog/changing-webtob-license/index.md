@@ -8,32 +8,37 @@ keywords: []
 tags: ["webtob"]
 ---
 
-# 개요
+{{< toc >}}
+
+&nbsp;
+
+## 개요
 
 WebtoB 라이센스를 교체하는 절차이다.
 
 어느날 개발팀으로부터 WebtoB 라이센스 교체 요청이 들어온 것이 발단이다.
 
-<br>
+&nbsp;
 
-# 배경지식
+## 배경지식
 
-**웹투비(WebtoB)**  
+### WebtoB
+
 한국의 티맥스소프트에서 개발한 웹서버 소프트웨어.  
 기존 웹서버가 가지고 있는 구조적인 문제를 혁신적으로 개선해 성능 및 안정성에 탁월한 기능을 제공하는 차세대 웹서버 제품이다.  
 주로 WAS 프로그램인 Jeus와 함께 사용한다.
 
-<br>
+&nbsp;
 
-# 작업절차
+## 작업절차
 
 ### 1. 라이센스 다운로드
 
 WebtoB 라이센스는 티맥스소프트에서 운영하는 기술지원 페이지인 [Technet](https://technet.tmaxsoft.com/ko/front/main/main.do)에서 다운로드 받을 수 있다.  
 
-![](./1.png)
+![Technet 접속 화면](./1.png)
 
-<br>
+&nbsp;
 
 ### 2. 기존 라이센스 상태 확인
 
@@ -44,9 +49,9 @@ $ su - tmax
 $
 ```
 
-이번 작업은 **tmax** 계정으로 진행해야한다.
+WebtoB 라이센스 교체 작업은 **tmax** 계정으로 진행해야한다.
 
-<br>
+&nbsp;
 
 **WebtoB 홈 디렉토리로 이동**
 
@@ -65,7 +70,7 @@ WebToB 설치 경로로 이동한 후, `license` 디렉토리로 들어간다.
 $ cd license
 ```
 
-<br>
+&nbsp;
 
 **기존 라이센스 상태 확인**  
 
@@ -89,7 +94,7 @@ Unlimited license
 
 라이센스 만료일(`Expiration date`)을 보니 임시로 발급받은 데모 라이센스가 만료하기 직전이다.
 
-<br>
+&nbsp;
 
 ### 3. 라이센스 파일 업로드
 
@@ -103,7 +108,7 @@ $ mv license.dat license.dat.old
 기존 임시 라이센스 파일명은 `license.dat`이다.  
 `license.dat`을 `license.dat.old` 로 파일명 변경한다.
 
-<br>
+&nbsp;
 
 **신규 라이센스 파일명 변경**
 
@@ -113,7 +118,7 @@ $ mv license.dat license.dat.old
 $ mv license_standard_new.dat license.dat
 ```
 
-<br>
+&nbsp;
 
 ### 4. 라이센스 파일 권한설정
 
@@ -124,7 +129,7 @@ $ chown tmax:web license.dat
 ```
 라이센스 파일의 소유자는 `tmax`, 그룹은 `web`으로 설정한다.
 
-<br>
+&nbsp;
 
 ```bash
 $ ls -l
@@ -136,7 +141,7 @@ $ ls -l
 
 기존 라이센스 파일(`license.dat.old`)의 소유자, 그룹과 동일하게 설정되었다.
 
-<br>
+&nbsp;
 
 ### 5. 웹서버 환경설정 컴파일
 
@@ -152,13 +157,13 @@ Successfully created the configuration file (/home/tmax/webtob/config/wsconfig) 
 The host name of the running machine is testserver.
 ```
 
-<br>
+&nbsp;
 
 ### 6. WebtoB 재시작
 
 변경된 라이센스 환경설정을 적용하기 위해서는 WebtoB 서버를 내렸다가 올려야 한다.  
 
-<br>
+&nbsp;
 
 **WebtoB 중지**  
 `wsdown` 명령어를 실행후 y 키를 눌러서 WebtoB 서버를 내린다.  
@@ -176,7 +181,7 @@ WSDOWN for node(testserver) is starting:
         WSDOWN: WebtoB is down
 ```
 
-<br>
+&nbsp;
 
 **WebtoB 시작**  
 WebtoB 서버를 다시 올린다.  
@@ -196,7 +201,7 @@ Starting SVR(htmls) at Wed Jun 23 13:50:48 2021
 
 WebtoB의 주요 프로세스인 wsm, htl, hth, htmls 가 정상적으로 구동된 걸 확인할 수 있다.
 
-<br>
+&nbsp;
 
 **WebtoB 주요 프로세스별 역할**
 
@@ -212,7 +217,7 @@ WebtoB의 주요 프로세스인 wsm, htl, hth, htmls 가 정상적으로 구동
 - **HTMLS(HTML Server)**  
   HTML 요청을 처리하는 HTML 서버 프로세스이다.
 
-<br>
+&nbsp;
 
 ### 7. 라이센스 & 프로세스 상태 확인
 
@@ -235,7 +240,7 @@ License check by hostname: testserver
 
 Standard Edition, 32 CPU License 로 정상 적용 확인.
 
-<br>
+&nbsp;
 
 **WebtoB 프로세스 상태 확인**
 
@@ -250,6 +255,6 @@ $ ps -ef | egrep 'htm|htl|hth|htmls'
 
 wsm, hth, htl, htmls 프로세스가 구동중인 걸 확인했다.  
 
-<br>
+&nbsp;
 
 작업 끝.

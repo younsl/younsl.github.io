@@ -8,22 +8,7 @@ keywords: []
 tags: ["git", "dev"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [발단](#발단)
-- [환경](#환경)
-- [해결방법](#해결방법)
-  - [1. submodule 삭제](#1-submodule-삭제)
-    - [submodule 목록 확인](#submodule-목록-확인)
-    - [submodule deinit](#submodule-deinit)
-    - [로컬에서 submodule 디렉토리 삭제](#로컬에서-submodule-디렉토리-삭제)
-    - [git에서 submodule 디렉토리 삭제](#git에서-submodule-디렉토리-삭제)
-    - [submodule 목록 재확인](#submodule-목록-재확인)
-  - [2. submodule 등록](#2-submodule-등록)
-    - [submodule 다시 추가](#submodule-다시-추가)
-    - [submodule 추가 결과 확인](#submodule-추가-결과-확인)
-- [참고자료](#참고자료)
+{{< toc >}}
 
 &nbsp;
 

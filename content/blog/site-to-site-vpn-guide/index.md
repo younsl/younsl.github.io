@@ -8,38 +8,7 @@ keywords: []
 tags: ["aws", "devops", "network", "vpn"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [환경](#환경)
-  - [네트워크 구성](#네트워크-구성)
-  - [로컬 작업환경](#로컬-작업환경)
-- [준비사항](#준비사항)
-  - [AWS CLI](#aws-cli)
-  - [충분한 IAM 권한](#충분한-iam-권한)
-- [배경지식](#배경지식)
-  - [VPN Tunneling](#vpn-tunneling)
-  - [Transit Gateway + VPN 구성](#transit-gateway--vpn-구성)
-    - [장점](#장점)
-    - [한계점](#한계점)
-- [작업절차](#작업절차)
-  - [Customer Gateway 정보 수집](#customer-gateway-정보-수집)
-  - [Customer Gateway 생성](#customer-gateway-생성)
-    - [Customer Gateway 생성 시 옵션 설명](#customer-gateway-생성-시-옵션-설명)
-  - [VPN Connection 생성](#vpn-connection-생성)
-  - [Config 전달](#config-전달)
-    - [명령어 형식](#명령어-형식)
-    - [실제 명령어](#실제-명령어)
-  - [VPN 구성 작업](#vpn-구성-작업)
-  - [Transit Gateway 라우팅](#transit-gateway-라우팅)
-  - [VPN 터널 Failover 테스트](#vpn-터널-failover-테스트)
-    - [Failover 테스트](#failover-테스트)
-    - [테스트 시 주의사항](#테스트-시-주의사항)
-- [구성 결과](#구성-결과)
-  - [Resource Access Manager 구성](#resource-access-manager-구성)
-  - [Site-to-Site VPN Connection 구성](#site-to-site-vpn-connection-구성)
-  - [Route 53 Inbound Resolver](#route-53-inbound-resolver)
+{{< toc >}}
 
 &nbsp;
 

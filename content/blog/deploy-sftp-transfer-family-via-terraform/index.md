@@ -8,38 +8,7 @@ keywords: []
 tags: ["aws", "terraform"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [배경지식](#배경지식)
-  - [AWS Transfer Family](#aws-transfer-family)
-  - [AWS Transfer Family의 장단점](#aws-transfer-family의-장단점)
-    - [장점](#장점)
-    - [단점](#단점)
-- [환경](#환경)
-  - [로컬 환경](#로컬-환경)
-- [준비사항](#준비사항)
-- [Transfer Family 구성하기](#transfer-family-구성하기)
-  - [테라폼 코드 다운로드](#테라폼-코드-다운로드)
-    - [코드 구조](#코드-구조)
-    - [local-exec 설명](#local-exec-설명)
-  - [코드 수정](#코드-수정)
-    - [S3 버킷 이름](#s3-버킷-이름)
-    - [리전](#리전)
-  - [AWS CLI 권한 확인](#aws-cli-권한-확인)
-- [SFTP 인프라 구축](#sftp-인프라-구축)
-  - [테라폼 배포](#테라폼-배포)
-    - [terraform init](#terraform-init)
-    - [terraform plan](#terraform-plan)
-    - [terraform apply](#terraform-apply)
-  - [SSH 키 생성](#ssh-키-생성)
-  - [SFTP 유저의 SSH 키 등록](#sftp-유저의-ssh-키-등록)
-  - [SFTP 접속](#sftp-접속)
-  - [파일 업로드 테스트](#파일-업로드-테스트)
-  - [실습환경 정리](#실습환경-정리)
-    - [terraform destroy](#terraform-destroy)
-- [참고자료](#참고자료)
+{{< toc >}}
 
 &nbsp;
 

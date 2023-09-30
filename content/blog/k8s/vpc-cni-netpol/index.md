@@ -8,24 +8,7 @@ keywords: []
 tags: ["devops", "kubernetes", "karpenter"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [배경지식](#배경지식)
-  - [VPC CNI](#vpc-cni)
-  - [network policy](#network-policy)
-- [준비사항](#준비사항)
-  - [EKS Cluster 버전](#eks-cluster-버전)
-  - [VPC CNI 버전](#vpc-cni-버전)
-  - [Linux kernel](#linux-kernel)
-- [설정하기](#설정하기)
-  - [기존 구성 확인](#기존-구성-확인)
-  - [버전 업그레이드](#버전-업그레이드)
-  - [업그레이드 결과 확인](#업그레이드-결과-확인)
-  - [netpol 활성화](#netpol-활성화)
-  - [동작 테스트](#동작-테스트)
-- [참고자료](#참고자료)
+{{< toc >}}
 
 &nbsp;
 

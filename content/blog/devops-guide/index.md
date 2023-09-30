@@ -10,45 +10,7 @@ showComments: true
 showAdvertisement: true
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [데브옵스 북마크](#데브옵스-북마크)
-  - [Career](#career)
-  - [DevOps](#devops)
-  - [SRE](#sre)
-  - [Blog](#blog)
-  - [Kubernetes](#kubernetes)
-  - [AWS](#aws)
-  - [FinOps](#finops)
-  - [IaC](#iac)
-  - [Golang](#golang)
-- [분야별 지식 정리](#분야별-지식-정리)
-  - [Site Reliability Engineering](#site-reliability-engineering)
-    - [SRE 가용성 표](#sre-가용성-표)
-    - [class `SRE` implements `DevOps`](#class-sre-implements-devops)
-    - [에러 예산과 SLO](#에러-예산과-slo)
-    - [익스포터의 동작방식 차이](#익스포터의-동작방식-차이)
-  - [Networking](#networking)
-    - [주요 토픽](#주요-토픽)
-    - [Read Timeout과 Connection Timeout 비교](#read-timeout과-connection-timeout-비교)
-  - [AWS](#aws-1)
-    - [Interface Endpoint와 Gateway Endpoint의 차이점](#interface-endpoint와-gateway-endpoint의-차이점)
-    - [Amazon Aurora 장단점](#amazon-aurora-장단점)
-      - [장점](#장점)
-      - [단점](#단점)
-  - [Kubernetes](#kubernetes-1)
-    - [Control Plane이 파드 상태를 모니터링하고 업데이트하는 과정](#control-plane이-파드-상태를-모니터링하고-업데이트하는-과정)
-  - [Computer Science](#computer-science)
-    - [RESTful API의 동작방식](#restful-api의-동작방식)
-  - [Linux](#linux)
-    - [`top` 명령어에서 load average 의미](#top-명령어에서-load-average-의미)
-  - [Communication](#communication)
-    - [개발자와의 커뮤니케이션](#개발자와의-커뮤니케이션)
-  - [Operation](#operation)
-    - [GitOps](#gitops)
-- [추천강의](#추천강의)
+{{< toc >}}
 
 &nbsp;
 

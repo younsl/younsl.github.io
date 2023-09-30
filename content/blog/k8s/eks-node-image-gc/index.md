@@ -8,6 +8,10 @@ keywords: []
 tags: ["devops", "kubernetes", "minikube"]
 ---
 
+{{< toc >}}
+
+&nbsp;
+
 ## 개요
 
 Kubelet에서 자동으로 컨테이너 이미지를 정리하도록 Image Garbage Collection을 설정하는 방법을 소개합니다.

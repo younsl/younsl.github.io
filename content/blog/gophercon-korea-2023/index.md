@@ -10,43 +10,7 @@ showComments: true
 showAdvertisement: false
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [오피스 아워](#오피스-아워)
-  - [제가 궁금했던 사항](#제가-궁금했던-사항)
-  - [당근마켓의 문제해결 사례](#당근마켓의-문제해결-사례)
-    - [인프라 구성](#인프라-구성)
-    - [Graceful Shutdown 기법](#graceful-shutdown-기법)
-    - [HTTPS 통신 시 외부로 나가는 문제](#https-통신-시-외부로-나가는-문제)
-- [세션 내용](#세션-내용)
-  - [키노트](#키노트)
-  - [Open Source In Go](#open-source-in-go)
-    - [CI/CD](#cicd)
-    - [OpenTelemetry](#opentelemetry)
-  - [오픈소스 기여](#오픈소스-기여)
-    - [오픈소스 기여에 도움을 주는 행사와 도구들](#오픈소스-기여에-도움을-주는-행사와-도구들)
-  - [당근마켓의 Go 도입기](#당근마켓의-go-도입기)
-    - [당근마켓의 Go 사용 현황](#당근마켓의-go-사용-현황)
-    - [회사에서 Go를 시작한 계기](#회사에서-go를-시작한-계기)
-    - [Go 성능 이슈](#go-성능-이슈)
-    - [CPU 스로틀링 해결](#cpu-스로틀링-해결)
-    - [질문답변](#질문답변)
-  - [API 서버 테스트코드 A-Z](#api-서버-테스트코드-a-z)
-    - [Golang Project Layout](#golang-project-layout)
-    - [Clean 아키텍처 원칙](#clean-아키텍처-원칙)
-    - [결론](#결론)
-      - [테스트를 어렵게 만드는 요소](#테스트를-어렵게-만드는-요소)
-    - [레이어별 테스트 UseCase](#레이어별-테스트-usecase)
-      - [Repository](#repository)
-      - [UseCase](#usecase)
-      - [Delivery](#delivery)
-    - [정리](#정리)
-  - [Go와 K8s로 만드는 Datacenter Autopilot](#go와-k8s로-만드는-datacenter-autopilot)
-    - [HMetal](#hmetal)
-    - [K8s Operator Pattern 도입 결정](#k8s-operator-pattern-도입-결정)
-- [참고자료](#참고자료)
+{{< toc >}}
 
 &nbsp;
 

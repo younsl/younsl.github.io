@@ -8,22 +8,7 @@ keywords: []
 tags: ["os", "linux", "aws"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [환경](#환경)
-- [발단](#발단)
-- [해결방안](#해결방안)
-- [상세 조치방법](#상세-조치방법)
-  - [MSSQL 이중화 중지](#mssql-이중화-중지)
-  - [MSSQL 백업](#mssql-백업)
-  - [로그 축소](#로그-축소)
-  - [이중화 상태 확인](#이중화-상태-확인)
-- [개선방법](#개선방법)
-  - [backup-utils 인스턴스](#backup-utils-인스턴스)
-  - [AWS Backup vs backup-utils](#aws-backup-vs-backup-utils)
-  - [Backup-utils 관련자료](#backup-utils-관련자료)
+{{< toc >}}
 
 &nbsp;
 

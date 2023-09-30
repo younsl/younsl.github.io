@@ -8,32 +8,7 @@ keywords: []
 tags: ["devops", "kubernetes", "karpenter"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [중요사항](#중요사항)
-- [배경지식](#배경지식)
-  - [Karpenter](#karpenter)
-  - [Karpenter 관련 차트](#karpenter-관련-차트)
-- [환경](#환경)
-  - [클러스터 환경](#클러스터-환경)
-  - [로컬 환경](#로컬-환경)
-- [Karpenter 헬름 차트 업그레이드(설치) 절차](#karpenter-헬름-차트-업그레이드설치-절차)
-  - [1. 환경변수 설정](#1-환경변수-설정)
-  - [2. Karpenter Controller 설치](#2-karpenter-controller-설치)
-    - [Karpenter Controller values 작성](#karpenter-controller-values-작성)
-      - [values.yaml 예시](#valuesyaml-예시)
-    - [Karpenter Controller 헬름 배포](#karpenter-controller-헬름-배포)
-  - [3. Karpenter CRDs 설치](#3-karpenter-crds-설치)
-  - [4. 차트 결과 확인](#4-차트-결과-확인)
-  - [5. CRD 생성](#5-crd-생성)
-    - [crds.yaml 예시](#crdsyaml-예시)
-  - [6. 모니터링](#6-모니터링)
-    - [Karpenter Controller 로그 모니터링](#karpenter-controller-로그-모니터링)
-    - [노드 상태 모니터링](#노드-상태-모니터링)
-- [결과](#결과)
-- [참고자료](#참고자료)
+{{< toc >}}
 
 &nbsp;
 

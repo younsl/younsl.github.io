@@ -8,34 +8,7 @@ keywords: []
 tags: ["devops", "kubernetes", "karpenter"]
 ---
 
-## 목차
-
-- [목차](#목차)
-- [개요](#개요)
-- [배경지식](#배경지식)
-  - [Karpenter](#karpenter)
-    - [기능과 동작방식](#기능과-동작방식)
-    - [General Availability](#general-availability)
-  - [Provisioner](#provisioner)
-  - [IRSA](#irsa)
-- [환경](#환경)
-  - [EKS 클러스터](#eks-클러스터)
-  - [로컬 환경](#로컬-환경)
-- [Karpenter 설치](#karpenter-설치)
-  - [초기 환경변수 설정](#초기-환경변수-설정)
-    - [환경변수 주의사항](#환경변수-주의사항)
-  - [IAM Role 생성](#iam-role-생성)
-    - [Karpenter 노드용 IAM Role](#karpenter-노드용-iam-role)
-    - [Karpenter 컨트롤러용 IAM Role](#karpenter-컨트롤러용-iam-role)
-  - [서브넷 및 보안 그룹에 태그 추가](#서브넷-및-보안-그룹에-태그-추가)
-    - [Subnet](#subnet)
-    - [Security Group](#security-group)
-  - [aws-auth ConfigMap 업데이트](#aws-auth-configmap-업데이트)
-  - [Karpenter 배포](#karpenter-배포)
-    - [Karpenter Controller Pod의 배치 설정](#karpenter-controller-pod의-배치-설정)
-  - [Provisioner 생성](#provisioner-생성)
-  - [Karpenter 동작 테스트](#karpenter-동작-테스트)
-- [참고자료](#참고자료)
+{{< toc >}}
 
 &nbsp;
 
