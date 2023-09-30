@@ -1,5 +1,5 @@
 ---
-title: "SCDF hack"
+title: "SCDF"
 date: 2023-09-30T13:22:40+09:00
 lastmod: 2023-09-30T13:22:41+09:00
 slug: ""
