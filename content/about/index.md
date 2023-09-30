@@ -10,6 +10,8 @@ showComments: false
 showAdvertisement: false
 ---
 
+![Billie Eilish](./images/billie.jpg)
+
 [`github`](https://github.com/younsl) [`cysl@kakao.com`](mailto:cysl@kakao.com)
 
 <!--
