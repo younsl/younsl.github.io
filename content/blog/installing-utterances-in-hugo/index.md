@@ -70,7 +70,7 @@ Utterances를 사용하면 댓글 기능을 구현하는 데 드는 시간은 10
 
 [utterances 공식 홈페이지](https://utteranc.es)에 접속한다. 중간에 configuration 이후 'repo:' 값이 있다.
 
-![repo 값 입력 위치](./0.png)
+![repo 값 입력 위치](./1.png)
 
 이 값에 **소유자와 레포지터리 이름**을 입력한다. 예를 들어 나같은 경우는 다음과 같이 작성했다.
 
@@ -326,6 +326,6 @@ Press Ctrl+C to stop
 
 이후 블로그 홈페이지( `http://localhost:1313/`)에 접속해서 확인해본 결과, 포스트 하단에 Utterances 댓글창이 잘 적용된 걸 확인할 수 있다.
 
-![Utterances가 적용된 게시글 화면](./1.png)
+![Utterances가 적용된 게시글 화면](./2.png)
 
 그럼 다들 Hugo 블로그 잘 쓰시길 바란다. Happy Halloween!

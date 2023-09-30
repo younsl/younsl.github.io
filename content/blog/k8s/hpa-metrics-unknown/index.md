@@ -8,10 +8,15 @@ keywords: []
 tags: ["devops", "kubernetes"]
 ---
 
+{{< toc >}}
+
+&nbsp;
+
 ## 개요
 
-HPA가 메트릭을 수집하지 못하는 이슈에 대한 트러블슈팅 기록입니다.  
-Kubernetes 클러스터를 운영하는 DevOps Engineer, SRE를 대상으로 작성했습니다.
+HPA가 메트릭을 수집하지 못하는 이슈에 대한 트러블슈팅 기록입니다.
+
+이 페이지는 Kubernetes 클러스터를 운영하는 DevOps Engineer, SRE를 대상으로 작성되었습니다.
 
 &nbsp;
 
@@ -33,7 +38,8 @@ HPA는 설정한 CPU 사용률 또는 메모리 사용률에 따라 파드 수�
 
 ### metrics-server
 
-HPA를 사용하기 위해서는 metrics-server가 필요합니다.  
+HPA를 사용하기 위해서는 metrics-server pod가 필요합니다.
+
 [metrics-server](https://github.com/kubernetes-sigs/metrics-server)는 쿠버네티스 클러스터 내에서 리소스 사용률에 대한 메트릭을 수집하고 쿠버네티스 API 서버에 보내는 역할을 합니다.
 
 &nbsp;
@@ -42,8 +48,9 @@ HPA를 사용하기 위해서는 metrics-server가 필요합니다.
 
 ### 쿠버네티스 클러스터
 
-- EKS v1.24
-- 클러스터에 헬름 차트로 metrics-server v0.6.2가 설치되어 있습니다.
+- **EKS v1.24**
+- **CPU 아키텍처** : AMD64 (x86_64)
+- **metrics-server** : 헬름 차트를 사용해서 EKS 클러스터에 metrics-server v0.6.2가 설치되어 있습니다.
 
 ```bash
 $ helm list \
