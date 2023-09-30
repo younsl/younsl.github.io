@@ -1,5 +1,5 @@
 ---
-title: "Kyverno hack"
+title: "Kyverno"
 date: 2023-08-27T21:33:45+09:00
 lastmod: 2023-09-04T23:58:45+09:00
 slug: ""
