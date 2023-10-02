@@ -1,7 +1,7 @@
 ---
 title: "DevOps Guide"
 date: 2023-07-30T15:38:15+09:00
-lastmod: 2023-08-21T09:51:25+09:00
+lastmod: 2023-10-02T21:14:25+09:00
 slug: ""
 description: "DevOps Engineer를 위한 가이드"
 keywords: []
@@ -160,6 +160,9 @@ Cloud Posse 공식 테라폼 모듈
 
 [terraform-google-modules](https://github.com/orgs/terraform-google-modules/repositories)  
 GCP 공식 테라폼 모듈
+
+[Terraform Best Practices](https://www.terraform-best-practices.com/)  
+e-book: 테라폼 Best Practices
 
 &nbsp;
 
