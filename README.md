@@ -2,30 +2,25 @@
 # younsl.github.io
 
 [![Deploy Hugo site to Pages](https://github.com/younsl/younsl.github.io/actions/workflows/hugo.yml/badge.svg)](https://github.com/younsl/younsl.github.io/actions/workflows/hugo.yml)
-[![Badge - Last commit](https://img.shields.io/github/last-commit/younsl/younsl.github.io.svg)](https://github.com/younsl/younsl.github.io/commits/main)
-![Badge - Github stars](https://img.shields.io/github/stars/younsl/younsl.github.io.svg?label=stars)
-![Badge - Github forks](https://img.shields.io/github/forks/younsl/younsl.github.io.svg?label=forks)
 [![Badge - License](https://img.shields.io/badge/license-MIT-ff69b4.svg)](https://github.com/younsl/younsl.github.io/blob/main/LICENSE)
-[![Badge - contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/younsl/younsl.github.io/issues)
 
-Personal tech blog. Use [etch](https://github.com/LukasJoswiak/etch) as the hugo theme.
+Personal tech blog.
 
 ## Installation
 
-You need to install hugo as a preparation.
+**Prerequisite**: You need to install hugo `v0.119.0` or higher
 
 ```bash
-$ brew install hugo
-$ hugo version
-hugo v0.115.4-dc9524521270f81d1c038ebbb200f0cfa3427cc5+extended darwin/arm64 BuildDate=2023-07-20T06:49:57Z VendorInfo=brew
+brew install hugo
+hugo version
 ```
 
 Add `etch` theme as a submodule using git command.
 
 ```bash
-$ git submodule init
-$ git submodule add https://github.com/LukasJoswiak/etch.git themes/etch
-$ git submodule update themes/etch
+git submodule init
+git submodule add https://github.com/LukasJoswiak/etch.git themes/etch
+git submodule update themes/etch
 ```
 
 Check the submodule status.
@@ -37,15 +32,25 @@ $ git submodule status
 
 ## Run for development
 
-Generate your blog site using etch theme.
+Generate your blog site using [etch](https://github.com/LukasJoswiak/etch) theme.
 
 ```bash
-$ hugo server -t etch
-$ open http://localhost:1313
+hugo server -t etch
+open http://localhost:1313
 ```
+
+## Deployment
+
+Deployment method is github actions (beta), not classic. There is no need for any additional branches.
+
+It is recommended to use the Standard Hugo Workflow provided by Github Pages. See my hugo deployment workflow on [this repository](./.github/workflows/hugo.yml).
 
 ## Integrations
 
 Several plugins were integrated with this blog using the Partial function.
 
-[Google AdSense](https://github.com/younsl/younsl.github.io/blob/main/layouts/partials/adsense.html), [Utterances](https://github.com/younsl/younsl.github.io/blob/main/layouts/partials/comments.html), [Google Search Console](https://github.com/younsl/younsl.github.io/blob/main/static/google3e664c168bbd9088.html)
+| Status | Integration Name | Description | Intg. Method |
+|--------|------------------|-------------|--------------|
+| <small>In-use</small> | Google Adsense | Google Ads | [Hugo partials](https://github.com/younsl/younsl.github.io/blob/main/layouts/partials/adsense.html) |
+| <small>In-use</small> | Utterances | Page comment plugin | [Hugo partials](https://github.com/younsl/younsl.github.io/blob/main/layouts/partials/comments.html) |
+| <small>In-use</small> | Google Search Console | SEO for Google | [Static file](https://github.com/younsl/younsl.github.io/blob/main/static/google3e664c168bbd9088.html) |
