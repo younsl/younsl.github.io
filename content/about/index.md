@@ -1,16 +1,20 @@
 ---
-title: "Younsung Lee"
+title: "About"
 date: 2022-08-31T15:38:15+09:00
-lastmod: 2023-08-09T00:51:33+09:00
+lastmod: 2023-10-02T15:35:33+09:00
 slug: ""
-description: "Younsung Lee's profile"
+description: "About"
 keywords: []
 tags: ["bio", "profile"]
 showComments: false
 showAdvertisement: false
 ---
 
-[`github`](https://github.com/younsl) [`cysl@kakao.com`](mailto:cysl@kakao.com)
+### Younsung Lee
+
+DevOps Engineer
+
+**Contact**: [`github`](https://github.com/younsl) [`cysl@kakao.com`](mailto:cysl@kakao.com)
 
 <!--
 **Gadgets**  
@@ -45,7 +49,7 @@ AWS, GCP, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops
 &nbsp;
 
 **DevOps Engineer** <small>|</small> [Greenlabs Financial](https://seedglobal.co)  
-Sep 5, 2022 ― Apr 7, 2023 (7 mos)
+Sep 5, 2022 ― Apr 7, 2023 <small>(7 mos)</small>
 
 AWS, Kubernetes, Istio, Observability, CI/CD, Terraform, MLOps, Infrastructure Ops
 
@@ -57,14 +61,14 @@ AWS, Kubernetes, Istio, Observability, CI/CD, Terraform, MLOps, Infrastructure O
 &nbsp;
 
 **Cloud Engineer** <small>|</small> [Watcha](https://watcha.team)  
-Feb 14, 2022 ― Aug 5, 2022 (6 mos)
+Feb 14, 2022 ― Aug 5, 2022 <small>(6 mos)</small>
 
 AWS, Kubernetes, CI/CD, Terraform, Infrastructure Ops
 
 &nbsp;
 
 **System Engineer** <small>|</small> [KDN](https://kdn.com)  
-Dec 16, 2013 ― Feb 11, 2022 (8 yrs 2 mos)
+Dec 16, 2013 ― Feb 11, 2022 <small>(8 yrs 2 mos)</small>
 
 On-premise, Linux administration, VMware Cluster administration, Storage administration, Backup and Recovery, Monitoring, Infrastructure Ops
 
@@ -84,12 +88,6 @@ On-premise, Linux administration, VMware Cluster administration, Storage adminis
 Mar 2018 ― Feb 2022
 
 <!-- GPA: 4.09 / 4.5 -->
-
-&nbsp;
-
-### Contribution
-
-[Maintainer of backup-utils-chart](https://github.com/younsl/backup-utils-chart), [bitnami/charts](https://github.com/bitnami/charts/issues/19446), [docs for flyway-action](https://github.com/joshuaavalon/flyway-action/pull/12) and [integrations/slack](https://github.com/integrations/slack/issues/1138#issuecomment-1705400597)
 
 &nbsp;
 
