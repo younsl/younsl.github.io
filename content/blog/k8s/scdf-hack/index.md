@@ -54,7 +54,9 @@ SCDF 사용자가 Kubernetes 환경에서 Task를 실행하게 되면 SCDF Deplo
 
 ### Spring Cloud Data Flow
 
-Spring Cloud Data Flow 서버는 Kubernetes에 헬름차트로 설치했습니다. Skipper는 활성화하지 않은 상태입니다.
+Spring Cloud Data Flow 서버는 Kubernetes에 헬름차트로 설치했습니다.
+
+제 경우 SCDF에서 스트리밍 애플리케이션을 처리할 필요가 없어서 Skipper는 기본값 그대로 `enabled: false`로 꺼둔 상태입니다.
 
 ![SCDF 구성](./2.png)
 
