@@ -214,7 +214,7 @@ $ pwd  # jumped
 
 &nbsp;
 
-### 2. neofetch
+### neofetch
 
 neofetch는 터미널 창에서 컴퓨터와 OS에 대한 유용한 정보를 제공해주는 툴입니다.
 
@@ -337,7 +337,19 @@ neofetch에서 자신이 원하는 이미지를 넣고 싶다면 [neofetch로 �
 
 제 경우 neofetch 하단에 명언이 나오도록 [fortune](https://formulae.brew.sh/formula/fortune) 패키지를 조합해서 사용하고 있습니다.
 
-fortune도 brew를 사용해서 설치했습니다.
+![fortune 예시](./2.png)
+
+&nbsp;
+
+macOS 패키지 관리자인 [brew](https://brew.sh)를 사용해서 fortune을 설치합니다.
+
+```bash
+brew install fortune
+```
+
+&nbsp;
+
+로컬 환경에 `fortune` 명령어가 추가됩니다.
 
 ```bash
 $ brew list fortune
@@ -360,19 +372,84 @@ neofetch
 fortune ~/.config/fortune/
 ```
 
+`~/.config/fortune` 디렉토리 안에 출력할 명언 파일들을 작성해서 미리 한 곳에 모아 놓습니다.
+
+제 사용 사례로는 책이나 미디어에서 인상깊게 본 구절과 유명 개발자들의 명언을 `.fortune` 파일에 모두 기록해두고 터미널로 항상 복습합니다.
+
+아래와 같이 각 카테고리별로 `.fortune` 파일을 분류합니다.
+
+```bash
+$ ls
+bootstrap.sh        crypto.fortune      general.fortune     programming.fortune security.fortune    strfile.sh
+carrer.fortune      devops.fortune      philosophy.fortune  science.fortune     sre.fortune
+```
+
 &nbsp;
 
-책이나 미디어에서 인상깊게 본 구절과 유명 개발자들의 명언을 fortune 파일에 모두 기록해두고 터미널로 항상 복습합니다.
+명언을 모아놓은 텍스트 파일을 작성했으면 이제 `~/.config/fortune/` 디렉토리 안에 `strfile.sh` 스크립트를 생성합니다.
 
-각 카테고리별로 fortune 파일을 분류하고 있습니다.
+```bash
+$ cat << EOF > ~/.config/fortune/strfile.sh
+#!/bin/bash
+
+# 현재 디렉토리에서 .fortune 파일 목록을 가져옴
+fortune_files=$(find . -maxdepth 1 -type f -name "*.fortune")
+
+# 각 .fortune 파일에 대해 strfile 실행
+for fortune_file in $fortune_files; do
+  strfile "$fortune_file"
+done
+EOF
+```
+
+`fortune`은 일반 텍스트 파일만은 읽지 못하므로, 인덱스 정보가 담긴 데이터 파일 `.dat`로 변환 처리해주는 스크립트입니다.
+
+> `strfile` 명령어는 `fortune`과 함께 사용되어 텍스트 파일을 더 쉽게 검색하고 무작위로 텍스트를 선택하는 데 도움을 줍니다. `strfile`은 텍스트 파일을 읽어 들이고 인덱스가 담긴 데이터 파일 `.dat`을 생성합니다. 이 인덱스 데이터 파일은 `fortune`이 출력할 명언을 검색할 때 빠른 액세스를 가능하게 합니다.
+
+&nbsp;
+
+명언이 있는 경로에서 `strfile.sh`을 실행합니다.
+
+```bash
+sh strfile.sh
+```
+
+```bash
+"./programming.fortune.dat" created
+There were 26 strings
+Longest string: 366 bytes
+Shortest string: 59 bytes
+
+...
+
+"./science.fortune.dat" created
+There were 4 strings
+Longest string: 169 bytes
+Shortest string: 80 bytes
+```
+
+스크립트는 각각의 `.fortune` 파일을 읽어서 인덱스 정보가 담긴 데이터 파일인 `.dat`를 생성합니다.
+
+&nbsp;
+
+스크립트를 실행한 후 결과는 다음과 같습니다.
 
 ```bash
 $ ls ~/.config/fortune/
-bootstrap.sh            crypto.fortune.dat      general.fortune.dat     science.fortune         sre.fortune
-carrer.fortune          devops.fortune          philosophy.fortune      science.fortune.dat     sre.fortune.dat
-carrer.fortune.dat      devops.fortune.dat      programming.fortune     security.fortune        strfile.sh
-crypto.fortune          general.fortune         programming.fortune.dat security.fortune.dat
+bootstrap.sh            crypto.fortune.dat      general.fortune.dat     programming.fortune.dat security.fortune.dat
+carrer.fortune          devops.fortune          philosophy.fortune      science.fortune         sre.fortune
+carrer.fortune.dat      devops.fortune.dat      philosophy.fortune.dat  science.fortune.dat     sre.fortune.dat
+crypto.fortune          general.fortune         programming.fortune     security.fortune        strfile.sh
 ```
+
+각 분야별로 모아놓은 `.fortune` 파일에 매핑되는 `.dat`가 생성된 걸 확인할 수 있습니다.
+
+> **주의사항**  
+> `fortune` 명령어는 `.dat` 파일 그 자체로는 명언 내용에 대한 완전한 정보를 읽지 못합니다. 항상 `.fortune`과 `.dat` 파일 둘다 모두 존재해야 `fortune`이 정상적으로 명언 데이터를 읽어들일 수 있습니다.
+
+&nbsp;
+
+이제 iTerm2를 재실행하거나 `zsh` 명령어로 쉘을 재시작하면, `fortune`은 `~/.config/fortune/`에 위치한 모든 명언들 중 하나를 랜덤하게 출력합니다.
 
 &nbsp;
 
