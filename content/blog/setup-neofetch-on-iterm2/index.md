@@ -305,7 +305,7 @@ iTerm2를 최초로 실행하거나 탭을 새로 생성할 때마다 제가 지
 **참고**:  
 위 터미널에서 사진 아래쪽에 같이 출력되는 명언이나 구절은 `fortune`이라는 툴을 사용했습니다. `fortune`도 `neofetch`와 동일하게 zsh에 설정해서 사용할 수 있습니다.
 
-관심 있으신 분들은 [zsh 플러그인 설치](/blog/installing-zsh-plugins/#랜덤-명언-조합하기)를 참고하세요.
+`fortune`에 관심 있으신 분들은 [zsh 플러그인 설치](/blog/installing-zsh-plugins/#랜덤-명언-조합하기) 페이지를 참고하세요.
 
 &nbsp;
 

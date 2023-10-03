@@ -352,12 +352,9 @@ brew install fortune
 로컬 환경에 `fortune` 명령어가 추가됩니다.
 
 ```bash
-$ brew list fortune
-/opt/homebrew/Cellar/fortune/9708/bin/fortune
-/opt/homebrew/Cellar/fortune/9708/bin/strfile
-/opt/homebrew/Cellar/fortune/9708/bin/unstr
-/opt/homebrew/Cellar/fortune/9708/share/games/ (70 files)
-/opt/homebrew/Cellar/fortune/9708/share/man/ (3 files)
+$ which fortune && fortune -v
+/opt/homebrew/bin/fortune
+fortune-mod version 9708
 ```
 
 &nbsp;
@@ -372,9 +369,11 @@ neofetch
 fortune ~/.config/fortune/
 ```
 
-`~/.config/fortune` 디렉토리 안에 출력할 명언 파일들을 작성해서 미리 한 곳에 모아 놓습니다.
+zsh에 설정한 것과 동일하게, `~/.config/fortune` 디렉토리 안에 출력할 명언 파일들을 작성해서 미리 한 곳에 모아 놓습니다.
 
-제 사용 사례로는 책이나 미디어에서 인상깊게 본 구절과 유명 개발자들의 명언을 `.fortune` 파일에 모두 기록해두고 터미널로 항상 복습합니다.
+&nbsp;
+
+제 사용 사례로는 책이나 미디어에서 인상깊게 본 구절과 유명 개발자들의 명언을 `.fortune` 파일에 모두 기록해두고, 터미널을 열 때마다 습관적으로 읽을 수 있게 계속 노출시키고 있습니다.
 
 아래와 같이 각 카테고리별로 `.fortune` 파일을 분류합니다.
 
@@ -404,7 +403,7 @@ EOF
 
 `fortune`은 일반 텍스트 파일만은 읽지 못하므로, 인덱스 정보가 담긴 데이터 파일 `.dat`로 변환 처리해주는 스크립트입니다.
 
-> `strfile` 명령어는 `fortune`과 함께 사용되어 텍스트 파일을 더 쉽게 검색하고 무작위로 텍스트를 선택하는 데 도움을 줍니다. `strfile`은 텍스트 파일을 읽어 들이고 인덱스가 담긴 데이터 파일 `.dat`을 생성합니다. 이 인덱스 데이터 파일은 `fortune`이 출력할 명언을 검색할 때 빠른 액세스를 가능하게 합니다.
+이 때 사용되는 `strfile` 명령어는 `fortune`과 같이 사용되며, 텍스트 파일을 더 쉽게 검색하고 무작위로 텍스트를 선택하는 데 도움을 줍니다. `strfile`을 실행하면 텍스트 파일을 읽어 들이고 인덱스가 담긴 데이터 파일 `.dat`을 생성합니다. 이 인덱스 데이터 파일은 `fortune`이 출력할 명언을 검색할 때 빠른 액세스를 가능하게 합니다.
 
 &nbsp;
 
@@ -445,7 +444,7 @@ crypto.fortune          general.fortune         programming.fortune     security
 각 분야별로 모아놓은 `.fortune` 파일에 매핑되는 `.dat`가 생성된 걸 확인할 수 있습니다.
 
 > **주의사항**  
-> `fortune` 명령어는 `.dat` 파일 그 자체로는 명언 내용에 대한 완전한 정보를 읽지 못합니다. 항상 `.fortune`과 `.dat` 파일 둘다 모두 존재해야 `fortune`이 정상적으로 명언 데이터를 읽어들일 수 있습니다.
+> `fortune` 명령어는 `.dat` 파일 그 자체로는 명언 내용에 대한 완전한 정보를 읽지 못합니다. 디렉토리 안에 `.fortune`과 `.dat` 파일 **둘다** 존재해야 `fortune`이 정상적으로 명언 데이터를 읽을 수 있습니다.
 
 &nbsp;
 
