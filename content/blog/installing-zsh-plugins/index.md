@@ -368,10 +368,10 @@ fortune ~/.config/fortune/
 
 ```bash
 $ ls ~/.config/fortune/
-bootstrap.sh            crypto.fortune.dat      general.fortune.dat     science.fortune.dat
-carrer.fortune          devops.fortune          programming.fortune     security.fortune
-carrer.fortune.dat      devops.fortune.dat      programming.fortune.dat security.fortune.dat
-crypto.fortune          general.fortune         science.fortune         strfile.sh
+bootstrap.sh            crypto.fortune.dat      general.fortune.dat     science.fortune         sre.fortune
+carrer.fortune          devops.fortune          philosophy.fortune      science.fortune.dat     sre.fortune.dat
+carrer.fortune.dat      devops.fortune.dat      programming.fortune     security.fortune        strfile.sh
+crypto.fortune          general.fortune         programming.fortune.dat security.fortune.dat
 ```
 
 &nbsp;
