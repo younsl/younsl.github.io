@@ -30,13 +30,15 @@ Prometheus Operator는 Kubernetes Kubernetes 위에서 Prometheus 클러스터�
 
 Prometheus Operator의 가장 큰 목적은 Kubernetes 클러스터에 대한 Prometheus 기반 모니터링 스택 구성을 단순화하고 자동화하는 것입니다.
 
-Prometheus 연산자에는 다음 3가지 기능이 포함되지만 이에 국한되지는 않습니다.
+Prometheus Operator는 크게 3가지 기능을 가지고 있지만 이에 국한되지는 않습니다.
 
-1. **Kubernetes 사용자 정의 리소스** : Kubernetes 사용자 정의 리소스(Custom Resource Definition)를 사용하여 Prometheus, Alertmanager, Thanos 및 관련 구성 요소를 배포하고 관리합니다.
+1. **Kubernetes 사용자 정의 리소스** : Kubernetes 사용자 정의 리소스(Custom Resource Definition)를 사용하여 Prometheus, Alertmanager, Thanos Ruler 및 관련 구성 요소를 배포하고 관리합니다.
 2. **단순한 배포 설정** : 기본 Kubernetes 리소스의 버전, 데이터 보존을 위한 persistentVolume 구성, metric 보존기간(Retention) 설정 및 고가용성과 같은 Prometheus의 기본 사항을 구성합니다.
 3. **메트릭 수집대상에 대한 설정** : 익숙한 Kubernetes의 label 필터링을 기반으로 모니터링 대상 설정을 자동으로 생성합니다. Prometheus 관련 설정 언어를 배울 필요가 없습니다.
 
 Prometheus Operator에 대한 소개는 공식문서의 [시작하기](https://prometheus-operator.dev/docs/prologue/introduction/) 페이지를 참조하세요.
+
+[kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/kube-prometheus-stack-51.2.0/charts/kube-prometheus-stack) 헬름 차트를 사용해서 Prometheus Operator를 설치하고 관리할 수 있습니다.
 
 &nbsp;
 
@@ -46,6 +48,7 @@ Prometheus Operator에 대한 소개는 공식문서의 [시작하기](https://p
 
 - **OS** : macOS Sonoma 14.0
 - **CPU** : M1 Pro Max (arm64)
+- **kubectl** : v1.28.2 ([brew](https://brew.sh)로 설치함)
 
 &nbsp;
 
@@ -69,7 +72,9 @@ Prometheus Operator에 대한 소개는 공식문서의 [시작하기](https://p
 
 &nbsp;
 
-## 메트릭 수집(Scrape)
+## 구성하기
+
+### kube-prometheus-stack 헬름 차트 설치
 
 작업 환경은 EKS v1.28 버전의 클러스터입니다. 2023년 9월 5일 기준으로 가장 최신 버전의 EKS입니다.
 
@@ -81,7 +86,7 @@ ip-10-xxx-xxx-xx.ap-northeast-2.compute.internal    Ready    <none>   8d    v1.2
 ip-10-xxx-xxx-xx.ap-northeast-2.compute.internal    Ready    <none>   8d    v1.28.1-eks-43840fb
 ```
 
-이 클러스터는 3대의 워커노드로 구성되어 있습니다.
+이 EKS 클러스터는 3대의 워커노드로 구성됩니다.
 
 &nbsp;
 
@@ -94,13 +99,13 @@ ip-10-xxx-xxx-xx.ap-northeast-2.compute.internal    Ready    <none>   8d    v1.2
 
 모니터링을 구성할 때 되도록이면 여러 헬름 차트를 조합하는 방식 대신, `kube-prometheus-stack` 차트 하나로 모니터링 에드온 전체를 한번에 관리하는 걸 추천합니다.
 
-만약 kube-prometheus-stack 차트를 안쓴다면 클러스터 관리자는 Prometheus 차트, Alert Manager 구성, Grafana 차트, Thanos 차트 각각을 클러스터에 설치해서 모든 복잡한 모니터링 구성을 직접 해야만 할 것입니다. 결정적으로 `kube-prometheus-stack`을 사용하지 않을 이유가 없습니다.
+만약 kube-prometheus-stack 차트를 사용 안한다면 쿠버네티스 클러스터 관리자는 각각의 Prometheus 차트, Alert Manager 구성, Grafana 차트, Thanos 차트를 설치해서 모든 복잡한 모니터링 구성해주어야 합니다. 결정적으로 `kube-prometheus-stack`을 사용하지 않을 이유가 없습니다.
 
 &nbsp;
 
-`monitoring` 네임스페이스에 `kube-prometheus-stack` 차트를 미리 설치했습니다.
+`kube-prometheus-stack` 차트를 클러스터의 `monitoring` 네임스페이스에 설치합니다.
 
-`kube-prometheus-stack` 차트 설치에 사용하면 `helm` 명령어는 다음과 같습니다.
+`kube-prometheus-stack` 차트를 설치하는 `helm` 명령어는 다음과 같습니다.
 
 ```bash
 # Download kube-prometheus-stack chart
@@ -133,11 +138,7 @@ kube-prometheus-stack  monitoring  1         2023-09-27 14:58:32.286992 +0900 KS
 
 &nbsp;
 
-### Prometheus Operator 설정
-
-`kube-prometheus-stack` 차트에는 Prometheus Operator가 포함되어 있습니다.
-
-`kube-prometheus-stack` 차트를 설치하면 Prometheus Operator Pod가 생성됩니다.
+`kube-prometheus-stack` 차트에는 Prometheus Operator가 포함되어 있습니다. `kube-prometheus-stack` 차트를 설치하면 Prometheus Operator Pod가 생성됩니다.
 
 Prometheus Operator Pod 상태를 확인합니다.
 
@@ -156,9 +157,9 @@ EKS v1.28 클러스터의 `monitoring` 네임스페이스에 [Prometheus Operato
 
 &nbsp;
 
-Prometheus Operator는 Prometheus Server, Grafana, Thanos, Prometheus의 Scrape 설정, 메트릭 제공 서비스를 노출하는 ServiceMonitor 등을 모두를 CRD로 추상화해서 관리합니다.
+Prometheus Operator는 Prometheus Server, Grafana, Thanos, Prometheus의 메트릭 수집(Scrape) 설정, 메트릭 제공 서비스를 노출하는 ServiceMonitor 등을 모두를 CRD로 추상화해서 관리합니다.
 
-예를 들어 클러스터 관리자가 prometheus CRD를 생성하면, Prometheus Operator(Pod)가 이 CRD를 감지한 다음 Prometheus Server Pod를 자동으로 생성합니다.
+예를 들어 클러스터 관리자가 prometheus, alertmanager CRD를 생성하면, Prometheus Operator(Pod)가 이 CRD를 감지한 다음 Prometheus Server Pod와 Alert Manager Pod를 자동 생성합니다.
 
 ![Prometheus Operator의 동작방식](./3.png)
 
@@ -166,7 +167,9 @@ Prometheus Operator는 Prometheus Server, Grafana, Thanos, Prometheus의 Scrape 
 
 &nbsp;
 
-아래 명령어로 Prometheus Operator로 사용할 수 있는 CRD를 확인할 수 있습니다.
+아래 명령어로 Prometheus Operator에서 사용할 수 있는 CRD를 확인할 수 있습니다.
+
+Prometheus Operator가 사용할 모니터링 관련 CRD는 `kube-prometheus-stack` 차트를 설치할 때 기본적으로 같이 설치됩니다.
 
 ```bash
 kubectl api-resources --api-group monitoring.coreos.com
@@ -186,7 +189,23 @@ servicemonitors       smon         monitoring.coreos.com/v1         true        
 thanosrulers          ruler        monitoring.coreos.com/v1         true         ThanosRuler
 ```
 
-Prometheus Operator에서 사용하는 CRD(Custom Resource Definition)는 위와 같습니다. 위에 언급된 모든 CRD는 `kube-prometheus-stack` 차트를 설치할 때 기본적으로 같이 설치됩니다.
+Prometheus Operator와 관련된 CRD(Custom Resource Definition)는 10개입니다.
+
+kube-prometheus-stack의 [Github](https://github.com/prometheus-community/helm-charts/tree/kube-prometheus-stack-51.2.0/charts/kube-prometheus-stack/charts/crds/crds)에서도 확인할 수 있습니다.
+
+&nbsp;
+
+`kube-prometheus-stack` 차트에서 CRD 생성 여부는 `crds.enabled` 값으로 설정할 수 있습니다.
+
+```yaml
+# values.yaml for kube-prometheus-stack
+## Install Prometheus Operator CRDs
+##
+crds:
+  enabled: true
+```
+
+`crds.enabled`의 기본값은 `true` 입니다.
 
 &nbsp;
 
@@ -225,8 +244,8 @@ Statefulset에서 각 컴포넌트의 실제 버전을 확인할 수 있습니�
 
 Prometheus Operator에 의해 구성된 Prometheus와 Alert Manager 파드의 버전은 다음과 같습니다.
 
-- Prometheus `v2.47.0`
-- Prometheus Alert Manager `v0.26.0`
+- **Prometheus** : `v2.47.0`
+- **Prometheus Alert Manager** : `v0.26.0`
 
 &nbsp;
 
@@ -241,14 +260,15 @@ Prometheus Operator에 의해 구성된 Prometheus와 Alert Manager 파드의 �
 +     serviceMonitorSelectorNilUsesHelmValues: false
 ```
 
-`serviceMonitorSelectorNilUsesHelmValue` 값이 `true`인 경우, `prometheus-operator`는 헬름 차트를 통해서만 생성된 serviceMonitor를 감지합니다.  
-먼저 기본값 `true`를 `false`로 변경한 후 `kube-prometheus-stack` 차트를 다시 배포합니다. 이 설정은 이후 Actions Runner Controller 메트릭을 문제없이 수집하기 위한 사전 작업이라고 생각하시면 됩니다.
+`serviceMonitorSelectorNilUsesHelmValue` 값이 `true`인 경우, `prometheus-operator`는 헬름 차트를 통해서만 생성된 serviceMonitor를 감지합니다.
+
+이 설정 변경은 메트릭 수집 대상인 Actions Runner Controller의 메트릭을 문제없이 수집하기 위한 사전 작업입니다.
 
 &nbsp;
 
-변경된 prometheus operator의 설정을 반영하기 위해 헬름 차트 업그레이드를 진행합니다.
+Prometheus Operator의 바뀐 설정을 반영하기 위해 `kube-prometheus-stack` 헬름 차트를 업그레이드합니다.
 
-`kube-prometheus-stack` 차트를 업그레이드하는 명령어 예시는 다음과 같습니다.
+`kube-prometheus-stack` 차트를 업그레이드하는 `helm` 명령어는 다음과 같습니다.
 
 ```bash
 helm upgrade \
@@ -260,9 +280,15 @@ helm upgrade \
 
 &nbsp;
 
-### Actions Runner Controller
+### 타겟의 메트릭 노출 설정
 
-동일한 EKS 클러스터에 Actions Runner Controller v0.23.3이 설치되어 있습니다.
+이 시나리오에서 메트릭 수집 대상(Target)은 Actions Runner Controller 입니다.
+
+[Actions Runner Controller](/blog/k8s/actions-runner-admin-guide/)는 Github Actions의 Workflow들을 수행하는 서버 자원인 Actions Runner Pod를 중앙 관리하는 컨트롤러입니다.
+
+&nbsp;
+
+Prometheus와 동일한 EKS 클러스터에 Actions Runner Controller가 미리 설치되어 있습니다.
 
 ```bash
 $ helm list -n actions-runner-system
@@ -270,9 +296,7 @@ NAME                       NAMESPACE              REVISION  UPDATED             
 actions-runner-controller  actions-runner-system  26        2023-10-04 20:07:28.715411 +0900 KST  deployed  actions-runner-controller-0.23.3  0.27.4
 ```
 
-설치 방식은 공식 actions-runner-controller 헬름 차트를 사용했습니다.
-
-[Actions Runner Controller](/blog/k8s/actions-runner-admin-guide/)는 Github Actions의 Workflow들을 수행하는 서버 자원인 Actions Runner Pod를 중앙관리하는 두뇌 역할을 합니다.
+설치 방식은 공식 [actions-runner-controller](https://github.com/actions/actions-runner-controller/tree/master/charts/actions-runner-controller) 헬름 차트를 사용했습니다.
 
 &nbsp;
 
@@ -313,7 +337,7 @@ github-actions-runner   spacex                                           ["suppo
 
 &nbsp;
 
-Actions Runner Controller의 헬름 차트 설정을 변경합니다.
+Actions Runner Controller 헬름 차트에서 [메트릭 관련 설정](https://github.com/actions/actions-runner-controller/blob/master/docs/monitoring-and-troubleshooting.md#metrics)을 변경합니다.
 
 ```diff
 # values.yaml for actions-runner-controller
@@ -335,18 +359,19 @@ metrics:
 ...
 ```
 
-`metrics` 설정에서 크게 2가지 변경사항이 있습니다.
+`metrics` 설정에서 크게 3가지 변경사항이 있습니다.
 
-1. Actions Runner Controller 파드 관련 메트릭 제공을 위해 serviceMonitor 자동 생성
-2. 메트릭 제공 관련 Port 변경
-
-헬름 차트 변경사항 중에서 1번 변경사항이 매우 중요합니다. 일반적으로는 Prometheus Server Pod가 다른 Pod나 Application의 메트릭 수집을 하기 위해서는 복잡한 메트릭 수집 구성 과정(Scrape)이 필요합니다.
-
-하지만 Prometheus Operator 덕분에 serviceMonitor라는 CRD만 있으면 알아서 Prometheus Pod가 serviceMonitor를 감지한 다음 Prometheus Server Pod에 메트릭 수집 설정까지 반영합니다. Prometheus Server의 메트릭 수집 설정까지 CRD로 관리한다는 걸 이해할 수 있는 부분입니다.
+1. Actions Runner Controller를 설치하면서 관련 메트릭 제공을 위해 serviceMonitor CRD도 같이 생성되도록 변경
+2. 메트릭 제공을 위한 전용 Port 변경
+3. Actions Runner Controller의 RBAC Proxy 비활성화
 
 &nbsp;
 
-> 위 Actions Runenr Controller 차트에서 보는 것과 같이, helm 차트를 지원하는 대부분의 쿠버네티스 어플리케이션들은 기본적으로 메트릭 전용 포트를 제공하며 serviceMonitor 생성과 상세 설정을 할 수 있도록 헬름 차트 설정값을 제공하는 편입니다.
+여기서 1번 변경사항의 의미를 이해하는 게 중요합니다. 일반적으로는 Prometheus Server Pod가 다른 Pod나 Application의 메트릭 수집을 하기 위해서는 복잡한 메트릭 수집 구성 과정(Scrape)이 필요합니다.
+
+하지만 Prometheus Operator 덕분에 serviceMonitor라는 CRD만 있으면 알아서 Prometheus Pod가 serviceMonitor를 감지한 다음 Prometheus Server Pod에 메트릭 수집 설정까지 반영합니다. Prometheus Server의 메트릭 수집 설정까지 CRD로 관리한다는 걸 이해할 수 있는 부분입니다.
+
+> 위 Actions Runenr Controller 차트에서 보는 것과 같이, 대부분의 쿠버네티스 어플리케이션들은 기본적으로 메트릭 전용 포트를 제공하며 serviceMonitor CRD 생성과 세부 설정을 할 수 있도록 헬름 차트로 설정값들을 제공하고 있습니다.
 
 &nbsp;
 
@@ -363,7 +388,9 @@ helm upgrade \
 
 &nbsp;
 
-이제 다시 Prometheus Operator 영역으로 돌아가보겠습니다.
+### 메트릭 수집결과 확인
+
+이제 다시 Prometheus Operator 영역으로 돌아갑니다.
 
 Actions Runner Controller의 메트릭을 노출시키는 Service Monitor CRD와 Service 리소스 정보를 확인합니다.
 
@@ -403,7 +430,7 @@ kubectl logs \
 ts=2023-10-04T12:40:42.618Z caller=kubernetes.go:329 level=info component="discovery manager scrape" discovery=kubernetes config=serviceMonitor/actions-runner-system/actions-runner-controller-service-monitor/0 msg="Using pod service account via in-cluster config"
 ```
 
-위 로그 내용을 해석해보면, Prometheus Server는 Actions Runner metric 제공하기 위해 존재하는 CRD인 serviceMonitor를 자동으로 감지한 후, Prometheus의 Scrape 설정에 알아서 해당 Service를 추가합니다.
+위 Pod 로그 내용을 해석해보면, Prometheus Server는 Actions Runner metric 제공하기 위해 존재하는 CRD인 serviceMonitor를 자동으로 감지한 후, Prometheus의 Scrape 설정에 알아서 해당 Service를 추가합니다.
 
 쿠버네티스 구성도로 표현하면 다음과 같은 플로우로 메트릭 수집이 진행됩니다.
 
@@ -455,34 +482,44 @@ Actions Runner Controller 전용 serviceMonitor에 의해 수집되는 Prometheu
 
 Actions Runner 관련 메트릭
 
-- **horizontal**runnerautoscaler_replicas_desired
-- **horizontal**runnerautoscaler_runners
-- **horizontal**runnerautoscaler_runners_busy
-- **horizontal**runnerautoscaler_runners_registered
-- **horizontal**runnerautoscaler_spec_max_replicas
-- **horizontal**runnerautoscaler_spec_min_replicas
-- **horizontal**runnerautoscaler_terminating_busy
+- horizontalrunnerautoscaler_replicas_desired
+- horizontalrunnerautoscaler_runners
+- horizontalrunnerautoscaler_runners_busy
+- horizontalrunnerautoscaler_runners_registered
+- horizontalrunnerautoscaler_spec_max_replicas
+- horizontalrunnerautoscaler_spec_min_replicas
+- horizontalrunnerautoscaler_terminating_busy
 - runnerdeployment_spec_replicas
 
 Actions Runner Controller 관련 메트릭
 
-- **controller_runtime**_active_workers
-- **controller_runtime**_max_concurrent_reconciles
-- **controller_runtime**_reconcile_errors_total
-- **controller_runtime**_reconcile_time_seconds_bucket
-- **controller_runtime**_reconcile_time_seconds_count
-- **controller_runtime**_reconcile_time_seconds_sum
-- **controller_runtime**_reconcile_total
-- **controller_runtime**_webhook_requests_in_flight
-- **controller_runtime**_webhook_requests_total
+- controller_runtime_active_workers
+- controller_runtime_max_concurrent_reconciles
+- controller_runtime_reconcile_errors_total
+- controller_runtime_reconcile_time_seconds_bucket
+- controller_runtime_reconcile_time_seconds_count
+- controller_runtime_reconcile_time_seconds_sum
+- controller_runtime_reconcile_total
+- controller_runtime_webhook_requests_in_flight
+- controller_runtime_webhook_requests_total
 
 &nbsp;
 
-## Grafana 대시보드 설정
+### Grafana 대시보드 설정
 
-위 Actions Runner Controller와 Actions Runner 메트릭들을 기반으로 미리 구성된 대시보드가 존재합니다. [Actions Runner Controller 대시보드](https://grafana.com/grafana/dashboards/19382-horizontalrunnerautoscalers/)입니다.
+일반적으로 Prometheus와 타겟 간의 메트릭 수집(Scrape) 설정을 끝낸 후 Grafana 대시보드를 생성하면 구성이 끝납니다.
 
-이제 대시보드 등록을 위해서 Grafana 웹페이지에 접속합니다.
+이 때 `kube-prometheus-stack` 헬름 차트로 설치하는 경우 이점이 하나 더 발견됩니다. Prometheus Server와 Grafana가 한 번에 설치되며 심지어 Grafana의 설정 중 데이터 소스에 Prometheus Server가 자동 등록되어 있습니다.
+
+![Grafana와 데이터 소스](./6.png)
+
+위와 같이 EKS 클러스터에 Grafana가 바로 사용 가능한 상태로 설치됩니다.
+
+&nbsp;
+
+Actions Runner Controller와 Actions Runner 메트릭들을 기반으로 미리 구성된 대시보드가 존재합니다. [Actions Runner Controller 대시보드](https://grafana.com/grafana/dashboards/19382-horizontalrunnerautoscalers/)입니다. 만약 Grafana 대시보드가 없었다면 Grafana에서 PromQL이라는 언어로 일일히 작성해가면서 만들어야 했을텐데 그나마 다행입니다.
+
+이제 대시보드 등록을 위해서 Grafana 웹페이지에 접속합니다. 제 경우 AWS Load Balancer Controller와 Ingress를 사용해서 ALB를 생성한 후, Grafana의 서비스를 노출시켰습니다.
 
 &nbsp;
 
@@ -490,7 +527,7 @@ Actions Runner Controller 관련 메트릭
 
 아래는 `kube-prometheus-stack` 차트의 `values.yaml` 파일에서 Grafana 관련 설정 부분입니다.
 
-```bash
+```yaml
 # values.yaml for kube-prometheus-stack
 ## Using default values from https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
 ##
@@ -510,26 +547,26 @@ grafana:
 
 관리자 계정의 로그인 정보를 사용해서 Grafana에 로그인합니다.
 
-> **주의사항**  
+> **보안 주의사항**  
 > 이 시나리오의 경우 예제이므로 만약 프로덕션 환경의 Grafana를 사용한다면 반드시 IP 기반의 접근제어를 적용하고 별도의 관리자 ID, Password를 사용하거나 OAuth2 기반의 Google 로그인을 연동하여 인증 구성을 하도록 합니다.
 
 &nbsp;
 
 Home → Dashboards → 우측의 New 버튼 → Import 버튼을 클릭합니다.
 
-![대시보드 생성 1](./6.png)
+![Grafana 대시보드 생성 1](./7.png)
 
 &nbsp;
 
 Actions Runner Controller 대시보드 ID인 `19382`를 입력한 다음 Load 버튼을 클릭하면 대시보드가 생성됩니다.
 
-![대시보드 생성 2](./7.jpg)
+![Grafana 대시보드 생성 2](./8.jpg)
 
 &nbsp;
 
 생성 완료된 Actions Runner Controller 전용 대시보드는 다음과 같습니다.
 
-![Grafana 대시보드 예제](./8.png)
+![생성된 Actions Runner Controller 대시보드 화면](./9.png)
 
 Actions Runner Controller 대시보드에서 크게 2가지 정보가 제공됩니다.
 
@@ -542,7 +579,7 @@ Actions Runner Controller 대시보드에서 크게 2가지 정보가 제공됩�
 
 ### Prometheus Operator의 이점
 
-쿠버네티스에 올려서 쓰는 모니터링 솔루션은 너무 복잡해서 초심자가 처음 배울 떄 많이 힘들어하는 부분입니다. 이런 이유 때문에 많은 유명 기업들이 `kube-prometheus-stack` 차트를 사용해서 Prometheus Operator를 설치하고, 복잡한 모니터링 에드온들을 한 번에 관리하는 추세입니다.
+쿠버네티스 클러스터에 올려서 쓰는 모니터링 솔루션은 너무 복잡해서 초보자가 처음 배울 때 가장 많이 힘들어하는 부분입니다. 이런 높은 난이도와 복잡도 때문에 많은 유명 기업들이 `kube-prometheus-stack` 차트를 사용해서 Prometheus Operator를 설치하고, 복잡한 모니터링 에드온들을 한 번에 관리하는 추세입니다.
 
 &nbsp;
 
