@@ -420,6 +420,8 @@ Actions Runner Controller 관련 메트릭
 
 &nbsp;
 
+## Grafana 대시보드 설정
+
 위 Actions Runner Controller와 Actions Runner 메트릭들을 기반으로 미리 구성된 대시보드가 존재합니다. [Actions Runner Controller 대시보드](https://grafana.com/grafana/dashboards/19382-horizontalrunnerautoscalers/)입니다.
 
 이제 대시보드 등록을 위해서 Grafana 웹페이지에 접속합니다.
