@@ -14,13 +14,40 @@ tags: ["devops", "kubernetes", "monitoring", "prometheus"]
 
 ## 개요
 
-Actions Runner Controller 메트릭을 Prometheus Operator로 수집하고, Grafana의 대시보드로 출력하는 방법을 소개합니다.
+Prometheus Operator로 다른 Application Pod의 메트릭을 수집하고, Grafana의 대시보드로 출력하는 방법을 소개합니다.
 
 쿠버네티스 클러스터 관리와 모니터링을 담당하는 DevOps Engineer를 대상으로 작성된 가이드입니다.
 
 &nbsp;
 
+## 배경지식
+
+### Prometheus Operator
+
+Prometheus Operator는 Kubernetes Kubernetes 위에서 Prometheus 클러스터를 생성, 구성, 관리합니다.
+
+![Prometheus Operator logo](./1.png)
+
+Prometheus Operator의 가장 큰 목적은 Kubernetes 클러스터에 대한 Prometheus 기반 모니터링 스택 구성을 단순화하고 자동화하는 것입니다.
+
+Prometheus 연산자에는 다음 3가지 기능이 포함되지만 이에 국한되지는 않습니다.
+
+1. **Kubernetes 사용자 정의 리소스** : Kubernetes 사용자 정의 리소스(Custom Resource Definition)를 사용하여 Prometheus, Alertmanager, Thanos 및 관련 구성 요소를 배포하고 관리합니다.
+2. **단순한 배포 설정** : 기본 Kubernetes 리소스의 버전, 데이터 보존을 위한 persistentVolume 구성, metric 보존기간(Retention) 설정 및 고가용성과 같은 Prometheus의 기본 사항을 구성합니다.
+3. **메트릭 수집대상에 대한 설정** : 익숙한 Kubernetes의 label 필터링을 기반으로 모니터링 대상 설정을 자동으로 생성합니다. Prometheus 관련 설정 언어를 배울 필요가 없습니다.
+
+Prometheus Operator에 대한 소개는 공식문서의 [시작하기](https://prometheus-operator.dev/docs/prologue/introduction/) 페이지를 참조하세요.
+
+&nbsp;
+
 ## 환경
+
+### 작업자 로컬 환경
+
+- **OS** : macOS Sonoma 14.0
+- **CPU** : M1 Pro Max (arm64)
+
+&nbsp;
 
 ### 클러스터
 
@@ -31,7 +58,9 @@ Actions Runner Controller 메트릭을 Prometheus Operator로 수집하고, Graf
 
 ### 모니터링 관련 에드온
 
-`kube-prometheus-stack` 헬름 차트를 설치하면 아래 에드온들이 함께 설치됩니다.
+![작업 환경 구성도](./2.png)
+
+[kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/kube-prometheus-stack-51.2.0/charts/kube-prometheus-stack) `v51.2.0` 헬름 차트를 설치하면 아래 에드온들이 함께 설치됩니다.
 
 - **Prometheus Operator** : v0.68.0
 - **Prometheus** : v2.47.0
@@ -71,19 +100,46 @@ ip-10-xxx-xxx-xx.ap-northeast-2.compute.internal    Ready    <none>   8d    v1.2
 
 `monitoring` 네임스페이스에 `kube-prometheus-stack` 차트를 미리 설치했습니다.
 
+`kube-prometheus-stack` 차트 설치에 사용하면 `helm` 명령어는 다음과 같습니다.
+
 ```bash
-$ helm list -n monitoring
-NAME                   NAMESPACE   REVISION  UPDATED                               STATUS    CHART                         APP VERSION
-kube-prometheus-stack  monitoring  12        2023-09-27 14:58:32.286992 +0900 KST  deployed  kube-prometheus-stack-51.2.0  v0.68.0
+# Download kube-prometheus-stack chart
+git clone https://github.com/prometheus-community/helm-charts.git
+cd ./helm-charts/kube-prometheus-stack/
+```
+
+```bash
+#  Install the kube-prometheus-stack chart on your EKS cluster
+helm upgrade \
+  --install \
+  --create-namespace monitoring \
+  -f values.yaml \
+  -n monitoring \
+  kube-prometheus-stack . \
+  --wait
 ```
 
 &nbsp;
 
-### Prometheus Operator
+쿠버네티스 클러스터에 배포된 `kube-prometheus-stack` 헬름 차트 정보를 확인합니다.
+
+```bash
+$ helm list -n monitoring
+NAME                   NAMESPACE   REVISION  UPDATED                               STATUS    CHART                         APP VERSION
+kube-prometheus-stack  monitoring  1         2023-09-27 14:58:32.286992 +0900 KST  deployed  kube-prometheus-stack-51.2.0  v0.68.0
+```
+
+`kube-prometheus-stack`이 `monitoring` 네임스페이스에 정상적으로 설치된 상태입니다.
+
+&nbsp;
+
+### Prometheus Operator 설정
 
 `kube-prometheus-stack` 차트에는 Prometheus Operator가 포함되어 있습니다.
 
 `kube-prometheus-stack` 차트를 설치하면 Prometheus Operator Pod가 생성됩니다.
+
+Prometheus Operator Pod 상태를 확인합니다.
 
 ```bash
 $ kubectl get pod \
@@ -98,11 +154,13 @@ kube-prometheus-stack-operator-8449959549-865vh   1/1     Running   0          8
 
 EKS v1.28 클러스터의 `monitoring` 네임스페이스에 [Prometheus Operator v0.68.0](https://github.com/prometheus-operator/prometheus-operator/releases/tag/v0.68.0) 파드가 설치되어 있습니다.
 
+&nbsp;
+
 Prometheus Operator는 Prometheus Server, Grafana, Thanos, Prometheus의 Scrape 설정, 메트릭 제공 서비스를 노출하는 ServiceMonitor 등을 모두를 CRD로 추상화해서 관리합니다.
 
 예를 들어 클러스터 관리자가 prometheus CRD를 생성하면, Prometheus Operator(Pod)가 이 CRD를 감지한 다음 Prometheus Server Pod를 자동으로 생성합니다.
 
-![Prometheus Operator의 동작방식](./1.png)
+![Prometheus Operator의 동작방식](./3.png)
 
 결과적으로 Prometheus Operator에 의해 모든 모니터링 관련 에드온들을 쿠버네티스 영역에서 CRD로 관리할 수 있습니다.
 
@@ -207,7 +265,7 @@ helm upgrade \
 동일한 EKS 클러스터에 Actions Runner Controller v0.23.3이 설치되어 있습니다.
 
 ```bash
-helm list -n actions-runner-system
+$ helm list -n actions-runner-system
 NAME                       NAMESPACE              REVISION  UPDATED                               STATUS    CHART                             APP VERSION
 actions-runner-controller  actions-runner-system  26        2023-10-04 20:07:28.715411 +0900 KST  deployed  actions-runner-controller-0.23.3  0.27.4
 ```
@@ -349,7 +407,7 @@ ts=2023-10-04T12:40:42.618Z caller=kubernetes.go:329 level=info component="disco
 
 쿠버네티스 구성도로 표현하면 다음과 같은 플로우로 메트릭 수집이 진행됩니다.
 
-![serviceMonitor를 사용한 메트릭 수집](./2.png)
+![serviceMonitor를 사용한 메트릭 수집](./4.png)
 
 &nbsp;
 
@@ -389,7 +447,7 @@ Chrome Browser로 `http://localhost:9090`으로 접속합니다.
 open http://localhost:9090
 ```
 
-![Prometheus에서 메트릭을 확인한 화면](./3.png)
+![Prometheus에서 메트릭을 확인한 화면](./5.png)
 
 Actions Runner Controller 전용 serviceMonitor에 의해 수집되는 Prometheus 메트릭 리스트는 다음과 같습니다.
 
@@ -450,7 +508,7 @@ grafana:
   adminPassword: example-password
 ```
 
-기본 접속 정보를 사용해서 Grafana에 로그인합니다.
+관리자 계정의 로그인 정보를 사용해서 Grafana에 로그인합니다.
 
 > **주의사항**  
 > 이 시나리오의 경우 예제이므로 만약 프로덕션 환경의 Grafana를 사용한다면 반드시 IP 기반의 접근제어를 적용하고 별도의 관리자 ID, Password를 사용하거나 OAuth2 기반의 Google 로그인을 연동하여 인증 구성을 하도록 합니다.
@@ -459,19 +517,24 @@ grafana:
 
 Home → Dashboards → 우측의 New 버튼 → Import 버튼을 클릭합니다.
 
-![대시보드 생성 1](./4.png)
+![대시보드 생성 1](./6.png)
 
 &nbsp;
 
 Actions Runner Controller 대시보드 ID인 `19382`를 입력한 다음 Load 버튼을 클릭하면 대시보드가 생성됩니다.
 
-![대시보드 생성 2](./5.jpg)
+![대시보드 생성 2](./7.jpg)
 
 &nbsp;
 
 생성 완료된 Actions Runner Controller 전용 대시보드는 다음과 같습니다.
 
-![Grafana 대시보드 예제](./6.png)
+![Grafana 대시보드 예제](./8.png)
+
+Actions Runner Controller 대시보드에서 크게 2가지 정보가 제공됩니다.
+
+- **배포된 전체 Runner Pod 개수 중 Workflow를 처리 중인 비율** [`%`]
+- **시간대별 Actions Runner Pod의 개수 변화** : Actions Runner Pod는 Horizontal Runner Autoscaler에 의해 유동적으로 개수를 늘렸다 줄였다 할 수 있습니다.
 
 &nbsp;
 
@@ -495,3 +558,6 @@ Prometheus Operator를 사용하면 다음과 같은 장점이 있습니다.
 [Prometheus Operator 공식문서](https://prometheus-operator.dev)
 
 [Actions Runner Controller 대시보드](https://grafana.com/grafana/dashboards/19382-horizontalrunnerautoscalers/)
+
+[Actions Runner Controller 구성](/blog/k8s/actions-runner-admin-guide/)  
+쿠버네티스 클러스터에 ARC<sup>Actions Runner Controller</sup>를 설치하는 가이드입니다.
