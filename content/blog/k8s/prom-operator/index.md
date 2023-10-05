@@ -337,7 +337,9 @@ github-actions-runner   spacex                                           ["suppo
 
 &nbsp;
 
-Actions Runner Controller 헬름 차트에서 [메트릭 관련 설정](https://github.com/actions/actions-runner-controller/blob/master/docs/monitoring-and-troubleshooting.md#metrics)을 변경합니다.
+기본적으로 Actions Runner Controller Pod는 `/metrics` 엔드포인트로 Runner 관련 메트릭을 노출하고 있습니다.
+
+Actions Runner Controller 헬름 차트에서 메트릭 관련 설정을 변경합니다.
 
 ```diff
 # values.yaml for actions-runner-controller
@@ -359,19 +361,25 @@ metrics:
 ...
 ```
 
-`metrics` 설정에서 크게 3가지 변경사항이 있습니다.
+[Actions Runner Controller 공식문서](https://github.com/actions/actions-runner-controller/blob/master/docs/monitoring-and-troubleshooting.md#metrics)를 참고해서 `metrics` 설정 3개를 변경했습니다.
 
-1. Actions Runner Controller를 설치하면서 관련 메트릭 제공을 위해 serviceMonitor CRD도 같이 생성되도록 변경
-2. 메트릭 제공을 위한 전용 Port 변경
-3. Actions Runner Controller의 RBAC Proxy 비활성화
+1. Actions Runner Controller를 설치할 때, Prometheus Server Pod가 자동으로 감지할 수 있도록 `serviceMonitor` CRD도 같이 생성하도록 변경 : `metrics.serviceMonitor`
+2. 메트릭 제공을 위한 전용 Port 변경 : `metrics.port`
+3. Actions Runner Controller의 RBAC Proxy 비활성화 : `metrics.enabled`
 
 &nbsp;
 
-여기서 1번 변경사항의 의미를 이해하는 게 중요합니다. 일반적으로는 Prometheus Server Pod가 다른 Pod나 Application의 메트릭 수집을 하기 위해서는 복잡한 메트릭 수집 구성 과정(Scrape)이 필요합니다.
+여기서 1번 변경사항의 의미를 이해하는 게 중요합니다. 일반적으로는 Prometheus Server Pod가 다른 Pod나 Application의 메트릭 수집을 하기 위해서는 복잡한 메트릭 수집(Scrape) 구성 과정이 필요합니다.
 
-하지만 Prometheus Operator 덕분에 serviceMonitor라는 CRD만 있으면 알아서 Prometheus Pod가 serviceMonitor를 감지한 다음 Prometheus Server Pod에 메트릭 수집 설정까지 반영합니다. Prometheus Server의 메트릭 수집 설정까지 CRD로 관리한다는 걸 이해할 수 있는 부분입니다.
+하지만 Prometheus Operator 덕분에 serviceMonitor라는 CRD만 있으면, 알아서 Prometheus Pod가 serviceMonitor를 감지한 다음 Prometheus Server Pod에 메트릭 수집 설정까지 반영합니다.
 
-> 위 Actions Runenr Controller 차트에서 보는 것과 같이, 대부분의 쿠버네티스 어플리케이션들은 기본적으로 메트릭 전용 포트를 제공하며 serviceMonitor CRD 생성과 세부 설정을 할 수 있도록 헬름 차트로 설정값들을 제공하고 있습니다.
+Prometheus Server의 메트릭 수집 설정까지 쿠버네티스 리소스 형태(CRD)로 관리한다는 걸 이해할 수 있는 부분입니다.
+
+> **serviceMonitor 제공여부**  
+> 위 Actions Runenr Controller 차트에서 보는 것과 같이, 대부분의 쿠버네티스 어플리케이션들은 기본적으로 메트릭 전용 포트와 엔드포인트를 제공하며 serviceMonitor CRD 생성과 세부 설정을 할 수 있도록 헬름 차트로 설정값들을 제공하고 있습니다.
+>
+> **`/metrics` 엔드포인트**  
+> [nginx](https://docs.nginx.com/nginx-management-suite/nim/previous-versions/v1/guides/metrics/#access-metrics)와 [Node Exporter](https://prometheus.io/docs/guides/node-exporter/#node-exporter-metrics)를 포함한 대부분의 경우, Prometheus와 연동하기 위한 엔드포인트로 `/metrics`를 제공하는 것이 일반적인 방법입니다. Prometheus는 이 엔드포인트로부터 메트릭 데이터를 주기적으로 수집하여 저장하고, 사용자가 정의한 규칙에 따라 경고 및 모니터링을 수행합니다.
 
 &nbsp;
 
