@@ -1,7 +1,7 @@
 ---
 title: "Prometheus Operator"
 date: 2023-10-05T22:16:40+09:00
-lastmod: 2023-10-05T23:54:45+09:00
+lastmod: 2023-10-05T23:58:45+09:00
 slug: ""
 description: ""
 keywords: []
