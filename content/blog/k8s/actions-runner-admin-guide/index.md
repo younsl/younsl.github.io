@@ -838,6 +838,18 @@ docker in docker로 띄운 컨테이너에서 IRSA 권한 에러 발생시 [Usin
 
 &nbsp;
 
+### 모니터링
+
+Actions Runner Controller Pod는 특별한 추가 설정 없이도 `/metrics` Path를 통해 기본적으로 Prometheus 메트릭을 제공하고 있습니다. [ARC 전용 Grafana Dashboard](https://grafana.com/grafana/dashboards/19382-horizontalrunnerautoscalers/)도 같이 제공되므로 비교적 쉽게 모니터링을 구성할 수 있습니다.
+
+제가 Grafana에 등록해서 사용하고 있는 대시보드 화면입니다.
+
+![Actions Runner Controller 대시보드](./11.png)
+
+Actions Runner Controller와 Prometheus를 연동하는 구성 방법은 제가 작성한 [Prometheus Operator](/blog/k8s/prom-operator/) 페이지와 Actions Runner Controller 공식문서 [Monitoring and troubleshooting](https://github.com/actions/actions-runner-controller/blob/master/docs/monitoring-and-troubleshooting.md#metrics)를 참고하세요.
+
+&nbsp;
+
 ## 참고자료
 
 ### ARC 헬름차트 설치 관련 문서
