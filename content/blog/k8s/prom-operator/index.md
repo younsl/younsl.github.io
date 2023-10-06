@@ -440,6 +440,27 @@ ts=2023-10-04T12:40:42.618Z caller=kubernetes.go:329 level=info component="disco
 
 위 Pod 로그 내용을 해석해보면, Prometheus Server는 Actions Runner metric 제공하기 위해 존재하는 CRD인 serviceMonitor를 자동으로 감지한 후, Prometheus의 Scrape 설정에 알아서 해당 Service를 추가합니다.
 
+&nbsp;
+
+실제 Prometheus Server Pod 안에 들어가서 `/etc/prometheus/config_out/prometheus.env.yaml` 파일 내용을 확인해보면 scrape_configs에 자동으로 추가된 걸 확인할 수 있습니다.
+
+```yaml
+...
+scrape_configs:
+- job_name: serviceMonitor/actions-runner-system/actions-runner-controller-service-monitor/0
+  honor_labels: false
+  kubernetes_sd_configs:
+  - role: endpoints
+    namespaces:
+      names:
+      - actions-runner-system
+  metrics_path: /metrics
+  relabel_configs:
+...
+```
+
+&nbsp;
+
 쿠버네티스 구성도로 표현하면 다음과 같은 플로우로 메트릭 수집이 진행됩니다.
 
 ![serviceMonitor를 사용한 메트릭 수집](./4.png)
@@ -593,7 +614,9 @@ Actions Runner Controller 대시보드에서 크게 2가지 정보가 제공됩�
 
 Prometheus Operator를 사용하면 다음과 같은 장점이 있습니다.
 
-- `kube-prometheus-stack`을 사용해서 Prometheus Operator를 설치 운영하면 쿠버네티스의 모든 모니터링 에드온을 쉽고 깔끔하게 관리할 수 있습니다. (여러분들이 Prometheus 헬름 차트로만 설치한 Prometheus Server에 Grafana를 붙이고 HA 구성과 장기 보관 스토리지를 위해 Thanos까지 붙여야 한다고 상상해보세요.)
+- `kube-prometheus-stack` 차트 하나만으로 CRD, Prometheus, Grafana, Thanos Sidecar, Thanos Ruler 등의 모든 모니터링 리소스가 관리되기 때문에, 모니터링 시스템 관리에 드는 운영 오버헤드를 절약할 수 있습니다.
+  - 여러분들이 만약 Prometheus 헬름 차트로만 설치한 Prometheus Server에 Grafana를 붙이고 HA 구성과 장기 보관 스토리지를 위해 Thanos까지 붙여야 한다고 상상해보세요.
+- 모든 모니터링 관련 리소스가 CRD로 관리, 운영되므로 DevOps Engineer와 SRE 관점에서 운영 접근성이 높습니다.
 - 물론 Prometheus의 기본 컨셉, Scrape, 모니터링 에드온들에 대한 기본 이해가 필요하며, Prometheus Operator 관련 CRD의 YAML 스펙과 사용법이 처음에는 헷갈릴 수 있습니다.
 
 &nbsp;
