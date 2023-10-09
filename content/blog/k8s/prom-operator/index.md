@@ -1,7 +1,7 @@
 ---
 title: "Prometheus Operator"
 date: 2023-10-05T22:16:40+09:00
-lastmod: 2023-10-05T23:58:45+09:00
+lastmod: 2023-10-09T22:25:45+09:00
 slug: ""
 description: ""
 keywords: []
@@ -24,7 +24,7 @@ Prometheus Operator로 다른 Application Pod의 메트릭을 수집하고, Graf
 
 ### Prometheus Operator
 
-Prometheus Operator는 Kubernetes Kubernetes 위에서 Prometheus 클러스터를 생성, 구성, 관리합니다.
+Prometheus Operator는 Kubernetes 클러스터 위에서 Prometheus 클러스터를 생성, 구성, 관리합니다.
 
 ![Prometheus Operator logo](./1.png)
 
