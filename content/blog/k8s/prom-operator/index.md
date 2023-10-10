@@ -552,7 +552,54 @@ Actions Runner Controller와 Actions Runner 메트릭들을 기반으로 미리 
 
 &nbsp;
 
-`kube-prometheus-stack` 헬름 차트로 설치한 경우, Grafana의 관리자 ID는 `admin`이며, 기본 패스워드는 `grafana.adminPassword`에서 확인 가능합니다.
+#### persistence 설정
+
+`kube-prometheus-stack` 차트에서 기본적으로 Grafana의 PersistentVolume이 비활성화되어 있습니다.
+
+Grafana 대시보드나 Alert을 등록하더라도 Grafana 파드가 재시작될 경우 데이터는 그대로 손실됩니다. 이제 Grafana 파드가 재시작되더라도 대시보드나 Alert 설정에 대한 데이터를 영구 보존을 위해 persistence 설정을 활성화 해보겠습니다.
+
+`kube-prometheus-stack` 안에는 `grafana` 차트가 child chart로 포함되어 있기 때문에 그대로 Grafana 차트의 value 값들을 `kube-prometheus-stack` 차트에 선언하여 넘겨줄 수가 있습니다.
+
+`kube-prometheus-stack` 차트의 `values.yaml` 파일에서 `grafana`를 찾습니다.
+
+그 다음 다음과 같이 `persistence` 설정들을 추가합니다.
+
+```bash
+# values.yaml for kube-prometheus-stack chart
+grafana:
+  ...
+  persistence:
+    enabled: true
+    storageClassName: gp3
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+```
+
+이후 다시 `kube-prometheus-stack` 헬름 차트를 설치하면 10Gi 용량의 PV가 생성되고, Grafana Pod에 자동으로 마운트됩니다.
+
+```bash
+$ kubectl get pv -n monitoring
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                                                                                                     STORAGECLASS   REASON   AGE
+pvc-2a2df390-7d05-47cf-87fc-b36cb53c69f4   10Gi       RWO            Delete           Bound    monitoring/kube-prometheus-stack-grafana                                                                  gp3                     152m
+pvc-5c13c09e-3844-43f0-ba75-aa27f8e980d2   200Gi      RWO            Delete           Bound    monitoring/prometheus-kube-prometheus-stack-prometheus-db-prometheus-kube-prometheus-stack-prometheus-0   gp3                     12d
+```
+
+&nbsp;
+
+Grafana Alert, Dashboard 설정 데이터는 Grafana 파드의 `/var/lib/grafana` 디렉토리 안에 `grafana.db` 파일에 저장됩니다.
+
+```bash
+$ kubectl exec -it -n monitoring kube-prometheus-stack-grafana-74458749d9-fmqjl -- df -h /var/lib/grafana
+Filesystem                Size      Used Available Use% Mounted on
+/dev/nvme1n1              9.7G      2.2M      9.7G   0% /var/lib/grafana
+```
+
+&nbsp;
+
+#### 패스워드 확인
+
+`kube-prometheus-stack` 차트를 헬름 차트로 설치한 경우, Grafana의 관리자 ID는 `admin`이며, 기본 패스워드는 `grafana.adminPassword`에서 확인 가능합니다.
 
 아래는 `kube-prometheus-stack` 차트의 `values.yaml` 파일에서 Grafana 관련 설정 부분입니다.
 
@@ -573,6 +620,10 @@ grafana:
 
   adminPassword: example-password
 ```
+
+&nbsp;
+
+#### 대시보드 추가
 
 관리자 계정의 로그인 정보를 사용해서 Grafana에 로그인합니다.
 
