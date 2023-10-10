@@ -260,7 +260,7 @@ Prometheus Operator에 의해 구성된 Prometheus와 Alert Manager 파드의 �
 +     serviceMonitorSelectorNilUsesHelmValues: false
 ```
 
-`serviceMonitorSelectorNilUsesHelmValue` 값이 `true`인 경우, `prometheus-operator`는 헬름 차트를 통해서만 생성된 serviceMonitor를 감지합니다.
+`serviceMonitorSelectorNilUsesHelmValues` 값이 `true`인 경우, `prometheus-operator`는 헬름 차트를 통해서만 생성된 serviceMonitor를 감지합니다.
 
 이 설정 변경은 메트릭 수집 대상인 Actions Runner Controller의 메트릭을 문제없이 수집하기 위한 사전 작업입니다.
 
@@ -554,50 +554,85 @@ Actions Runner Controller와 Actions Runner 메트릭들을 기반으로 미리 
 
 #### persistence 설정
 
-`kube-prometheus-stack` 차트에서 기본적으로 Grafana의 PersistentVolume이 비활성화되어 있습니다.
+`kube-prometheus-stack` 차트에서 기본적으로 Grafana의 PersistentVolume이 비활성화되어 있습니다. Grafana 헬름 차트의 persistence.enabled 설정이 기본값으로 비활성화 `false`이기 때문입니다. 자세한 사항은 Grafana 공식 helm chart의 [README](https://github.com/grafana/helm-charts/tree/main/charts/grafana#configuration)에서 확인할 수 있습니다.
 
 Grafana 대시보드나 Alert을 등록하더라도 Grafana 파드가 재시작될 경우 데이터는 그대로 손실됩니다. 이제 Grafana 파드가 재시작되더라도 대시보드나 Alert 설정에 대한 데이터를 영구 보존을 위해 persistence 설정을 활성화 해보겠습니다.
 
-`kube-prometheus-stack` 안에는 `grafana` 차트가 child chart로 포함되어 있기 때문에 그대로 Grafana 차트의 value 값들을 `kube-prometheus-stack` 차트에 선언하여 넘겨줄 수가 있습니다.
+&nbsp;
+
+`kube-prometheus-stack` 차트 안에는 `grafana` 차트가 child chart로 포함되어 있습니다. 이 설정은 [Chart.yaml](https://github.com/prometheus-community/helm-charts/blob/kube-prometheus-stack-51.2.0/charts/kube-prometheus-stack/Chart.yaml)에서 직접 확인할 수 있습니다.
+
+```yaml
+# Chart.yaml for kube-prometheus-stack chart
+dependencies:
+  - name: crds
+    version: "0.0.0"
+    condition: crds.enabled
+  - name: kube-state-metrics
+    version: "5.12.*"
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: kubeStateMetrics.enabled
+  - name: prometheus-node-exporter
+    version: "4.23.*"
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: nodeExporter.enabled
+  - name: grafana
+    version: "6.59.*"
+    repository: https://grafana.github.io/helm-charts
+    condition: grafana.enabled
+  - name: prometheus-windows-exporter
+    repository: https://prometheus-community.github.io/helm-charts
+    version: "0.1.*"
+    condition: windowsMonitoring.enabled
+```
+
+&nbsp;
+
+Grafana의 세부 설정 변경이 필요한 경우, value 값들을 `kube-prometheus-stack` 차트의 `values.yaml` 파일에 선언만 하면 Grafana 차트로 넘겨줄 수가 있습니다.
 
 `kube-prometheus-stack` 차트의 `values.yaml` 파일에서 `grafana`를 찾습니다.
 
-그 다음 다음과 같이 `persistence` 설정들을 추가합니다.
+그 다음 아래와 같이 `grafana.persistence` 설정들을 추가합니다. Grafana의 PersistentVolume 설정 관련된 값들은 `values.yaml`에 기본적으로 선언되어 있지 않아서 직접 추가해주어야 합니다.
 
-```bash
+```yaml
 # values.yaml for kube-prometheus-stack chart
 grafana:
   ...
   persistence:
     enabled: true
     storageClassName: gp3
-    size: 10Gi
+    size: 2Gi
     accessModes:
       - ReadWriteOnce
 ```
 
-이후 다시 `kube-prometheus-stack` 헬름 차트를 설치하면 10Gi 용량의 PV가 생성되고, Grafana Pod에 자동으로 마운트됩니다.
+- `size` : Grafana 전용 볼륨의 용량을 의미합니다. Prometheus 볼륨의 경우 모든 메트릭을 PersistenVolume에 저장하기 때문에 큰 용량이 필요할테지만, Grafana 전용 볼륨에는 많은 용량이 필요하지 않으므로 2Gi 정도만 할당해도 충분합니다.
+- `storageClassName` : 새로 생성될 Grafana 볼륨의 Storage Class를 지정합니다. 제 경우 EKS 클러스터에 EBS CSI Driver를 설치한 후 gp3 StorageClass를 Default로 사용하고 있어서 `gp3`로 지정했습니다.
+
+이후 다시 `kube-prometheus-stack` 차트를 `helm upgrade`하면 10Gi 용량의 PV가 생성되고, Grafana Pod에 자동으로 마운트됩니다.
 
 ```bash
 $ kubectl get pv -n monitoring
 NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                                                                                                     STORAGECLASS   REASON   AGE
-pvc-2a2df390-7d05-47cf-87fc-b36cb53c69f4   10Gi       RWO            Delete           Bound    monitoring/kube-prometheus-stack-grafana                                                                  gp3                     152m
+pvc-2a2df390-7d05-47cf-87fc-b36cb53c69f4   2Gi        RWO            Delete           Bound    monitoring/kube-prometheus-stack-grafana                                                                  gp3                     152m
 pvc-5c13c09e-3844-43f0-ba75-aa27f8e980d2   200Gi      RWO            Delete           Bound    monitoring/prometheus-kube-prometheus-stack-prometheus-db-prometheus-kube-prometheus-stack-prometheus-0   gp3                     12d
 ```
 
 &nbsp;
 
-Grafana Alert, Dashboard 설정 데이터는 Grafana 파드의 `/var/lib/grafana` 디렉토리 안에 `grafana.db` 파일에 저장됩니다.
+Persistent Volume은 기본적으로 Grafana 파드의 `/var/lib/grafana` 경로에 마운트됩니다.
 
 ```bash
 $ kubectl exec -it -n monitoring kube-prometheus-stack-grafana-74458749d9-fmqjl -- df -h /var/lib/grafana
 Filesystem                Size      Used Available Use% Mounted on
-/dev/nvme1n1              9.7G      2.2M      9.7G   0% /var/lib/grafana
+/dev/nvme1n1              1.9G      2.2M      1.9G   0% /var/lib/grafana
 ```
+
+Grafana Alert, Dashboard 설정 데이터는 Grafana 파드의 `/var/lib/grafana` 디렉토리 안에 위치한 `grafana.db` 파일에 저장됩니다.
 
 &nbsp;
 
-#### 패스워드 확인
+#### Admin 패스워드 확인
 
 `kube-prometheus-stack` 차트를 헬름 차트로 설치한 경우, Grafana의 관리자 ID는 `admin`이며, 기본 패스워드는 `grafana.adminPassword`에서 확인 가능합니다.
 
