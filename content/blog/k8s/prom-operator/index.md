@@ -609,7 +609,7 @@ grafana:
 - `size` : Grafana 전용 볼륨의 용량을 의미합니다. Prometheus 볼륨의 경우 모든 메트릭을 PersistenVolume에 저장하기 때문에 큰 용량이 필요할테지만, Grafana 전용 볼륨에는 많은 용량이 필요하지 않으므로 2Gi 정도만 할당해도 충분합니다.
 - `storageClassName` : 새로 생성될 Grafana 볼륨의 Storage Class를 지정합니다. 제 경우 EKS 클러스터에 EBS CSI Driver를 설치한 후 gp3 StorageClass를 Default로 사용하고 있어서 `gp3`로 지정했습니다.
 
-이후 다시 `kube-prometheus-stack` 차트를 `helm upgrade`하면 10Gi 용량의 PV가 생성되고, Grafana Pod에 자동으로 마운트됩니다.
+이후 다시 `kube-prometheus-stack` 차트를 `helm upgrade`하면 2Gi 용량의 PV가 생성되고, Grafana Pod에 자동으로 마운트됩니다.
 
 ```bash
 $ kubectl get pv -n monitoring
@@ -623,7 +623,7 @@ pvc-5c13c09e-3844-43f0-ba75-aa27f8e980d2   200Gi      RWO            Delete     
 Persistent Volume은 기본적으로 Grafana 파드의 `/var/lib/grafana` 경로에 마운트됩니다.
 
 ```bash
-$ kubectl exec -it -n monitoring kube-prometheus-stack-grafana-74458749d9-fmqjl -- df -h /var/lib/grafana
+$ kubectl exec -it -n monitoring kube-prometheus-stack-grafana-6d7bc8d4d4-zzspn -- df -h /var/lib/grafana
 Filesystem                Size      Used Available Use% Mounted on
 /dev/nvme1n1              1.9G      2.2M      1.9G   0% /var/lib/grafana
 ```
