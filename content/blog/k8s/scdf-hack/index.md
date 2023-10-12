@@ -196,7 +196,7 @@ deployer:
     - JAVA_TOOL_OPTIONS=-Xmx1024m
 ```
 
-위와 같이 설정된 경우 4개의 환경변수가 Task pod 생성시 자동으로 주입됩니다.
+위와 같이 설정된 경우 2개의 환경변수가 Task pod 생성시 자동으로 주입됩니다.
 
 &nbsp;
 
