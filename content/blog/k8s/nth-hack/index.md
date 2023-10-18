@@ -1,7 +1,7 @@
 ---
 title: "NTH hack"
 date: 2023-06-11T22:29:40+09:00
-lastmod: 2023-06-12T23:37:45+09:00
+lastmod: 2023-10-18T15:34:45+09:00
 slug: ""
 description: "Node Termination Handler를 사용해서 EKS 스팟 워커노드 안전하게 운영하는 방법을 소개합니다. NTH의 원리, 개념, 설치방법 등을 다룹니다."
 keywords: []
@@ -404,3 +404,6 @@ NTH 공식 깃허브에 업로드된 Helm Chart. 혹은 [ArtifactHUB](https://ar
 
 [Reduce Kubernetes Infrastructure cost with EC2 Spot Instances — Part 2](https://medium.com/upday-devs/reduce-kubernetes-infrastructure-cost-with-ec2-spot-instances-part-2-6e311ef56b84)  
 (영문) Non-production 환경을 100% Spot 인스턴스로 운영한 대단한 사례입니다.  
+
+[Spot Instance Advisor](https://aws.amazon.com/ko/ec2/spot/instance-advisor/)  
+각 리전과 인스턴스 타입별로 스팟 인스턴스 중단 빈도[%]를 확인할 수 있습니다.
