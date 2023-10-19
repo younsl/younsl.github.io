@@ -26,6 +26,8 @@ Amazon ECR의 멀티 아키텍처 이미지 지원을 통해 이제 동일한 �
 
 컨테이너 이미지는 **레이어**와 **매니페스트**라는 두 가지 주요 부분으로 구성됩니다.
 
+![Manifest and Layer](./1.png)
+
 도커 허브에서 이미지를 받아올 때 기본적으로 CPU 아키텍처가 arm64인지, amd64인지에 따라 동일한 버전의 다른 아키텍처를 가진 컨테이너 이미지를 가져오도록 동작합니다.
 이를 멀티 아키텍처 이미지라고 합니다.
 
@@ -43,7 +45,7 @@ Manifest 목록(또는 이미지 인덱스)을 사용하면 다른 이미지 Man
 
 &nbsp;
 
-![ECR Manifests](./1.png)
+![ECR Manifests](./2.png)
 
 위와 같이 Repository에는 Manifest List와 Image가 존재합니다. 여기서 멀티 아키텍처, 즉 CPU 아키텍처에 따라 동일한 버전의 다른 이미지를 구분해주는 역할을 하는 일종의 전화번호부가 Manifest List입니다.
 
@@ -106,7 +108,7 @@ Manifest 목록(또는 이미지 인덱스)을 사용하면 다른 이미지 Man
 
 사용자는 일반적으로 Access Key 기반의 AWS IAM User 또는 IAM Role을 사용해서 ECR Repository에 로그인하게 됩니다.
 
-![ECR Push 절차](./2.png)
+![ECR Push 절차](./3.png)
 
 ECR에 로그인합니다. 로그인 후 발급되는 인증 토큰은 사용되는 레지스트리마다 필요하며, 12시간 동안 유효합니다. 자세한 정보는 AWS 공식문서 [프라이빗 레지스트리 인증](https://docs.aws.amazon.com/ko_kr/AmazonECR/latest/userguide/registry_auth.html)을 참조하세요.
 
@@ -243,7 +245,7 @@ docker manifest push 111122223333.dkr.ecr.ap-northeast-2.amazonaws.com/golang:1.
 sha256:4785f93a005bbca8f24b174b68eabce38ab8664d3286cdf9464529cedc616ce7
 ```
 
-![Management Console In ECR](./3.jpg)
+![Management Console In ECR](./4.jpg)
 
 이후 AWS Management Console에서 ECR로 이동합니다. 위와 같이 Manifest의 경우는 Artifact type이 Image Index로 표시되는 걸 확인할 수 있습니다.
 
