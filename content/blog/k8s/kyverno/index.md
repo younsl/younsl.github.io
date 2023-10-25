@@ -188,6 +188,249 @@ Kyverno를 운영하면서 가장 높은 비중을 차지하는 정책 타입은
 
 &nbsp;
 
+## Policy 작성 가이드
+
+### Context
+
+변수는 Kyverno Rule의 `context` 키워드에서 정의될 수 있습니다.
+
+변수는 정적 값, 다른 변수 또는 중첩된 오브젝트 등으로 정의될 수 있습니다. 아래 정책에서는 값이 `foo`인 컨텍스트 변수를 설정합니다.
+
+```yaml
+    context:
+    - name: foodata
+      variable:
+        value: "foo"
+```
+
+&nbsp;
+
+이번 코드 조각은 컨텍스트 변수를 `request.object.metadata.name` 값으로 설정합니다. 값 필드가 정의되지 않은 경우 JMESPath의 내용은 전체 컨텍스트에 적용됩니다.
+
+```bash
+    context:
+    - name: preStopSleepSeconds
+      variable:
+        jmesPath: request.object.metadata.labels.preStopSleepSeconds
+        default: 30
+```
+
+&nbsp;
+
+Context와 JMESPath의 여러 함수가 적용된 Mutate Policy 예시입니다.
+
+```yaml
+{{- $name := "mutate-pre-post-scripts-injection" }}
+{{- if eq (include "kyverno-policies.customMutatePolicies" (merge (dict "name" $name) .)) "true" }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: {{ $name }}
+  annotations:
+    policies.kyverno.io/title: Mutate termination grace period seconds
+    policies.kyverno.io/category: Other, EKS Best Practices
+    policies.kyverno.io/subject: Pod
+    kyverno.io/kyverno-version: 1.8.0-rc2
+    kyverno.io/kubernetes-version: "1.24"
+    policies.kyverno.io/minversion: 1.6.0
+    policies.kyverno.io/description: >-
+      Mutate policy for preStop script sleep.
+spec:
+  schemaValidation: false
+  rules:
+  - name: mutate-poststart-script-raptor-config-curl
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          operations:
+          - CREATE
+          namespaceSelector:
+            matchLabels:
+              policies.kyverno.io/test-mutate-rules-injection: enabled
+    exclude:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - default
+          selector:
+            matchLabels:
+              role: spring-app
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - default
+          selector:
+            matchLabels:
+              policies.kyverno.io/test-mutate-rules-injection: disabled
+    context:
+    - name: postStartSleepSeconds
+      variable:
+        jmesPath: request.object.metadata.labels.postStartSleepSeconds
+        default: 5
+    mutate:
+      patchesJson6902: |-
+        - op: add
+          path: "/spec/containers/0/lifecycle/postStart/exec/command"
+          value:
+          - "/bin/sh"
+          - "-c"
+          - "if ! curl -s http://raptor-config.default > /dev/null; then sleep {{ `{{ postStartSleepSeconds }}` }}; exit 1; fi"
+          
+  - name: mutate-prestop-script-sleep-test
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          operations:
+          - CREATE
+          namespaceSelector:
+            matchLabels:
+              policies.kyverno.io/test-mutate-rules-injection: enabled
+    exclude:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - default
+          selector:
+            matchLabels:
+              role: spring-app
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - default
+          selector:
+            matchLabels:
+              policies.kyverno.io/test-mutate-rules-injection: disabled
+    context:
+    - name: preStopSleepSeconds
+      variable:
+        jmesPath: request.object.metadata.labels.preStopSleepSeconds
+        default: 30
+    mutate:
+      patchesJson6902: |-
+        - op: add
+          path: "/spec/containers/0/lifecycle/preStop/exec/command"
+          value:
+          - "/bin/sh"
+          - "-c"
+          - "sleep {{ `{{ preStopSleepSeconds }}` }}"
+
+  - name: mutate-termination-grace-period-seconds-test
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          operations:
+          - CREATE
+          namespaceSelector:
+            matchLabels:
+              policies.kyverno.io/test-mutate-rules-injection: enabled
+    exclude:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - default
+          selector:
+            matchLabels:
+              role: spring-app
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - default
+          selector:
+            matchLabels:
+              policies.kyverno.io/test-mutate-rules-injection: disabled
+    context:
+    - name: preStopSleepSeconds
+      variable:
+        jmesPath: request.object.metadata.labels.preStopSleepSeconds
+        default: 30
+    mutate:
+      patchStrategicMerge:
+        spec:
+          # JMESpath should be enclosed in " "
+          terminationGracePeriodSeconds: "{{ `{{ add(to_number(preStopSleepSeconds), to_number('10')) }}` }}"
+{{- end }}
+```
+
+&nbsp;
+
+### JMESPath 활용
+
+Kyverno에서는 [JMESPath](https://kyverno.io/docs/writing-policies/jmespath/)라는 언어를 지원합니다.
+
+JMESPath를 사용하면 여러가지 문자열 변환 처리, 함수, 사칙연산 등의 수학 계산식 등을 Cluster Policy 안에서 실행할 수 있습니다.
+
+아래는 예제 Cluster Policy YAML 코드 중 일부입니다.
+
+```yaml
+    context:
+    - name: preStopSleepSeconds
+      variable:
+        jmesPath: request.object.metadata.labels.preStopSleepSeconds
+        default: 30
+    mutate:
+      patchStrategicMerge:
+        spec:
+          # JMESpath should be enclosed in " "
+          # Defining an integer as an argument in JMESPath requires enclosure in backticks.
+          terminationGracePeriodSeconds: "{{ add(to_number(preStopSleepSeconds), `10`) }}"
+```
+
+위 Cluster Policy는 다음 순서대로 수행됩니다.
+
+- 정책이 적용되는 Pod의 라벨 중 `preStopSleepSeconds`의 값을 읽습니다.
+- 해당 값을 `preStopSleepSeconds` 변수에 넣습니다. 없으면 `30` 기본값으로 지정됩니다.
+- `to_number` 함수에 의해 값이 문자열 타입에서 숫자 타입으로 변환되고 `add()` 함수에 의해 +10 하게 됩니다.
+- 파드의 tGPS 값은 해당 값으로 변환<sup>Mutate</sup> 됩니다.
+
+&nbsp;
+
+Cluster Policy 작성시 팁입니다.
+
+- 숫자를 2개 연산해야 하는 경우 [`sum()`](https://main.kyverno.io/docs/writing-policies/jmespath/#sum) 함수가 아닌 [`add()`](https://main.kyverno.io/docs/writing-policies/jmespath/#add) 함수를 써야 합니다.
+- String 타입의 값을 Integer로 변경하려면 JMESPath의 `to_number()` 함수를 사용합니다. [정책 예시](https://kyverno.io/policies/cert-manager/limit-duration/limit-duration/)
+- ClusterPolicy의 `spec.schemaValidation` 값을 `false`로 설정해야 다음 에러를 피할 수 있습니다. 기본값은 `true` 입니다. 더 자세한 내용은 공식문서 [Tips & Tricks](https://kyverno.io/docs/writing-policies/tips/#mutate)를 참고하세요.
+
+```yaml
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: test-mutate-policy
+  annotations:
+    ...
+spec:
+  schemaValidation: false
+```
+
+```bash
+error admission webhook "validate-policy.kyverno.svc" denied the request on ClusterPolicy resource.`
+```
+
+- Pod의 Label `metadata.labels.xxx`의 값엔 반드시 `"40"` 이런식으로 문자열 처리가 되어야 합니다. 따라서 해당 값을 `spec.terminationGracePeriodSeconds` 등의 숫자만 올 수 있는 설정에 넣고 싶을 경우, JMESpath의 `to_number()` 함수를 사용해서 타입 변환 처리를 해서 넣을 수 있습니다.
+- JMESPath에서 Argument로 숫자 타입을 정의하려면 `10`과 같이 백틱으로 묶어야 합니다.
+
+```bash
+terminationGracePeriodSeconds: "{{ add(to_number(preStopSleepSeconds), `10`) }}"
+```
+
+[관련된 Github Issue](https://github.com/kyverno/policies/issues/792#issuecomment-1778910734)
+
+&nbsp;
+
 ## 더 나아가서
 
 ### 정책 현황 시각화
