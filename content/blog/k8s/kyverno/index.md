@@ -150,7 +150,25 @@ Kyverno는 [설치 방식](https://kyverno.io/docs/installation/methods/)<sup>In
 
 기본적으로 Kyverno 정책 엔진인 `kyverno`를 먼저 설치한 다음, 정책 리소스 모음 차트인 `kyvenro-policies`를 배포합니다.
 
-이를 그림으로 표현하면 다음과 같습니다.
+헬름 차트 레포 구조를 잡는 방법에는 특별한 공식은 없지만, 제 경우는 `git clone`을 사용해서 `kyverno`와 `kyverno-policies` 공식 차트들을 다운로드 받고 `helm install`을 사용해 설치해 운영하는 걸 선호합니다.
+
+아래는 `charts` 레포에 구성해놓은 디렉토리 트리 구조입니다.
+
+```bash
+charts
+├── kyverno
+│   ├── values.yaml
+│   ├── Chart.yaml
+│   └── templates/
+└── kyverno-policies
+    ├── values.yaml
+    ├── Chart.yaml
+    └── templates/
+```
+
+&nbsp;
+
+차트 설치 과정을 그림으로 표현하면 다음과 같습니다.
 
 ![helm 차트 설치 과정](./4.png)
 
