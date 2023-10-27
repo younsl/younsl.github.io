@@ -8,6 +8,10 @@ keywords: []
 tags: ["devops", "kubernetes"]
 ---
 
+{{< toc >}}
+
+&nbsp;
+
 ## 개요
 
 Argo Workflows의 Executor Plugin 기능을 활성화하는 방법입니다.
@@ -84,7 +88,34 @@ controller:
 ```bash
 $ helm upgrade argo-workflows argo/argo-workflows \
     -f values.yaml \
-    -n <YOUR-ARGO-WORKFLOWS-NAMESPACE>
+    -n <YOUR-ARGO-WORKFLOWS-NAMESPACE> \
+    --wait
+```
+
+&nbsp;
+
+### 설정 확인
+
+Helm 업그레이드 이후 `workflow-controller` 파드의 컨테이너에 `ARGO_EXECUTOR_PLUGINS` 환경변수가 추가되었는지 확인합니다.
+
+&nbsp;
+
+`helm upgrade` 후 `workflow-controller` deployment에 정상적으로 환경변수가 추가된 결과는 다음과 같습니다.
+
+```diff
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+spec:
+  template:
+    spec:
+      containers:
+        - name: workflow-controller
+          env:
++           - name: ARGO_EXECUTOR_PLUGINS
++             value: "true"
+          ...
 ```
 
 &nbsp;
