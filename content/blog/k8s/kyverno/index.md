@@ -431,27 +431,94 @@ terminationGracePeriodSeconds: "{{ add(to_number(preStopSleepSeconds), `10`) }}"
 
 &nbsp;
 
-## 더 나아가서
+## 정책 모니터링
 
-### 정책 현황 시각화
+Kyverno 엔진을 설치하고 ClusterPolicy를 적용하는 이유는 결과적으로 모범사례를 위반된 쿠버네티스 리소스들을 인지하고 개선하기 위함입니다.
 
-저희가 Kyverno 엔진을 설치하고 ClusterPolicy를 적용하는 업무의 최종 목적지는 결국 모범사례를 위반된 리소스들을 인지하고 개선하기 위함입니다.  
-클러스터에 배포된 Kyverno 정책의 현황, 정책에 위반된 리소스들을 `kubectl`로 필터링해 볼 수 있습니다만, 방법이 복잡하고 명령어를 매번 치기 귀찮습니다. 또한 보안 직군과 같은 쿠버네티스 이해도가 다른 사람과 정책 운영 업무를 협업하는 건 현실적으로 어렵습니다.
+Kyverno의 정책을 모니터링 해야하는 이유는 크게 4가지가 있습니다.
+
+- **문제 식별**: 메트릭 및 대시보드를 통해 정책 위반 및 클러스터 문제를 빠르게 식별할 수 있으며, 조치를 취하기 위해 더 빠른 대응이 가능합니다. 클러스터에 적용된 Kyverno 정책의 현황, 정책에 위반된 리소스들을 `kubectl`로 필터링해 볼 수 있습니다만, 방법이 복잡하고 명령어를 매번 치기 귀찮습니다. 전체적인 클러스터의 정책 상태를 한 눈에 보기 위한 목적이 가장 큽니다.
+- **트렌드 및 통계 수집**: 장기적인 트렌드와 통계를 수집하여 인프라스트럭처 및 정책 변경에 따른 영향을 모니터링할 수 있습니다.
+- **팀 협업**: 대시보드를 공유하고 팀 간 협업을 촉진하여 문제 해결 및 정책 관리를 향상시킬 수 있습니다. Cloud Security Engineer와 같이 쿠버네티스가 메인 업무가 아닌 다른 직군과 Kubernetes Policy에 대해 협업하는 건 현실적으로 어렵습니다. Kyverno 메트릭과 대시보드를 구성하면 이에 대한 간격을 좁힐 수 있습니다.
+- **의사결정에 도움**: 정책 통과, 위반 관련 메트릭 데이터를 시각화하고 분석하여 미래 클러스터 조정 및 정책 수정에 대한 결정을 내릴 수 있습니다.
 
 &nbsp;
+
+### 시각화 방법
+
+Helm 차트로 Kyverno를 설치하면 8000번 포트로 메트릭을 노출하는 추가 서비스가 생성됩니다.
 
 Kyverno는 이 문제를 해결하기 위해 정책 운영결과 시각화 도구 2가지를 제공합니다.
 
-1. [Policy Reporter UI](https://github.com/kyverno/policy-reporter)
-2. [Prometheus + Grafana](https://kyverno.io/docs/monitoring/) : Grafana 대시보드 생성을 위한 공식 `.json` 파일도 같이 제공하고 있습니다.
-
-Policy Reporter UI는 공식 [헬름차트](https://github.com/kyverno/policy-reporter/tree/main/charts/policy-reporter)로 간단하게 설치할 수 있습니다. 사내망에서만 접근 가능한 Policy Reporter를 아래와 같이 구성할 수 있습니다.
-
-![Policy Reporter 구성 예시](./5.png)
+1. [**Policy Reporter UI**](https://github.com/kyverno/policy-reporter) : Policy Reporter UI는 공식 [헬름차트](https://github.com/kyverno/policy-reporter/tree/main/charts/policy-reporter)로 간단하게 설치할 수 있습니다.
+2. [**Prometheus + Grafana**](https://kyverno.io/docs/monitoring/) : Kyverno 전용 [Grafana 대시보드](https://kyverno.io/docs/monitoring/bonus-grafana-dashboard/)를 제공하고 있습니다.
 
 &nbsp;
 
+### Policy Reporter 설치
+
+헬름 차트를 사용해서 Policy Reporter를 설치하는 방법입니다.
+
+Github의 policy-reporter를 로컬에 다운로드 받습니다.
+
+```bash
+git clone https://github.com/kyverno/policy-reporter
+cd policy-reporter/charts/policy-reporter/
+```
+
+&nbsp;
+
+Policy Reporter `values.yaml` 파일에서 아래 3가지 값을 수정합니다.
+
+```yaml
+# values.yaml for policy-reporter
+kyvernoPlugin:
+  enabled: true  # [1] Set to true
+
+...
+
+# enable policy-report-ui
+ui:
+  enabled: true  # [2] Set to true
+
+  plugins:         # [3] Add
+    kyverno: true  # [3] Add
+
+...
+```
+
+`ui`는 Policy Reporter 웹 컴포넌트를 의미하는데, Policy Reporter 웹에서 Kyverno 정책 대시보드를 보기 위해 kyverno plugin을 켜주는 설정입니다.
+
+자세한 내용은 [Policy Reporter 아키텍처](https://kyverno.github.io/policy-reporter/guide/architecture) 공식문서를 참고하세요.
+
+&nbsp;
+
+기본 `values.yaml` 파일을 사용해서 Policy Reporter 차트를 배포합니다.
+
+```bash
+helm install \
+  policy-reporter . \
+  -n policy-reporter \
+  --create-namespace \
+  -f values.yaml \
+  --wait
+```
+
+&nbsp;
+
+사내망에서만 접근 가능한 Policy Reporter를 아래와 같이 구성할 수 있습니다.
+
+![Policy Reporter 구성 예시](./5.png)
+
+Policy Reporter 헬름 차트의 [Ingress](https://github.com/kyverno/policy-reporter/blob/main/charts/policy-reporter/values.yaml#L103)를 활성화해서 Internal 타입의 ALB를 만들었습니다.
+
+&nbsp;
+
+### Prometheus 방식
+
 `kyverno` 헬름차트를 설치하면 기본적으로 8000번 포트로 각 컨트롤러마다 prometheus 수집을 위한 메트릭 서비스가 생성됩니다.
+
+Kyverno 차트의 `values.yaml` 파일은 기본적으로 다음과 같이 설정되어 있습니다.
 
 ```bash
 # values.yaml (helm chart for kyverno)
@@ -489,7 +556,7 @@ reportsController:
 
 &nbsp;
 
-외부에 있는 Prometheus 서버가 메트릭을 수집하려면, 다음과 같이 metrics용 서비스를 기본값 `ClusterIP`에서 `NodePort`로 변경해야 합니다.
+다른 쿠버네티스 클러스터에 위치한 Prometheus 서버가 Kyverno 메트릭을 수집하려면, 다음과 같이 metrics용 서비스를 기본값 `ClusterIP`에서 `NodePort`로 변경해야 합니다.
 
 ```bash
 # values.yaml (helm chart for kyverno)
@@ -529,8 +596,16 @@ reportsController:
 
 기본값 `ClusterIP`를 `NodePort`로 변경해서 노출하게 되면, Kyverno Pod들이 위치한 클러스터 바깥에 Prometheus Server가 있더라도 Kyverno 메트릭을 수집해갈 수 있습니다.
 
+Prometheus와 Kyverno가 다른 클러스터에 위치한 경우 다음과 같은 아키텍처로 메트릭을 수집하게 됩니다.
+
 ![외부 노출을 위한 NodePort 구성](./6.png)
 
 &nbsp;
 
-서비스 타입을 `NodePort` 말고 `LoadBalancer` 타입을 쓰는 방법도 있습니다. 자세한 사항은 Kyverno 공식문서의 [Monitoring](https://kyverno.io/docs/monitoring/#installation-and-setup) 페이지를 참고합니다.
+메트릭 제공용 서비스의 타입을 `NodePort` 말고 `LoadBalancer` 타입을 쓰는 방법도 있습니다.
+
+공식문서 [Monitoring](https://kyverno.io/docs/monitoring/)에서는 크게 3가지 서비스 타입을 기준으로 각각 설정하는 방법을 설명합니다.
+
+1. **ClusterIP** (Default) : 메트릭 제공을 위한 기본 포트로 TCP/8000을 사용합니다.
+2. **NodePort**
+3. **LoadBalancer**
