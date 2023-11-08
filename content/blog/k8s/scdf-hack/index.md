@@ -1,7 +1,7 @@
 ---
 title: "SCDF hack"
 date: 2023-09-30T13:22:40+09:00
-lastmod: 2023-10-12T23:55:41+09:00
+lastmod: 2023-11-08T23:55:41+09:00
 slug: ""
 description: "쿠버네티스를 쉽고 효율적으로 관리하기 위해 k9s, kubecolor 등의 유틸리티 툴을 설치하고 사용하는 방법을 안내합니다."
 keywords: []
@@ -242,3 +242,73 @@ deployer:
 ```
 
 `imagePullPolicy`에 사용 가능한 값은 `IfNotPresent` (기본값), `Always`, `Never`이 있습니다.
+
+&nbsp;
+
+### Google OAuth 연동
+
+SCDF는 기본 설치하면 전혀 로그인 방식 없이 URL로 바로 접근 가능한 상태입니다.
+
+편하게 유저 관리 및 사용자가 로그인할 수 있도록 Google OAuth를 연동했습니다.
+
+&nbsp;
+
+SCDF Server의 ConfigMap에서는 다음과 같이 설정해주면 됩니다.
+
+```yaml
+Data
+====
+application.yaml:
+----
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: <REDACTED>.apps.googleusercontent.com
+            client-secret: <REDACTED>-<REDACTED>
+            scope:
+            - profile
+            - email
+            redirect-uri: https://scdf.example.com/login/oauth2/code/google
+            authorization-grant-type: authorization_code
+        provider:
+          google:
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            user-name-attribute: email
+  cloud:
+    dataflow:
+      security:
+        authorization:
+          provider-role-mappings:
+            google:
+              map-oauth-scopes: false
+```
+
+위 `application.yaml`의 설정들 중 `client-id`, `client-secret`, `redirect-uri` 값을 입력하려면 GCP에서 OAuth API 토큰을 생성해야 합니다.  
+OAuth 생성 후에 발급된 값들을 ConfigMap 데이터에 입력하면 됩니다.
+
+SCDF 공식문서의 [Configuration examples](https://docs.spring.io/spring-cloud-dataflow/docs/current/reference/htmlsingle/#_configuration_examples)를 참고해서 OAuth 연동을 진행했습니다.
+
+&nbsp;
+
+`user-name-attribute` 값에는 `email`, `name`을 사용할 수 있습니다.
+
+| user-name-attribute | 로그인시 표시되는 값      |
+|---------------------|----------------------|
+| `email`             | `younsl@example.com` |
+| `name`              | `이윤성` |
+
+`user-name-attribute`를 선언하지 않은 경우 로그인창에 표시되는 기본값은 고유한 숫자 고유넘버로 표시됩니다.
+
+예시로 `email`로 설정하게 되면 SCDF 웹 화면의 우측 상단에 다음과 같이 표시됩니다.
+
+![user-name-attribute를 name으로 설정한 경우 예시](./5.png)
+
+&nbsp;
+
+## 참고자료
+
+[Spring Cloud Data Flow Reference Guide](https://docs.spring.io/spring-cloud-dataflow/docs/current/reference/htmlsingle/)  
+SCDF 운영과 관리에 대한 전반적인 내용이 담긴 SCDF 공식문서입니다. 그렇게 문서가 친절한 편은 아닌게 아쉽습니다.
