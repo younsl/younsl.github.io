@@ -255,6 +255,40 @@ SCDF는 기본 설치하면 전혀 로그인 방식 없이 URL로 바로 접근 
 
 SCDF Server의 ConfigMap에서는 다음과 같이 설정해주면 됩니다.
 
+Bitnami의 SCDF 차트에서 OAuth 관련 설정의 경우 `values.yaml`로 제어할 수 없습니다. 따라서 SCDF Server의 ConfigMap 템플릿 파일에 직접 OAuth 관련 설정값을 넣어두는 방식을 채택했습니다.
+
+```bash
+$ tree spring-cloud-dataflow
+spring-cloud-dataflow
+├── Chart.lock
+├── Chart.yaml
+├── README.md
+├── charts
+│   ├── common-2.13.3.tgz
+│   ├── kafka-26.3.0.tgz
+│   ├── mariadb-14.1.0.tgz
+│   └── rabbitmq-12.4.0.tgz
+├── templates
+│   ├── ...
+│   ├── server
+│   │   └── configmap.yaml   # 여기에 설정 추가
+│   ├── serviceaccount.yaml
+│   ├── skipper
+│   │   └── ...
+│   └── spc.yaml
+├── values.schema.json
+└── values.yaml
+```
+
+&nbsp;
+
+GCP OAuth 연동에 성공한 SCDF Server의 ConfigMap의 설정 정보 예시입니다.
+
+```bash
+kubectl describe configmap spring-cloud-dataflow-server \
+  -n <YOUR_NAMESPACE>
+```
+
 ```yaml
 Data
 ====
@@ -289,7 +323,7 @@ spring:
 위 `application.yaml`의 설정들 중 `client-id`, `client-secret`, `redirect-uri` 값을 입력하려면 GCP에서 OAuth API 토큰을 생성해야 합니다.  
 OAuth 생성 후에 발급된 값들을 ConfigMap 데이터에 입력하면 됩니다.
 
-SCDF 공식문서의 [Configuration examples](https://docs.spring.io/spring-cloud-dataflow/docs/current/reference/htmlsingle/#_configuration_examples)를 참고해서 OAuth 연동을 진행했습니다.
+OAuth 연동은 SCDF 공식문서의 [Configuration examples](https://docs.spring.io/spring-cloud-dataflow/docs/current/reference/htmlsingle/#_configuration_examples)를 참고해서 진행했습니다.
 
 &nbsp;
 
@@ -300,9 +334,9 @@ SCDF 공식문서의 [Configuration examples](https://docs.spring.io/spring-clou
 | `email`             | `younsl@example.com` |
 | `name`              | `이윤성` |
 
-`user-name-attribute`를 선언하지 않은 경우 로그인창에 표시되는 기본값은 고유한 숫자 고유넘버로 표시됩니다.
+`user-name-attribute`를 설정하지 않은 경우, 로그인된 사용자의 우측 상단에 표시되는 자신의 이름이 고유한 숫자 고유넘버로 표시됩니다.
 
-예시로 `email`로 설정하게 되면 SCDF 웹 화면의 우측 상단에 다음과 같이 표시됩니다.
+`user-name-attribute`을 `email`로 설정하게 되면 SCDF 웹 화면의 우측 상단에 다음과 같이 사용자의 이메일 정보가 표시됩니다.
 
 ![user-name-attribute를 name으로 설정한 경우 예시](./5.png)
 
