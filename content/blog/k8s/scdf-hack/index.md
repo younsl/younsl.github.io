@@ -255,7 +255,9 @@ SCDF는 기본 설치하면 전혀 로그인 방식 없이 URL로 바로 접근 
 
 SCDF Server의 ConfigMap에서는 다음과 같이 설정해주면 됩니다.
 
-Bitnami의 SCDF 차트에서 OAuth 관련 설정의 경우 `values.yaml`로 제어할 수 없습니다. 따라서 SCDF Server의 ConfigMap 템플릿 파일에 직접 OAuth 관련 설정값을 넣어두는 방식을 채택했습니다.
+[Bitnami의 SCDF 차트](https://github.com/bitnami/charts/tree/main/bitnami/spring-cloud-dataflow)에서 OAuth 관련 설정의 경우 `values.yaml`로 제어할 수 없습니다. 따라서 SCDF Server의 ConfigMap 템플릿 파일에 직접 OAuth 관련 설정값을 넣어두는 방식을 채택했습니다.
+
+아래는 로컬에 clone 받은 `spring-cloud-dataflow` 차트 내부 구조입니다.
 
 ```bash
 $ tree spring-cloud-dataflow
@@ -271,7 +273,7 @@ spring-cloud-dataflow
 ├── templates
 │   ├── ...
 │   ├── server
-│   │   └── configmap.yaml   # 여기에 설정 추가
+│   │   └── configmap.yaml   # 여기에 OAuth 연동 설정 추가
 │   ├── serviceaccount.yaml
 │   ├── skipper
 │   │   └── ...
