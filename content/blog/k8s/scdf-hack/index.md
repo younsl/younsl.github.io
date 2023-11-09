@@ -253,10 +253,6 @@ SCDF는 기본 설치하면 전혀 로그인 방식 없이 URL로 바로 접근 
 
 &nbsp;
 
-SCDF Server의 ConfigMap에서는 다음과 같이 설정해주면 됩니다.
-
-[Bitnami의 SCDF 차트](https://github.com/bitnami/charts/tree/main/bitnami/spring-cloud-dataflow)에서 OAuth 관련 설정의 경우 `values.yaml`로 제어할 수 없습니다. 따라서 SCDF Server의 ConfigMap 템플릿 파일에 직접 OAuth 관련 설정값을 넣어두는 방식을 채택했습니다.
-
 아래는 로컬에 clone 받은 `spring-cloud-dataflow` 차트 내부 구조입니다.
 
 ```bash
@@ -282,14 +278,13 @@ spring-cloud-dataflow
 └── values.yaml
 ```
 
+OAuth와 관련된 설정은 SCDF Server의 ConfigMap에 추가해야 합니다.
+
+> 아직 [Bitnami의 SCDF 차트](https://github.com/bitnami/charts/tree/main/bitnami/spring-cloud-dataflow)는 OAuth 관련 설정을 `values.yaml`로 제어할 수 있도록 작성되지 않았습니다. 따라서 SCDF Server의 ConfigMap 템플릿 파일에 직접 OAuth 관련 설정값을 넣어두는 방식을 채택했습니다.
+
 &nbsp;
 
 GCP OAuth 연동에 성공한 SCDF Server의 ConfigMap의 설정 정보 예시입니다.
-
-```bash
-kubectl describe configmap spring-cloud-dataflow-server \
-  -n <YOUR_NAMESPACE>
-```
 
 ```yaml
 Data
@@ -322,12 +317,56 @@ spring:
               map-oauth-scopes: false
 ```
 
-위 `application.yaml`의 설정들 중 `client-id`, `client-secret`, `redirect-uri` 값을 입력하려면 GCP에서 OAuth API 토큰을 생성해야 합니다.  
-OAuth 생성 후에 발급된 값들을 ConfigMap 데이터에 입력하면 됩니다.
+#### OAuth 설정
+
+위 `application.yaml`의 설정들 중에서 OAuth 토큰 관련 값은 다음과 같습니다.
+
+- `client-id`
+- `client-secret`
+- `redirect-uri`
+
+GCP에서 API 및 서비스 → OAuth 2.0 클라이언트 ID를 생성한 다음 발급된 값들을 위 ConfigMap 데이터에 입력하면 됩니다.
 
 OAuth 연동은 SCDF 공식문서의 [Configuration examples](https://docs.spring.io/spring-cloud-dataflow/docs/current/reference/htmlsingle/#_configuration_examples)를 참고해서 진행했습니다.
 
 &nbsp;
+
+#### SCDF 권한 맵핑
+
+기본적으로 Spring Cloud Data Flow에 로그인하는 사용자에게 모든 SCDF 내부 권한(Role)이 할당됩니다.
+
+위 설정의 경우 spring.cloud.dataflow.security.authorization.provider-role-mappings.google.map-oauth-scopes 값을 `false`로 설정했기 때문에 모든 사용자가 모든 권한을 가지게 되는 구조입니다.
+
+이를 해결하려면 다음과 같이 `map-oauth-scopes`를 `true`로 설정하고 `role-mappings`에 세부적인 권한 맵핑 설정을 추가하면 됩니다.
+
+```yaml
+Data
+====
+application.yaml:
+----
+spring:
+  cloud:
+    dataflow:
+      security:
+        authorization:
+          provider-role-mappings:
+            google:
+              map-oauth-scopes: true                                    
+              role-mappings:
+                ROLE_CREATE: dataflow.create                            
+                ROLE_DEPLOY: dataflow.deploy
+                ROLE_DESTROY: dataflow.destroy
+                ROLE_MANAGE: dataflow.manage
+                ROLE_MODIFY: dataflow.modify
+                ROLE_SCHEDULE: dataflow.schedule
+                ROLE_VIEW: dataflow.view
+```
+
+자세한 사항은 SCDF 공식문서 [Customizing Authorization](https://docs.spring.io/spring-cloud-dataflow/docs/current/reference/htmlsingle/#configuration-security-customizing-authorization)을 참고해서 설정합니다.
+
+&nbsp;
+
+#### 로그인된 사용자의 이름 표시
 
 `user-name-attribute` 값에는 `email`, `name`을 사용할 수 있습니다.
 
