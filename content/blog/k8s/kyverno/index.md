@@ -602,6 +602,89 @@ Prometheus와 Kyverno가 다른 클러스터에 위치한 경우 다음과 같�
 
 &nbsp;
 
+### serviceMonitor 구성
+
+만약 Prometheus Operator를 설치해서 사용하고 있을 경우 아래와 같이 service monitor 리소스를 생성해서 메트릭을 수집할 수 있습니다.
+
+![serviceMonitor 구조](./7.png)
+
+현재 클러스터에서 serviceMonitor 리소스를 사용할 수 있는지 확인하기 위해 먼저 API Resource 목록을 조회합니다.
+
+```bash
+$ kubectl api-resources --api-group monitoring.coreos.com
+NAME                  SHORTNAMES   APIVERSION                       NAMESPACED   KIND
+alertmanagerconfigs   amcfg        monitoring.coreos.com/v1alpha1   true         AlertmanagerConfig
+alertmanagers         am           monitoring.coreos.com/v1         true         Alertmanager
+podmonitors           pmon         monitoring.coreos.com/v1         true         PodMonitor
+probes                prb          monitoring.coreos.com/v1         true         Probe
+prometheusagents      promagent    monitoring.coreos.com/v1alpha1   true         PrometheusAgent
+prometheuses          prom         monitoring.coreos.com/v1         true         Prometheus
+prometheusrules       promrule     monitoring.coreos.com/v1         true         PrometheusRule
+scrapeconfigs         scfg         monitoring.coreos.com/v1alpha1   true         ScrapeConfig
+servicemonitors       smon         monitoring.coreos.com/v1         true         ServiceMonitor
+thanosrulers          ruler        monitoring.coreos.com/v1         true         ThanosRuler
+```
+
+해당 클러스터에서 Prometheus Operator와 CRD가 이미 설치되어 있기 때문에 serviceMonitor가 존재하며 사용 가능한 상태입니다.
+
+더 자세한 serviceMonitor 사용 예시는 제 다른 글 [Prometheus Operator](blog/k8s/prom-operator/)를 참고합니다.
+
+&nbsp;
+
+ServiceMonitor는 Kyverno 헬름 차트 안에 이미 포함되어 있어서, `enabled: true`로만 설정해주면 알아서 생성해줍니다.
+
+아래는 serviceMonitor 활성화 예시입니다.
+
+```yaml
+# values.yaml
+admissionController:
+  serviceMonitor:
+    # -- Create a `ServiceMonitor` to collect Prometheus metrics.
+    enabled: true
+
+...
+
+backgroundController:
+  serviceMonitor:
+    # -- Create a `ServiceMonitor` to collect Prometheus metrics.
+    enabled: true
+
+...
+
+cleanupController:
+  serviceMonitor:
+    # -- Create a `ServiceMonitor` to collect Prometheus metrics.
+    enabled: true
+
+...
+
+reportController:
+  serviceMonitor:
+    # -- Create a `ServiceMonitor` to collect Prometheus metrics.
+    enabled: true
+```
+
+이후 `helm upgrade`로 Kyverno 변경사항을 반영합니다.
+
+```bash
+helm upgrade kyverno . -n kyverno -f values.yaml --wait
+```
+
+&nbsp;
+
+`kyverno` 네임스페이스에 4개의 serviceMonitor가 새로 생성된 걸 확인할 수 있습니다.
+
+```bash
+$ kubectl get smon -n kyverno
+NAME                            AGE
+kyverno-admission-controller    12m
+kyverno-background-controller   9m42s
+kyverno-cleanup-controller      9m42s
+kyverno-reports-controller      9m42s
+```
+
+&nbsp;
+
 메트릭 제공용 서비스의 타입을 `NodePort` 말고 `LoadBalancer` 타입을 쓰는 방법도 있습니다.
 
 공식문서 [Monitoring](https://kyverno.io/docs/monitoring/)에서는 크게 3가지 서비스 타입을 기준으로 각각 설정하는 방법을 설명합니다.
