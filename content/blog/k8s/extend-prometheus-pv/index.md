@@ -1,7 +1,7 @@
 ---
 title: "Extend Prometheus PV"
 date: 2023-11-10T15:22:40+09:00
-lastmod: 2023-11-10T20:48:45+09:00
+lastmod: 2023-11-15T08:53:45+09:00
 slug: ""
 description: "Prometheus Server Pod의 no space left on device 에러를 해결하기 위해 PersistentVolume을 증설하여 해결한 트러블슈팅 기록"
 keywords: []
@@ -96,6 +96,18 @@ Stream closed EOF for monitoring/prometheus-server-79f8d6c487-j6ppl (prometheus-
 
 - 헬름 차트에서 PV 용량을 늘린다.
 - `prometheus` 헬름 차트 재배포
+
+&nbsp;
+
+## 주의사항
+
+### EBS Volume 용량 변경 시 제한 사항
+
+EBS 볼륨(Persistent Volume)의 용량을 변경한 후, 또 다시 변경하려면 **6시간**을 기다려야 다시 변경할 수 있습니다.
+
+> 볼륨을 수정한 후 동일한 볼륨에 추가 수정 사항을 적용하려면 먼저 볼륨이 in-use 또는 available 상태가 되도록 6시간 이상 기다려야 합니다. 이를 때로 휴지 기간이라고도 합니다.
+
+자세한 사항은 EBS 공식문서 [볼륨 수정 시 요구 사항](https://docs.aws.amazon.com/ko_kr/AWSEC2/latest/UserGuide/modify-volume-requirements.html#elastic-volumes-limitations)의 제한 사항 문서를 참고하세요.
 
 &nbsp;
 
@@ -299,8 +311,7 @@ on=2.968652344s
 
 ## 참고자료
 
-[Using kubectl patch to modify existing Kubernetes objects](https://pet2cattle.com/2021/08/kubectl-patch)
-
-[Kubernetes를 사용하여 Persistent Volume 크기 조정](https://kubernetes.io/blog/2018/07/12/resizing-persistent-volumes-using-kubernetes/)
-
-[Amazon EBS CSI Driver](https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/ebs-csi.html)
+[Using kubectl patch to modify existing Kubernetes objects](https://pet2cattle.com/2021/08/kubectl-patch)  
+[Kubernetes를 사용하여 Persistent Volume 크기 조정](https://kubernetes.io/blog/2018/07/12/resizing-persistent-volumes-using-kubernetes/)  
+[Amazon EBS CSI Driver](https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/ebs-csi.html)  
+[볼륨 수정 시 요구 사항](https://docs.aws.amazon.com/ko_kr/AWSEC2/latest/UserGuide/modify-volume-requirements.html#elastic-volumes-limitations)
