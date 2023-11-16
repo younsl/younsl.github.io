@@ -125,6 +125,17 @@ pvc-6d42404c-5f3b-11e9-9126-0a883d273378   1124Gi     RWO            Retain     
 
 &nbsp;
 
+클러스터에서 사용 가능한 StorageClass 목록을 확인합니다.
+
+```bash
+$ kubectl get sc
+NAME                   PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+gp2                    kubernetes.io/aws-ebs   Delete          WaitForFirstConsumer   true                   3y247d
+gp3 (default)          ebs.csi.aws.com         Delete          WaitForFirstConsumer   true                   156d
+```
+
+&nbsp;
+
 용량을 늘리기 전에 StorageClass의 상세 설정을 확인합니다.
 
 ```bash
