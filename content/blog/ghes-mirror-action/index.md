@@ -125,5 +125,7 @@ jobs:
 
 Github Enterprise Server에 위치한 Mirror용 Repository에는 2개의 Actions Secret을 생성해두어야 합니다.
 
+![Secrets Architecture](./3.png)
+
 - `${{ secrets.ORG_GITHUB_CLOUD_ADMIN_PAT }}`에는 Github Cloud 계정의 PAT를 시크릿으로 생성해야 합니다.
 - `${{ secrets.DOGECOMPANY_ORG_GITHUB_ENTERPRISE_ADMIN_PAT }}`에는 Github Enterprise Server의 관리자 계정 PAT를 시크릿으로 생성해야 합니다.
