@@ -1,7 +1,7 @@
 ---
 title: "DevOps Guide"
 date: 2023-07-30T15:38:15+09:00
-lastmod: 2023-10-02T21:14:25+09:00
+lastmod: 2023-11-30T03:43:25+09:00
 slug: ""
 description: "DevOps Engineer를 위한 가이드"
 keywords: []
@@ -317,6 +317,39 @@ Connection Timeout은 클라이언트가 서버와의 연결을 맺는 데 걸�
 
 &nbsp;
 
+#### 모니터링 알람 구현 가이드
+
+Lambda Function을 사용하여 Slack 알람을 발송할 수 있습니다.
+
+AWS Lambda를 활용한 시스템 모니터링은 탄력적이고 효율적인 방법으로, 다양한 장점을 제공합니다. 서버리스 아키텍처의 도입으로 운영 및 관리 부담이 감소하면서, 비용과 리소스 사용을 최적화할 수 있습니다.
+
+슬랙 알람 발송용 Lambda Function을 작성할 때에는 직접 처음부터 모든 코드를 작성할 필요 없이, 이미 만들어진 템플릿들인 [Function blueprint](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-features.html#gettingstarted-features-blueprints)를 통해 구현을 시작하는 걸 적극 권장합니다.
+
+일반적으로 Lambda Function을 트리거해야 알람이 발송됩니다. 이 때 AWS 서비스에서는 2가지 방식으로 구현할 수 있습니다.
+
+&nbsp;
+
+##### EventBridge Rules + Lambda
+
+![EventBridge Rules 사용](./7.png)
+
+제가 EventBridge Rules + Lambda 아키텍처를 활용한 사용 사례는 다음과 같습니다.
+
+- AWS Personal Health Dashboard에서 이벤트 발생시 슬랙 채널로 알람 발송
+- ECR 저장소에 이미지 업로드 시 CVE 취약점 분석 후 슬랙 채널로 알람 발송
+
+&nbsp;
+
+##### SNS Topic + Lambda
+
+![SNS Topic 사용](./8.png)
+
+제가 SNS Topic + Lambda 아키텍처를 활용한 사용 사례는 다음과 같습니다.
+
+- CloudWatch Agent가 설치된 EC2 인스턴스를 대상으로, 루트 파일시스템 사용률이 80%를 초과하는 경우 슬랙 알람을 발송하기
+
+&nbsp;
+
 ### Kubernetes
 
 #### Control Plane이 파드 상태를 모니터링하고 업데이트하는 과정
@@ -381,7 +414,7 @@ GitOps는 시스템의 상태에 관한 모든 설정 정보도 응용 프로그
 
 깃옵스에서는 사용자가 시스템의 변경사항을 적용할 때 해당 명령들을 직접 실행하지 않습니다. 대신, 사용자는 자신이 원하는 상태를 반영한 설정 파일(e.g. 쿠버네티스의 YAML 파일)을 마치 소스 코드처럼 코드 저장소에 체크인합니다. 그러면 GitOps 운영자라고 부르는 자동화 시스템이 버전 관리 하의 설정 파일에 정의된 최신 상태에 맞게 시스템을 적절히 갱신합니다.
 
-![GitOps Workflow](./7.png)
+![GitOps Workflow](./9.png)
 
 &nbsp;
 
