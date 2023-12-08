@@ -206,6 +206,31 @@ daemonsetNodeSelector:
 
 &nbsp;
 
+#### 파드 리소스 제한
+
+Node Termination Handler 공식 헬름차트에는 리소스 요쳥값 제한값이 기본적으로 걸려있지 않습니다.
+
+데몬셋에 의해 각 노드마다 배치되는 데몬셋 파드의 리소스 초기 요청량(requests)과 최대 제한값(limits)을 지정합니다.
+
+기본적으로 데몬셋 파드는 백엔드나 프론트엔드 어플리케이션 파드와 달리 큰 리소스가 필요 없습니다. 제 경우는 아래와 같이 적은 리소스를 할당해도 전혀 동작에 문제가 없었습니다.
+
+`values.yaml` 파일에 다음과 같은 리소스 요청량 제한량 설정을 추가합니다.
+
+```bash
+# Now we are in `values.yaml`
+resources:
+  requests:
+    cpu: 10m
+    memory: 40Mi
+  limits:
+    cpu: 100m
+    memory: 100Mi
+```
+
+Node Termination Handler 헬름 차트에서 리소스 관련 템플릿 라인은 [여기](https://github.com/aws/aws-node-termination-handler/blob/main/config/helm/aws-node-termination-handler/templates/daemonset.linux.yaml#L177-L179)서 확인할 수 있습니다.
+
+&nbsp;
+
 #### webhookURL (선택사항)
 
 NTH 파드가 cordon & drain 조치를 할 때마다 슬랙 채널로 알람이 갈 수 있게 슬랙의 Incoming webhook URL을 입력합니다.
