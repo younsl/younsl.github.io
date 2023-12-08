@@ -208,7 +208,7 @@ daemonsetNodeSelector:
 
 #### 파드 리소스 제한
 
-Node Termination Handler 공식 헬름차트에는 리소스 요쳥값 제한값이 기본적으로 걸려있지 않습니다.
+[Node Termination Handler 공식 헬름차트](https://github.com/aws/aws-node-termination-handler/blob/main/config/helm/aws-node-termination-handler/templates/daemonset.linux.yaml#L177-L179)에는 리소스 요청값 제한값이 기본적으로 걸려있지 않습니다.
 
 데몬셋에 의해 각 노드마다 배치되는 데몬셋 파드의 리소스 초기 요청량(requests)과 최대 제한값(limits)을 지정합니다.
 
@@ -216,7 +216,7 @@ Node Termination Handler 공식 헬름차트에는 리소스 요쳥값 제한값
 
 `values.yaml` 파일에 다음과 같은 리소스 요청량 제한량 설정을 추가합니다.
 
-```bash
+```yaml
 # Now we are in `values.yaml`
 resources:
   requests:
@@ -226,8 +226,6 @@ resources:
     cpu: 100m
     memory: 100Mi
 ```
-
-Node Termination Handler 헬름 차트에서 리소스 관련 템플릿 라인은 [여기](https://github.com/aws/aws-node-termination-handler/blob/main/config/helm/aws-node-termination-handler/templates/daemonset.linux.yaml#L177-L179)서 확인할 수 있습니다.
 
 &nbsp;
 
