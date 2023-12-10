@@ -298,7 +298,8 @@ $ helm upgrade \
     --install \
     --namespace kube-system \
     aws-node-termination-handler ./aws-node-termination-handler \
-    --version $CHART_VERSION
+    --version $CHART_VERSION \
+    --wait
 ```
 
 NTH는 기본적으로 IMDS<sup>Instance Metadata Service</sup> 모드로 설치됩니다.
