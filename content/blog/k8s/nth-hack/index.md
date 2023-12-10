@@ -1,7 +1,7 @@
 ---
 title: "NTH hack"
 date: 2023-06-11T22:29:40+09:00
-lastmod: 2023-10-18T15:34:45+09:00
+lastmod: 2023-12-10T14:29:45+09:00
 slug: ""
 description: "Node Termination Handler를 사용해서 EKS 스팟 워커노드 안전하게 운영하는 방법을 소개합니다. NTH의 원리, 개념, 설치방법 등을 다룹니다."
 keywords: []
@@ -303,6 +303,17 @@ $ helm upgrade \
 ```
 
 NTH는 기본적으로 IMDS<sup>Instance Metadata Service</sup> 모드로 설치됩니다.
+
+&nbsp;
+
+SQS Queue를 사용하는 Queue Processor 모드로 설치하려면 다음과 같이 `values.yaml`의 `enableSqsTerminationDraining` 값을 `false`에서 `true`로 변경해야 합니다.
+
+```yaml
+# enableSqsTerminationDraining If true, this turns on queue-processor mode which drains nodes when an SQS termination event is received
+enableSqsTerminationDraining: true
+```
+
+이 외에도 SQS Queue와 IAM 권한 설정 등 부수적인 작업이 필요합니다. 해당 글에서는 IMDS 모드로 설치하는 방법만 다룹니다. 더 자세한 사항은 [NTH 공식문서](https://github.com/aws/aws-node-termination-handler?tab=readme-ov-file#infrastructure-setup)를 참고하세요.
 
 &nbsp;
 
