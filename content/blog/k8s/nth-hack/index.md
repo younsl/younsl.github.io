@@ -210,7 +210,7 @@ daemonsetNodeSelector:
 
 #### nodeAffinity
 
-더 복잡한 노드 선택 조건을 지정하려면 nodeSelector 보다는 nodeAffinity 방식을 사용해야 합니다.
+더 복잡한 노드 선택 조건을 지정하려면 [nodeSelector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) 보다는 [nodeAffinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity) 방식을 사용해야 합니다.
 
 ![nodeAffinity 동작방식](./5.png)
 
