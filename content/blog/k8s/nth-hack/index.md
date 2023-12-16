@@ -185,24 +185,59 @@ $ tree .
 
 헬름차트의 `values.yaml`을 수정합니다.
 
-저희는 `values.yaml` 파일에서 크게 2가지 설정을 수정할 예정입니다.
+저희는 `values.yaml` 파일에서 크게 3가지 설정을 수정할 예정입니다.
 
-1. **daemonsetNodeSelector** : NTH 파드가 배포될 노드 지정
-2. **webhookURL** : NTH가 이벤트 처리후 알림 메세지를 발송할 Slack incoming webhook의 URL 주소
+1. **배포대상 지정** : nodeSelector 또는 nodeAffinity를 사용해서 NTH를 특정 노드그룹에만 배포하여 클러스터의 전체 리소스를 절약합니다.
+2. **리소스 제한** : NTH 데몬셋 파드의 리소스의 요청값, 제한값을 설정하여 클러스터 전체 리소스를 절약합니다.
+3. **webhookURL** : NTH가 이벤트 처리후 알림 메세지를 발송할 Slack incoming webhook의 URL 주소
 
 &nbsp;
 
 #### daemonsetNodeSelector
 
+스팟 인스턴스 타입을 사용하는 워커노드에만 NTH 파드를 배포하도록 `daemonsetNodeSelector`를 지정합니다.
+
 ```yaml
-# Now we are in `values.yaml`
+# values.yaml
 daemonsetNodeSelector:
   # 데몬셋이 NTH 파드를 배포할 기준 설정
   eks.amazonaws.com/capacityType: SPOT
 ```
 
-스팟 워커노드에만 NTH 파드를 배포하도록 `daemonsetNodeSelector`를 지정합니다.  
 데몬셋의 배포 대상을 제한하지 않을 경우 On-demand를 포함한 모든 워커노드에 NTH 파드가 배포되어 불필요한 리소스를 차지하게 됩니다.
+
+&nbsp;
+
+#### nodeAffinity
+
+더 복잡한 노드 선택 조건을 지정하려면 nodeSelector 보다는 nodeAffinity 방식을 사용해야 합니다.
+
+특정 노드그룹에만 NTH 데몬셋 파드를 배포하고 싶은 경우, 노드그룹 이름을 기준으로 nodeAffinity를 설정합니다.
+
+`values.yaml`에 nodeAffinity를 적용한 예시는 다음과 같습니다.
+
+```yaml
+# values.yaml
+daemonsetAffinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: "eks.amazonaws.com/compute-type"
+              operator: NotIn
+              values:
+                - fargate
+            - key: node.kubernetes.io/name
+              operator: In
+              values:
+              - hpc-spot
+              - data-batch-spot
+```
+
+`matchExpressions`에 2가지 조건이 있는 경우 AND 조건으로 동작합니다. 따라서 위 설정의 경우 2가지 조건을 모두 충족한 노드에만 NTH 데몬셋 파드가 배포됩니다.
+
+1. Fargate 타입이 아닌 On-demand EC2인 경우
+2. 노드그룹 이름이 `hpc-spot` 또는 `data-batch-spot`에 속해있는 워커노드인 경우
 
 &nbsp;
 
@@ -217,7 +252,7 @@ daemonsetNodeSelector:
 `values.yaml` 파일에 다음과 같은 리소스 요청량 제한량 설정을 추가합니다.
 
 ```yaml
-# Now we are in `values.yaml`
+# values.yaml
 resources:
   requests:
     cpu: 10m
@@ -236,7 +271,7 @@ NTH 파드가 cordon & drain 조치를 할 때마다 슬랙 채널로 알람이 
 > Slack의 Incoming webhook 설정 방법은 이 글의 주제를 벗어나므로 설명은 생략하겠습니다.
 
 ```yaml
-# Now we are in `values.yaml`
+# values.yaml
 # webhookURL if specified, posts event data to URL upon instance interruption action.
 webhookURL: "https://hooks.slack.com/services/XXXXXXXXX/XXXXXXXXXXX/XXXXXXXXXXXXXXXXYYYZZZZZ"
 ```
@@ -246,7 +281,7 @@ webhookURL: "https://hooks.slack.com/services/XXXXXXXXX/XXXXXXXXXXX/XXXXXXXXXXXX
 만약 NTH의 이벤트 핸들링에 대한 슬랙 알람을 받을 필요 없다면 `webhookURL`은 기본값으로 비워두도록 합니다.
 
 ```yaml
-# Now we are in `values.yaml`
+# values.yaml
 # webhookURL if specified, posts event data to URL upon instance interruption action.
 webhookURL: ""
 ```
@@ -259,6 +294,7 @@ webhookURL: ""
 혹은 별도의 ConfigMap(또는 Secret)에 템플릿 정보를 저장한 후, 불러오는 방법도 있습니다.
 
 ```yaml
+# values.yaml
 # webhookTemplate if specified, replaces the default webhook message template.
 webhookTemplate: “{\”text\”:\”:rotating_light:*INSTANCE INTERRUPTION NOTICE*:rotating_light:\n*_EventID:_* `{{ .EventID }}`\n*_Environment:_* `<env_name>`\n*_InstanceId:_* `{{ .InstanceID }}`\n*_InstanceType:_* `{{ .InstanceType }}`\n*_Start Time:_* `{{ .StartTime }}`\n*_Description:_* {{ .Description }}\”}”
 ```
@@ -270,6 +306,7 @@ webhookTemplate: “{\”text\”:\”:rotating_light:*INSTANCE INTERRUPTION NOT
 기본값으로 아무것도 선언하지 않은 webhookTemplate은 다음과 같습니다.
 
 ```yaml
+# values.yaml
 webhookTemplate: "\{\"Content\":\"[NTH][Instance Interruption] InstanceId: \{\{ \.InstanceID \}\} - InstanceType: \{\{ \.InstanceType \}\} - Kind: \{\{ \.Kind \}\} - Start Time: \{\{ \.StartTime \}\}\"\}"
 ```
 
@@ -309,6 +346,7 @@ NTH는 기본적으로 IMDS<sup>Instance Metadata Service</sup> 모드로 설치
 SQS Queue를 사용하는 Queue Processor 모드로 설치하려면 다음과 같이 `values.yaml`의 `enableSqsTerminationDraining` 값을 `false`에서 `true`로 변경해야 합니다.
 
 ```yaml
+# values.yaml
 # enableSqsTerminationDraining If true, this turns on queue-processor mode which drains nodes when an SQS termination event is received
 enableSqsTerminationDraining: true
 ```
@@ -379,7 +417,7 @@ NTH 릴리즈에 적용된 `values.yaml` 상태를 확인합니다.
 $ helm get values aws-node-termination-handler -n kube-system
 ```
 
-저희가 `values.yaml` 파일에서 변경한 노드 선택, 슬랙 웹훅 주소 설정 값 2개가 잘 적용되어 있는지 확인합니다.
+저희가 `values.yaml` 파일에서 변경한 노드 선택, 파드의 리소스 제한, 슬랙 웹훅 주소 설정 값 3개가 잘 적용되어 있는지 확인합니다.
 
 &nbsp;
 
