@@ -1,7 +1,7 @@
 ---
 title: "NTH hack"
 date: 2023-06-11T22:29:40+09:00
-lastmod: 2023-12-10T14:29:45+09:00
+lastmod: 2023-12-16T19:00:45+09:00
 slug: ""
 description: "Node Termination Handler를 사용해서 EKS 스팟 워커노드 안전하게 운영하는 방법을 소개합니다. NTH의 원리, 개념, 설치방법 등을 다룹니다."
 keywords: []
@@ -212,6 +212,8 @@ daemonsetNodeSelector:
 
 더 복잡한 노드 선택 조건을 지정하려면 nodeSelector 보다는 nodeAffinity 방식을 사용해야 합니다.
 
+![nodeAffinity 동작방식](./5.png)
+
 특정 노드그룹에만 NTH 데몬셋 파드를 배포하고 싶은 경우, 노드그룹 이름을 기준으로 nodeAffinity를 설정합니다.
 
 `values.yaml`에 nodeAffinity를 적용한 예시는 다음과 같습니다.
@@ -299,7 +301,7 @@ webhookURL: ""
 webhookTemplate: “{\”text\”:\”:rotating_light:*INSTANCE INTERRUPTION NOTICE*:rotating_light:\n*_EventID:_* `{{ .EventID }}`\n*_Environment:_* `<env_name>`\n*_InstanceId:_* `{{ .InstanceID }}`\n*_InstanceType:_* `{{ .InstanceType }}`\n*_Start Time:_* `{{ .StartTime }}`\n*_Description:_* {{ .Description }}\”}”
 ```
 
-![커스터마이징한 Slack 메세지 예시](./5.png)
+![커스터마이징한 Slack 메세지 예시](./6.png)
 
 &nbsp;
 
@@ -310,7 +312,7 @@ webhookTemplate: “{\”text\”:\”:rotating_light:*INSTANCE INTERRUPTION NOT
 webhookTemplate: "\{\"Content\":\"[NTH][Instance Interruption] InstanceId: \{\{ \.InstanceID \}\} - InstanceType: \{\{ \.InstanceType \}\} - Kind: \{\{ \.Kind \}\} - Start Time: \{\{ \.StartTime \}\}\"\}"
 ```
 
-![디폴트 Slack 메세지 예시](./6.png)
+![디폴트 Slack 메세지 예시](./7.png)
 
 자세한 사항은 NTH 깃허브에서 [End to End 테스트 코드](https://github.com/aws/aws-node-termination-handler/blob/b6477836cc81f6c2e82ca9840adf170472bbd0fc/test/e2e/webhook-test#L30)를 확인하도록 합니다.
 
@@ -318,7 +320,7 @@ webhookTemplate: "\{\"Content\":\"[NTH][Instance Interruption] InstanceId: \{\{ 
 
 일반적인 네트워크 구성의 경우, Slack 알람을 받으려면 NTH Pod가 위치한 노드가 NAT Gateway를 경유해 Internet의 슬랙에 도달 가능한 네트워크 구성이어야 합니다.
 
-![Slack 알람시 네트워크 플로우](./7.png)
+![Slack 알람시 네트워크 플로우](./8.png)
 
 슬랙 채널로 이벤트 핸들링 알람을 보내는 주체는 NTH Pod입니다.
 
