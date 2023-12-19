@@ -115,6 +115,12 @@ K8s 학습 로드맵
 
 [CNCF Landscape](https://landscape.cncf.io/)
 
+[Cloud Native Trail map](https://www.cncf.io/blog/2018/03/08/introducing-the-cloud-native-landscape-2-0-interactive-edition/)
+
+![Cloud Native Trail map](./0.png)
+
+CNCF에서 공식 제공하는 클라우드 네이티브화하기 위한 로드맵. 클라우드 네이티브 컴퓨팅을 도입할 때 기술 적용 우선순위 판단할 때 첫 번째 길잡이 역할을 합니다.
+
 [eni max pod](https://github.com/awslabs/amazon-eks-ami/blob/master/files/eni-max-pods.txt)  
 EC2 타입별 수용가능 최대 파드 개수
 
