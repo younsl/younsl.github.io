@@ -395,7 +395,7 @@ FROM performance_schema.replication_group_members;
 3 rows in set (0.0005 sec)
 ```
 
-클러스터를 구성하는 3개 MySQL DB가 모두 온라잉ㄴ 상태이며, Primary - Secondary 구성임을 확인할 수 있습니다. 현재 저희가 접속한 DB는 Primary DB인 `mysql-cluster-0` 입니다.
+클러스터를 구성하는 3개 MySQL DB가 모두 온라인 상태이며, Primary - Secondary 구성임을 확인할 수 있습니다. 현재 저희가 접속한 DB는 Primary DB인 `mysql-cluster-0` 입니다.
 
 &nbsp;
 
