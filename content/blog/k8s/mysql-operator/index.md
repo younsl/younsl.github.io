@@ -392,6 +392,8 @@ No default schema selected; type \use <schema> to set one.
 
 root 계정의 password를 입력해야 로그인이 가능합니다.
 
+root 계정의 패스워드는 `mysql-innodbcluster` 헬름 차트의 `credentials.root.password` 값을 입력합니다.
+
 &nbsp;
 
 MySQL Shell에서는 `\sql`, `\py` 및 `\js` 명령어를 사용해서 모드를 변경할 수 있습니다.
