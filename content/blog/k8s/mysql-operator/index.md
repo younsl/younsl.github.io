@@ -160,7 +160,6 @@ image:
     enabled: false
     secretName:
 
-
 credentials:
   root:
     user: root
