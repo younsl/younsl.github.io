@@ -18,6 +18,18 @@ MySQL Operator를 설치한 후 사용하는 가이드입니다.
 
 &nbsp;
 
+## 배경지식
+
+### MySQL Operator for kubernetes
+
+Kubernetes용 MySQL Operator는 Kubernetes 클러스터 내에서 MySQL InnoDB 클러스터 설정을 관리하는 오퍼레이터입니다.
+
+MySQL Operator를 사용하면 롤링 업데이트 방식의 버전 업그레이드 및 MySQL DB 백업 자동화를 포함하는 설정, Maintenance를 통해 쉽게 MySQL DB 클러스터를 쿠버네티스 환경에서 관리할 수 있습니다.
+
+![MySQL operator 동작방식](./1.png)
+
+&nbsp;
+
 ## 환경
 
 ### 클러스터
@@ -51,7 +63,7 @@ MySQL Operator를 설치한 후 사용하는 가이드입니다.
 
 `mysql-operator` 프로젝트는 Github Cloud에 오픈소스로 제공됩니다.
 
-로컬 환경에 mysql-operator 레포지터리를 다운로드 받습니다.
+로컬 환경에 [mysql-operator](https://github.com/mysql/mysql-operator) 레포지터리를 다운로드 받습니다.
 
 ```bash
 git clone https://github.com/mysql/mysql-operator.git
@@ -341,7 +353,7 @@ kubectl get pod -n mysql mysql-cluster-0 -o yaml
 
 운영 관리의 목적으로 생성한 MySQL DB 클러스터에 접속해야할 경우, 먼저 MySQL Operator 파드에 접속합니다.
 
-![MySQL Operator에서 mysql pod 접속](./1.png)
+![MySQL Operator에서 mysql pod 접속](./2.png)
 
 대부분의 MySQL DB 운영 업무는 MySQL Shell을 사용해서 수행하게 됩니다.
 
@@ -457,7 +469,7 @@ FROM performance_schema.replication_group_members;
 
 MySQL Operator와 InnoDB Cluster의 아키텍처입니다.
 
-![Primary Secondary 구성](./2.png)
+![Primary Secondary 구성](./3.png)
 
 &nbsp;
 
