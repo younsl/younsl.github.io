@@ -314,6 +314,33 @@ $ ghe-repl-status -vv  # 이중화 상태 더 자세히 보기
 
 &nbsp;
 
+Replication 구성에 대한 네트워크 연결 가능성<sup>Connectivity</sup> 통계를 확인하려면 Primary 서버와 Replica 서버 양쪽 모두에서 다음 명령어를 실행합니다.
+
+```bash
+sudo fping -t 1000 -B 1 -c 5 -i 500 -q `ghe-cluster-nodex` -x
+```
+
+**중요**  
+복제(Replication)가 제대로 작동하려면 복제 인스턴스가 포트 `TCP/122` 및 `UDP/1194`를 통해 고가용성 환경의 다른 모든 어플라이언스와 통신할 수 있어야 합니다.
+
+&nbsp;
+
+Replication 상태에 따라 실행 결과값이 다르게 나옵니다.
+
+```bash
+# Replication 상태가 정상인 경우 결과값
+github-xxx-xxx-replica: xmt/rcv/%loss = 5/5/0%, min/avg/max = 0.17/0.23/0.27
+```
+
+```bash
+# Replication 상태가 비정상인 경우 결과값
+github-xxx-xxx-primary: xmt/rcv/%loss = 5/0/100%
+```
+
+위 경우 Replica 서버와 Primary 서버간의 Network 연결 가능 여부를 반드시 확인합니다. TCP/122와 UDP/1194 포트 중 하나라도 통신이 안되는 경우 위와 같이 `%loss` 값이 100%로 출력됩니다.
+
+&nbsp;
+
 ## 이중화 해제
 
 ### Replica 서버 접속
