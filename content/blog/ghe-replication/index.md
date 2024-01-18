@@ -114,6 +114,32 @@ ssh-ed25519 XXXXC.............................................................Ox
 
 ### 복제용 키페어 등록
 
+Replica 서버에서 키페이를 생성한 후 Primary 서버에서 등록합니다.
+크게 2가지 방법이 있습니다.
+
+1. SSH (CLI)
+2. Management Console
+
+&nbsp;
+
+#### SSH
+
+Primary 서버의 [Administrative SSH](https://docs.github.com/en/enterprise-server@3.11/admin/monitoring-managing-and-updating-your-instance/configuring-clustering/cluster-network-configuration#administrative-ports)<sup>TCP/122</sup>로 접속합니다.
+
+리눅스 서버에서 `~/.ssh/authorized_keys` 파일은 SSH 공개 키를 저장하는 파일로, 서버나 사용자가 원격으로 접속할 때 사용됩니다.
+
+`tee` 명령어를 사용해서 Replica 서버에서 생성한 SSH 공개키를 `authorized_keys` 파일에 새로 추가합니다.
+
+```bash
+echo "ssh-ed25519 <your-public-key> admin-ssh-key" | tee -a /home/admin/.ssh/authorized_keys
+```
+
+해당 파일에 SSH 공개키를 추가하게 되면 Management Console에서도 동일하게 조회가 됩니다.
+
+&nbsp;
+
+#### Management Console
+
 Github Enterprise 관리 콘솔 페이지에 접속해서 값을 입력하고 Add key를 눌러 복제용 키를 등록합니다.
 
 [관리 콘솔](https://docs.github.com/ko/enterprise-server@3.6/admin/configuration/administering-your-instance-from-the-management-console/about-the-management-console)은 HTTPS 프로토콜에 TCP/8443 포트를 사용합니다. 관리 콘솔 URL 주소는 `https://your.github-enterprise.com:8443/setup/settings/`와 같은 형식을 지니고 있습니다.
