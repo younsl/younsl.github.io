@@ -3,7 +3,7 @@ title: "ElasticSearch 운영 가이드"
 date: 2024-01-31T03:15:30+09:00
 lastmod: 2024-01-31T03:15:55+09:00
 slug: ""
-description: "WebtoB 라이센스를 교체하는 방법을 설명합니다."
+description: "DevOps Engineer를 위한 ElasticSearch 클러스터 운영 가이드"
 keywords: []
 tags: ["webtob"]
 ---
