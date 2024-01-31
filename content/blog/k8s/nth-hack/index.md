@@ -1,7 +1,7 @@
 ---
 title: "NTH hack"
 date: 2023-06-11T22:29:40+09:00
-lastmod: 2023-12-16T19:00:45+09:00
+lastmod: 2024-01-31T09:52:45+09:00
 slug: ""
 description: "Node Termination Handler를 사용해서 EKS 스팟 워커노드 안전하게 운영하는 방법을 소개합니다. NTH의 원리, 개념, 설치방법 등을 다룹니다."
 keywords: []
@@ -266,6 +266,37 @@ resources:
 
 &nbsp;
 
+#### PSP 사용여부
+
+Kubernetes v1.25 부터는 PSP<sup>Pod Security Policy</sup>가 지원되지 않습니다. 따라서 EKS v1.25 이상인 경우는 `rbac.pspEnabled`를 `false` 처리합니다.
+
+NTH 차트에서 설정 예시입니다.
+
+```diff
+# aws-node-termination-handle/values_ENV.yaml
+...
+  rbac:
+    create: true
++     pspEnabled: true
+-     pspEnabled: false
+```
+
+&nbsp;
+
+`rbac.pspEnabled` 값이 `false`인 경우 아래 쿠버네티스 리소스들을 생성되지 않게 명시적으로 지정합니다. 이는 NTH 차트의 일부인 [psp.yaml](https://github.com/aws/aws-node-termination-handler/blob/main/config/helm/aws-node-termination-handler/templates/psp.yaml#L1) 헬름 템플릿에 포함되어 있는 로직입니다.
+
+- PSP용 Role
+- PSP용 RoleBinding
+- PSP
+
+&nbsp;
+
+NTH 파드가 PSP를 사용하던 쿠버네티스 리소스 관계도는 다음과 같습니다.
+
+![NTH PSP](./6.png)
+
+&nbsp;
+
 #### webhookURL (선택사항)
 
 NTH 파드가 cordon & drain 조치를 할 때마다 슬랙 채널로 알람이 갈 수 있게 슬랙의 Incoming webhook URL을 입력합니다.
@@ -301,7 +332,7 @@ webhookURL: ""
 webhookTemplate: “{\”text\”:\”:rotating_light:*INSTANCE INTERRUPTION NOTICE*:rotating_light:\n*_EventID:_* `{{ .EventID }}`\n*_Environment:_* `<env_name>`\n*_InstanceId:_* `{{ .InstanceID }}`\n*_InstanceType:_* `{{ .InstanceType }}`\n*_Start Time:_* `{{ .StartTime }}`\n*_Description:_* {{ .Description }}\”}”
 ```
 
-![커스터마이징한 Slack 메세지 예시](./6.png)
+![커스터마이징한 Slack 메세지 예시](./7.png)
 
 &nbsp;
 
@@ -312,7 +343,7 @@ webhookTemplate: “{\”text\”:\”:rotating_light:*INSTANCE INTERRUPTION NOT
 webhookTemplate: "\{\"Content\":\"[NTH][Instance Interruption] InstanceId: \{\{ \.InstanceID \}\} - InstanceType: \{\{ \.InstanceType \}\} - Kind: \{\{ \.Kind \}\} - Start Time: \{\{ \.StartTime \}\}\"\}"
 ```
 
-![디폴트 Slack 메세지 예시](./7.png)
+![디폴트 Slack 메세지 예시](./8.png)
 
 자세한 사항은 NTH 깃허브에서 [End to End 테스트 코드](https://github.com/aws/aws-node-termination-handler/blob/b6477836cc81f6c2e82ca9840adf170472bbd0fc/test/e2e/webhook-test#L30)를 확인하도록 합니다.
 
@@ -320,7 +351,7 @@ webhookTemplate: "\{\"Content\":\"[NTH][Instance Interruption] InstanceId: \{\{ 
 
 일반적인 네트워크 구성의 경우, Slack 알람을 받으려면 NTH Pod가 위치한 노드가 NAT Gateway를 경유해 Internet의 슬랙에 도달 가능한 네트워크 구성이어야 합니다.
 
-![Slack 알람시 네트워크 플로우](./8.png)
+![Slack 알람시 네트워크 플로우](./9.png)
 
 슬랙 채널로 이벤트 핸들링 알람을 보내는 주체는 NTH Pod입니다.
 
