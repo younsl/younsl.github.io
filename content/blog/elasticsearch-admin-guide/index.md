@@ -1,5 +1,5 @@
 ---
-title: "ElasticSearch 운영 가이드"
+title: "elasticsearch admin guide"
 date: 2024-01-31T03:15:30+09:00
 lastmod: 2024-01-31T03:15:55+09:00
 slug: ""
