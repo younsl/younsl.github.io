@@ -46,6 +46,23 @@ OPA와 Kyverno 둘다 사용해본 AWS Solutions Architect의 경우, OPA 보다
 
 ## Kyverno 운영 가이드
 
+### 버전 호환성 표
+
+쿠버네티스 클러스터 버전에 맞는 Kyverno 버전을 설치해야 합니다.
+
+| Kyverno Version | Kubernetes Min | Kubernetes Max |
+|-----------------|----------------|----------------|
+| 1.6.x | 1.16 | 1.23 |
+| 1.7.x | 1.21 | 1.23 |
+| 1.8.x | 1.23 | 1.25 |
+| 1.9.x | 1.24 | 1.26 |
+| 1.10.x | 1.24 | 1.26 |
+| 1.11.x | 1.25 | 1.28 |
+
+자세한 사항은 Kyverno 공식문서 [Compatibility Matrix](https://kyverno.io/docs/installation/#compatibility-matrix) 페이지를 참고합니다.
+
+&nbsp;
+
 ### 정책 마켓플레이스
 
 모든 Policy의 YAML을 처음부터 작성할 필요 없이 약 292개의 정책이 이미 올라와 있습니다.
