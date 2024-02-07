@@ -148,7 +148,28 @@ cert-manager-webhook-54d7657dbb-5hshh     1/1     Running   0          19s
 
 &nbsp;
 
-### actions-runner-controller 설치
+cert-manager에 의해 관리되는 커스텀 리소스를 확인합니다.
+
+```bash
+$ kubectl api-resources --categories cert-manager
+NAME                  SHORTNAMES   APIVERSION                NAMESPACED   KIND
+challenges                         acme.cert-manager.io/v1   true         Challenge
+orders                             acme.cert-manager.io/v1   true         Order
+certificaterequests   cr,crs       cert-manager.io/v1        true         CertificateRequest
+certificates          cert,certs   cert-manager.io/v1        true         Certificate
+clusterissuers                     cert-manager.io/v1        false        ClusterIssuer
+issuers                            cert-manager.io/v1        true         Issuer
+```
+
+이 다음 과정에서 Actions Runner Controller 헬름 차트를 설치하게 되면 아래 3개의 커스텀 리소스가 같이 생성될 예정입니다.
+
+1. certificaterequests (cert-manager.io/v1)
+2. certificates (cert-manager.io/v1)
+3. issuers (cert-manager.io/v1)
+
+&nbsp;
+
+### actions-runner-controller 차트 수정
 
 #### 헬름 차트
 
@@ -231,6 +252,8 @@ Actions Runner가 GHE 서버와 HTTPS 통신이 불가능한 경우, Runner의 P
 
 &nbsp;
 
+### actions-runner-controller 차트 설치
+
 EKS 클러스터에 Actions Runner Controller를 헬름 차트로 설치합니다.
 
 ```bash
@@ -262,7 +285,31 @@ actions-runner-controller-77445d6674-v4nw5   2/2     Running   0          100m
 
 헬름 차트도 문제 없으며 Pod도 Running 상태인 걸 확인했습니다.
 
-Actions Runner Controller가 설치 완료되었습니다. 이제 Actions Runner를 배포할 수 있습니다.
+&nbsp;
+
+이전에 설치한 cert-manager에 의해 커스텀 리소스인 `certificate`도 같이 생성됩니다.
+
+cert-manager에 의해 관리되는 인증서 리소스와 인증서 발급자 리소스 상태를 확인합니다.
+
+```bash
+kubectl get issuer,certificate \
+  -n actions-runner-system \
+  -o wide
+```
+
+```bash
+NAME                                                                 READY   STATUS   AGE
+issuer.cert-manager.io/actions-runner-controller-selfsigned-issuer   True             55d
+
+NAME                                                                 READY   SECRET                                   ISSUER                                        STATUS                                          AGE
+certificate.cert-manager.io/actions-runner-controller-serving-cert   True    actions-runner-controller-serving-cert   actions-runner-controller-selfsigned-issuer   Certificate is up to date and has not expired   55d
+```
+
+인증서가 READY `true` 상태이면 정상적으로 Actions Runner Controller의 서비스 제공이 준비되었다고 판단할 수 있습니다. 이러한 인증서 인프라 구성을 위해 사전에 cert-manager 설치가 필요합니다.
+
+&nbsp;
+
+Actions Runner Controller가 설치 완료되었습니다. 이제 Actions Runner Pod를 배포할 수 있습니다.
 
 &nbsp;
 
