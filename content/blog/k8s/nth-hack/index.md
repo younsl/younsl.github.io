@@ -238,7 +238,7 @@ daemonsetAffinity:
 
 `matchExpressions`에 2가지 조건이 있는 경우 AND 조건으로 동작합니다. 따라서 위 설정의 경우 2가지 조건을 모두 충족한 노드에만 NTH 데몬셋 파드가 배포됩니다.
 
-1. Fargate 타입이 아닌 On-demand EC2인 경우
+1. Fargate 타입이 아닌 On-demand 또는 Spot 인스턴스인 경우
 2. 노드그룹 이름이 `hpc-spot` 또는 `data-batch-spot`에 속해있는 워커노드인 경우
 
 &nbsp;
@@ -494,6 +494,14 @@ aws-node-termination-handler   3         3         3       3            3       
 ```
 
 IMDS 모드는 aws-node-termination-handler 파드를 데몬셋을 통해 배포하기 때문에, 스팟 워커노드가 스케일 아웃되어 대수가 늘어나면 그에 맞춰서 NTH 파드도 자동 생성된 걸 확인할 수 있습니다.
+
+&nbsp;
+
+## 정리
+
+- NTH(Node Termination Handler)는 쿠버네티스 클러스터에 깔아쓰는 데몬셋 에드온입니다. NTH를 사용하면 스팟 인스턴스 및 메인터넌스 스케줄과 같은 EC2 인스턴스 관련 이벤트들을 자동 처리할 수 있습니다.
+- NTH의 동작방식은 크게 2개이며 IMDS 모드와 Queue 모드를 지원합니다.
+- 모드에 따라 자동 처리할 수 있는 인스턴스 이벤트 타입 범위가 다르며, Queue 모드가 더 넓은 이벤트 처리 범위를 가지고 있습니다.
 
 &nbsp;
 
