@@ -213,9 +213,41 @@ curl \
 
 &nbsp;
 
+적용된 기본 인덱스 탬플릿 설정을 확인합니다.
+
+```bash
+curl \
+  --location \
+  --request GET \
+  "${ES_ENDPOINT}/_template/default?pretty"
+```
+
+```json
+{
+  "default" : {
+    "order" : -1,
+    "index_patterns" : [
+      "*"
+    ],
+    "settings" : {
+      "index" : {
+        "number_of_shards" : "1",
+        "number_of_replicas" : "0"
+      }
+    },
+    "mappings" : { },
+    "aliases" : { }
+  }
+}
+```
+
+`default` 인덱스 템플릿에 `number_of_shards`, `number_of_replicas` 값이 새로 추가된 걸 확인할 수 있습니다.
+
+&nbsp;
+
 ### 기존 인덱스 설정
 
-기존 인덱스 설정 확인
+기존 인덱스 설정을 확인합니다.
 
 ```bash
 curl \
