@@ -25,6 +25,28 @@ OpenSeearch, ElasticSearch 운영자를 위한 가이드
 
 &nbsp;
 
+## 샤드
+
+### 기본개념
+
+Elasticsearch의 각 인덱스는 하나 이상의 샤드로 나누어지며, 각 샤드는 하드웨어 오류로부터 보호하기 위해 여러 노드에 걸쳐 복제될 수 있습니다.
+
+&nbsp;
+
+### ElasticSearch 내부구조
+
+![ES와 Lucene 내부구조](./1.png)
+
+&nbsp;
+
+### 샤드 구성 모범사례
+
+- **적절한 샤드 크기 선택** : 샤드당 용량은 일반적으로 10GB ~ 50GB 사이로 유지하는 것이 이상적입니다. 이 범위를 벗어나는 경우 샤드가 너무 커지거나 작아져서 성능 문제가 발생할 수 있습니다.
+- **일관된 샤드 크기 유지** : 모든 인덱스의 샤드 크기가 일관되도록 유지하는 것이 중요합니다. 샤드 크기가 큰 인덱스는 작은 인덱스와 동일한 노드에서 실행될 때 성능 문제를 야기할 수 있습니다.
+- **Rollover로 용량 자동조정** : 인덱스 상태 관리<sup>ISM, Index State Management</sup> 기능을 사용하는 경우 롤오버 작업의 `max_primary_shard_size` 임계값을 `50GB`로 설정하여 샤드가 `50GB`보다 커지지 않도록 합니다.
+
+&nbsp;
+
 ## 제약사항
 
 ### ElasticSearch 관리자의 API 제한
@@ -281,7 +303,7 @@ curl \
 
 ### ISM Policy
 
-![ISM Policy](./1.png)
+![ISM Policy](./2.png)
 
 인덱스는 처음에 hot 상태입니다. 2일 후 ISM이 인덱스를 old 상태로 전환합니다. old 상태로 전환될 떄 스토리지 공간 절약을 위해 인덱스 복제본<sup>Replicas</sup>을 0으로 변경합니다. 인덱스가 3일을 경과한 후에는 ISM이 인덱스를 삭제합니다.
 
@@ -383,4 +405,4 @@ Kibana URL로 접근시 503 에러코드와 함께 Http request timed out connec
 
 AWS 엔지니어가 수동 조치<sup>Manual Intervention</sup> 처리해서 해결할 수 있습니다. 이 Manual Intervention은 AWS 사용자가 Support 티켓을 올려야하며, AWS 내부팀 에스컬레이션이 된 후 처리됩니다.
 
-![Kibana 조치 다이어그램](./2.png)
+![Kibana 조치 다이어그램](./3.png)
