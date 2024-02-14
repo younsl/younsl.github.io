@@ -83,7 +83,7 @@ ES_ENDPOINT="https://xxxxyyyyzzzz.ap-northeast-2.es.amazonaws.com"
 curl \
   --location \
   --request GET \
-  "${ES_ENDPOINT}/_cat/health?v"
+  "$ES_ENDPOINT/_cat/health?v"
 ```
 
 ```bash
@@ -102,7 +102,7 @@ curl \
   --silent \
   --location \
   --request GET \
-  "${ES_ENDPOINT}/_cat/allocation?v" \
+  "$ES_ENDPOINT/_cat/allocation?v" \
   | column -t
 ```
 
@@ -132,7 +132,7 @@ shards  disk.indices  disk.used  disk.avail  disk.total  disk.percent  host     
 curl \
   --location \
   --request GET \
-  "${ES_ENDPOINT}/_cat/indices?v"
+  "$ES_ENDPOINT/_cat/indices?v"
 ```
 
 &nbsp;
@@ -143,7 +143,7 @@ curl \
 curl \
   --location \
   --request GET \
-  "${ES_ENDPOINT}/_cat/indices/podlog-*?v"
+  "$ES_ENDPOINT/_cat/indices/podlog-*?v"
 ```
 
 ```bash
@@ -163,7 +163,7 @@ yellow open   podlog-2024.02.10  lx0h-wzDQM6FxhTwSqe08w   5   1     721369      
 curl \
   --location \
   --request DELETE \
-  "${ES_ENDPOINT}/podlog-2024.02.07"
+  "$ES_ENDPOINT/podlog-2024.02.07"
 ```
 
 명령이 성공적으로 실행되면 Elasticsearch는 `acknowledged:true`와 같은 응답을 반환합니다. 이것은 삭제 요청이 성공적으로 처리되었음을 나타냅니다.
@@ -180,7 +180,7 @@ curl \
 
 &nbsp;
 
-### 추후 인덱스 기본 설정
+### 신규 인덱스의 Default 설정
 
 기본 인덱스 템플릿 설정을 업데이트합니다.
 
@@ -219,7 +219,7 @@ curl \
 curl \
   --location \
   --request GET \
-  "${ES_ENDPOINT}/_template/default?pretty"
+  "$ES_ENDPOINT/_template/default?pretty"
 ```
 
 ```json
@@ -358,11 +358,29 @@ curl \
 
 AWS 콘솔을 사용해서 ElasticSearch v6.8을 v7.1로 업그레이드한 직후 경험했던 문제.
 
-**증상**  
+&nbsp;
+
+#### 증상
+
 Kibana URL로 접근시 503 에러코드와 함께 Http request timed out connecting 에러 발생하는 증상이었습니다.
 
-**원인**  
+&nbsp;
+
+#### 발생 환경
+
+- **플랫폼** : AWS OpenSearch
+- **ElasticSearch** v7.1
+
+&nbsp;
+
+#### 원인
+
 문제의 근본 원인은 OpenSearch 도메인을 blue-green 배포가 필요한 Elasticsearch_6.8에서 Elasticsearch_7.1 버전으로 업그레이드했기 때문입니다. blue-green 배포에는 이전 클러스터에서 새 클러스터로의 인덱스 마이그레이션이 포함됩니다. 샤드 재할당이 완료되면 Kibana가 완전히 작동하게 됩니다. 이 경우 Kibana 인덱스 마이그레이션 프로세스에서 클러스터에 경쟁 조건이 발생했습니다.
 
-**해결방법**  
-AWS 엔지니어가 Manual Intervention 처리해서 해결할 수 있습니다. 이 Manual Intervention은 AWS Support 티켓을 올려 내부팀 에스컬레이션 후 처리됩니다.
+&nbsp;
+
+#### 해결방법
+
+AWS 엔지니어가 수동 조치<sup>Manual Intervention</sup> 처리해서 해결할 수 있습니다. 이 Manual Intervention은 AWS 사용자가 Support 티켓을 올려야하며, AWS 내부팀 에스컬레이션이 된 후 처리됩니다.
+
+![Kibana 조치 다이어그램](./2.png)
