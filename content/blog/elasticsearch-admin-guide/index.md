@@ -395,7 +395,7 @@ curl \
 
 ### ElasticSearch 업그레이드 후 Kibana 접근 불가 에러
 
-AWS 콘솔을 사용해서 ElasticSearch v6.8을 v7.1로 업그레이드한 직후 경험했던 문제.
+AWS 콘솔을 사용해서 ElasticSearch v6.8 → v7.1로 업그레이드한 직후 경험했던 문제.
 
 &nbsp;
 
@@ -408,7 +408,10 @@ Kibana URL로 접근시 503 에러코드와 함께 Http request timed out connec
 #### 발생 환경
 
 - **플랫폼** : AWS OpenSearch
-- **ElasticSearch** v7.1
+- **ElasticSearch** `v6.8` → `v7.1`
+- **Kibana** `v6.8` → `v7.1`
+
+ElasticSearch 도메인의 버전 업그레이드 완료 직후 Kibana 접근 불가한 상황이 발생했습니다.
 
 &nbsp;
 
