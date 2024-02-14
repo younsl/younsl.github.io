@@ -43,6 +43,23 @@ Elasticsearch의 각 인덱스는 하나 이상의 샤드로 나누어지며, �
 
 - **적절한 샤드 크기 선택** : 샤드당 용량은 일반적으로 10GB ~ 50GB 사이로 유지하는 것이 이상적입니다. 이 범위를 벗어나는 경우 샤드가 너무 커지거나 작아져서 성능 문제가 발생할 수 있습니다.
 - **일관된 샤드 크기 유지** : 모든 인덱스의 샤드 크기가 일관되도록 유지하는 것이 중요합니다. 샤드 크기가 큰 인덱스는 작은 인덱스와 동일한 노드에서 실행될 때 성능 문제를 야기할 수 있습니다.
+
+```bash
+# cat shards API로 현재 샤드 크기 확인
+curl \
+  -X GET \
+  "$ES_ENDPOINT/_cat/shards?v=true&h=index,prirep,shard,store&s=prirep,store&bytes=gb&pretty"
+```
+
+```bash
+index                  prirep shard store
+podlog-2024.02.13      p      3        38
+podlog-2024.02.13      p      2        38
+podlog-2024.02.13      p      0        38
+podlog-2024.02.13      p      1        38
+podlog-2024.02.13      p      4        38
+```
+
 - **Rollover로 용량 자동조정** : 인덱스 상태 관리<sup>ISM, Index State Management</sup> 기능을 사용하는 경우 롤오버 작업의 `max_primary_shard_size` 임계값을 `50GB`로 설정하여 샤드가 `50GB`보다 커지지 않도록 합니다.
 
 &nbsp;
