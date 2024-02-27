@@ -118,13 +118,65 @@ helm upgrade \
 
 ## 설정 가이드
 
+### kubelet 설정
+
+newrelic-infrasturcture 메트릭 수집을 위한 kubelet 데몬셋이 배포됩니다.
+
+![kubelet 데몬셋의 Configmap 구조](./1.png)
+
+kubelet 데몬셋에는 kubelet과 뉴렐릭 에이전트가 하나의 파드로 포함되어 있습니다.
+
+```bash
+$ kubectl get ds -n newrelic
+NAME                            DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+newrelic-bundle-nrk8s-kubelet   91        91        91      91           91          <none>          19d
+```
+
+&nbsp;
+
+뉴렐릭 에이전트의 설정을 확인하려면 뉴렐릭 네임스페이스의 ConfigMap을 조회합니다.
+
+```bash
+kubectl get configmap newrelic-bundle-nrk8s-agent-kubelet \
+  -n newrelic \
+  -o yaml
+```
+
+```yaml
+apiVersion: v1
+data:
+  newrelic-infra.yml: |-
+    # This is the configuration file for the infrastructure agent. See:
+    # https://docs.newrelic.com/docs/infrastructure/install-infrastructure-agent/configuration/infrastructure-agent-configuration-settings/
+    custom_attributes:
+      clusterName: TEST-CLUSTER
+    features:
+      docker_enabled: false
+    http_server_enabled: true
+    http_server_port: 8003
+    metrics_network_sample_rate: 300
+    metrics_nfs_sample_rate: 300
+    metrics_process_sample_rate: -1
+    metrics_storage_sample_rate: 300
+    metrics_system_sample_rate: 300
+kind: ConfigMap
+metadata:
+  ...
+```
+
+`nri-bundle` 차트에서 newrelic-infrasturcture 관련 설정들은 ConfigMap에 추가되고, ConfigMap은 파드에 설정파일 `/etc/newrelic-infra.yml`로 마운트됩니다.
+
+&nbsp;
+
 ### 비용 최적화 기법
 
 #### Low data mode 켜기
 
 **연관된 차트 이름**: `nri-bundle` (메인 차트)
 
-`lowDataMode` 토글은 Newrelic으로 전송되는 데이터를 줄이는 가장 간단한 방법입니다. nri-bundle 차트에서 `global.lowDataMode` 값을 `true`로 설정하면 기본 스크레이핑 간격이 `15s`(기본값)에서 `30s`로 변경됩니다.
+`lowDataMode` 토글은 Newrelic으로 전송되는 데이터를 줄이는 가장 간단한 방법입니다.
+
+nri-bundle 차트에서 `global.lowDataMode` 값을 `true`로 설정하면 기본 스크레이핑 간격이 `15s`<sup>기본값</sup> → `30s`로 변경됩니다.
 
 ```yaml
 # nri-bundle/values.yaml
@@ -144,7 +196,7 @@ lowDataMode가 활성화되면 기본 스크레이핑 간격이 `15s`에서 `30s
 
 &nbsp;
 
-어떤 이유로 인해 초 수를 미세 조정해야 하는 경우 `common.config.interval` 설정에 직접 선언해서 적용할 수 있습니다.
+어떤 이유로 인해 초 수를 미세 조정해야 하는 경우 `newrelic-infrastructure` 차트에서 `common.config.interval` 설정에 직접 선언해서 적용할 수 있습니다.
 
 ```yaml
 # nri-bundle/values.yaml
@@ -153,9 +205,14 @@ lowDataMode가 활성화되면 기본 스크레이핑 간격이 `15s`에서 `30s
 newrelic-infrastructure:
   common:
     config:
-      interval: 15s
+      interval: 40s
+
+global:
+  lowDataMode: false
 ...
 ```
+
+`interval` 값은 `40s`보다 큰 값으로 설정은 지원되지 않으며 이로 인해 NR UI가 제대로 작동하지 않게 됩니다.
 
 &nbsp;
 
@@ -193,6 +250,10 @@ newrelic-infrasturcture:
 
 지정된 네임스페이스의 메트릭만 수집하도록 필터링합니다.
 
+&nbsp;
+
+간단한 필터링 설정은 `namespaceSelector.matchLabels`를 사용합니다.
+
 ```yaml
 # nri-bundle/values.yaml
 # nri-bundle chart version v5.0.18
@@ -201,7 +262,42 @@ newrelic-infrastructure:
   common:
     config:
       namespaceSelector:
-        - default
-        - backoffice
+        matchLabels:
+          newrelic.com/scrape: true
 ...
 ```
+
+위 설정의 경우 `newrelic.com/scrape` 라벨이 붙은 네임스페이스만 수집하게 됩니다.
+
+&nbsp;
+
+더 복잡한 조건의 필터링 설정은 `namespaceSelector.matchExpressions`를 사용합니다.
+
+```yaml
+# nri-bundle/values.yaml
+# nri-bundle chart version v5.0.18
+...
+newrelic-infrastructure:
+  common:
+    config:
+      matchExpressions:
+        - {key: newrelic.com/scrape, operator: NotIn, values: ["false"]}
+```
+
+실제 서비스와 연관된 Namespace만 모니터링하도록 하면 비용을 절감할 수 있습니다.
+
+&nbsp;
+
+#### Deployment 히스토리 보관 수 조정
+
+```diff
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+...
+spec:
+- revisionHistoryLimit: 10
++ revisionHistoryLimit: 0
+```
+
+기본값 `10`에서 `0`으로 줄이는 경우, **20%의 데이터를 절감**할 수 있습니다. 대신 Deployment의 률백이 필요없는 경우에만 `revisionHistoryLimit`을 `0`으로 지정하도록 합니다.
