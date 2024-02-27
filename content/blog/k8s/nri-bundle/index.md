@@ -248,7 +248,7 @@ newrelic-infrasturcture:
 
 **연관된 차트 이름**: `newrelic-infrastructure` (하위 차트)
 
-지정된 네임스페이스의 메트릭만 수집하도록 필터링합니다.
+지정된 네임스페이스에서만 ksm<sup>kube-state-metrics</sup> 및 kubelet 메트릭을 필터링합니다.
 
 &nbsp;
 
@@ -280,11 +280,15 @@ newrelic-infrastructure:
 newrelic-infrastructure:
   common:
     config:
-      matchExpressions:
-        - {key: newrelic.com/scrape, operator: NotIn, values: ["false"]}
+      namespaceSelector:
+        matchExpressions:
+          - {key: newrelic.com/scrape, operator: NotIn, values: ["false"]}
 ```
 
 실제 서비스와 연관된 Namespace만 모니터링하도록 하면 비용을 절감할 수 있습니다.
+
+**관련문서**  
+[newrelic-infrastructure values](https://github.com/newrelic/nri-kubernetes/tree/main/charts/newrelic-infrastructure#values)
 
 &nbsp;
 
@@ -300,4 +304,4 @@ spec:
 + revisionHistoryLimit: 0
 ```
 
-기본값 `10`에서 `0`으로 줄이는 경우, **20%의 데이터를 절감**할 수 있습니다. 대신 Deployment의 률백이 필요없는 경우에만 `revisionHistoryLimit`을 `0`으로 지정하도록 합니다.
+`revisionHistoryLimit`을 기본값 `10` → `0`으로 줄이는 경우, **20%의 데이터를 절감**할 수 있습니다. 대신 Deployment의 률백이 필요없는 경우에만 `revisionHistoryLimit`을 `0`으로 지정하도록 합니다.
