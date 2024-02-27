@@ -95,3 +95,12 @@ Mar 2018 ― Feb 2022
 ### Certification
 
 ![HCVA](./images/8-hcva.png " ") &nbsp; ![CKA](./images/6-cka.png "Certified Kubernetes Administrator. 2022.09.13 ― 2025.09.13.") &nbsp; ![SAP](./images/5-sap.png "AWS Certified Solutions Architect - Professional. 2023.05.21 - 2026.05.21") &nbsp; ![DVA](./images/4-dva.png "AWS Certified Developer - 2023.05.18 - 2026.05.18") &nbsp; ![SOA](./images/3-soa.png "AWS Certified SysOps Administrator - 2023.05.13 - 2026.05.13") &nbsp; ![CLF](./images/2-clf.png "AWS Certified Cloud Practitioner - 2023.05.04 - 2026.05.21") &nbsp; ![SAA](./images/1-saa.png "AWS Certified Solutions Architect - Associate. 2020.06.26 ― 2026.05.21")
+
+&nbsp;
+
+### Travel Log
+
+**2011**: Shanghai, 🇨🇳 China  
+**2016/11** : Tokyo, 🇯🇵 Japan  
+**2023/11 - 2023/12** : Las Vegas, 🇺🇸 USA  
+**2024/02** : Osaka and Kyoto, 🇯🇵 Japan  
