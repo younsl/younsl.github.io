@@ -292,6 +292,56 @@ newrelic-infrastructure:
 
 &nbsp;
 
+#### 쿠버네티스 리소스 필터링
+
+불필요한 쿠버네티스 리소스를 메트릭 수집에서 제외합니다.
+
+```yaml
+# nri-bundle/values.yaml
+# nri-bundle chart version v5.0.18
+newrelic-infrastructure:
+  ...
+
+kube-state-metrics:
+  # kube-state-metrics.enabled -- Install the [`kube-state-metrics` chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics) from the stable helm charts repository.
+  # This is mandatory if `infrastructure.enabled` is set to `true` and the user does not provide its own instance of KSM version >=1.8 and <=2.0. Note, kube-state-metrics v2+ disables labels/annotations
+  # metrics by default. You can enable the target labels/annotations metrics to be monitored by using the metricLabelsAllowlist/metricAnnotationsAllowList options described [here](https://github.com/prometheus-community/helm-charts/blob/159cd8e4fb89b8b107dcc100287504bb91bf30e0/charts/kube-state-metrics/values.yaml#L274) in
+  # your Kubernetes clusters.
+  enabled: true
+
+  collectors:
+  # - certificatesigningrequests
+  # - configmaps
+  # - cronjobs
+  # - daemonsets
+  - deployments
+  # - endpoints
+  # - horizontalpodautoscalers
+  - ingresses
+  # - jobs
+  # - leases
+  # - limitranges
+  # - mutatingwebhookconfigurations
+  - namespaces
+  # - networkpolicies
+  - nodes
+  # - persistentvolumeclaims
+  # - persistentvolumes
+  # - poddisruptionbudgets
+  - pods
+  # - replicasets
+  # - replicationcontrollers
+  # - resourcequotas
+  # - secrets
+  # - services
+  - statefulsets
+  # - storageclasses
+  # - validatingwebhookconfigurations
+  # - volumeattachments
+```
+
+&nbsp;
+
 #### Deployment 히스토리 보관 수 조정
 
 ```diff
@@ -305,3 +355,24 @@ spec:
 ```
 
 `revisionHistoryLimit`을 기본값 `10` → `0`으로 줄이는 경우, **20%의 데이터를 절감**할 수 있습니다. 대신 Deployment의 률백이 필요없는 경우에만 `revisionHistoryLimit`을 `0`으로 지정하도록 합니다.
+
+&nbsp;
+
+### 비용절감 효과
+
+적용한 nri-bundle 상세설정
+
+- Low data mode 켜기 (global)
+- 메트릭 샘플링 주기 변경 (newrelic-infrastructure 차트)
+- 쿠버네티스 리소스 필터링 (kube-state-metrics 차트)
+- Deployment 히스토리 보관 수 조정 (쿠버네티스 네이티브한 설정)
+
+&nbsp;
+
+위 기법 적용시 다음과 같이 수집된 데이터 비용이 절감되었습니다.
+
+| Source | 적용 전 한달 | 적용 후 한달 | 절감율 |
+|--------|-----------|-----------|-------|
+| Infrastructure integrations | 18,260 GB | 6,387 GB | 약 64% 절감 |
+| Infrastructure processes | 257 GB | 443 GB | - |
+| Metrics | 9,039 GB | 7,902 GB | 약 10% 절감 |
