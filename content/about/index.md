@@ -43,7 +43,7 @@ AWS, GCP, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops
 - Build and operate Github Enterprise Server, Github Enterprise backup utilities and Actions Runner Controller.
 - Build and operate MSK Cluster and OpenSearch Cluster.
 - Migrate github enterprise backup server <sup>[backup-utils](https://github.com/github/backup-utils)</sup> workload from EC2 to EKS CronJob for leveraging dedicated EKS cluster.
-- Develop and release [backup-utils-chart](https://github.com/younsl/backup-utils-chart) project as a maintainer.
+- Develop and release [backup-utils-chart](https://github.com/younsl/charts/tree/main/charts/backup-utils) project as a maintainer.
 - Provision and operate multi-account AWS infrastructure using terraform modules.
 - Integrate private networking between GCP and AWS to connect GCP Service APIs from EKS Pods.
 

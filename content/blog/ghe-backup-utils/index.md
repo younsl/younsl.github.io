@@ -789,7 +789,7 @@ Backup progress: 138.00 % (25 / 18 ) ghe-backup-es-rsync took 1s
 그래서 백업서버 인프라를 쿠버네티스 클러스터에 CronJob 형태로 운영하는 결정을 했습니다. gp3 타입의 EBS 볼륨에 백업 데이터를 증적하는 메커니즘은 동일합니다.  
 다만 백업을 수행하는 주체가 EC2 대신 `CronJob`이 주기적으로 스케줄링하는 `Pod`로 바뀐다는 점이 가장 큰 차이점입니다.
 
-이에 대한 설치 방법은 이 글의 주제를 벗어나므로 생략하겠습니다. 더 관심 있으신 분들은 제가 개발한 [backup-utils-chart](https://github.com/younsl/backup-utils-chart) 레포지터리를 확인하세요.
+이에 대한 설치 방법은 이 글의 주제를 벗어나므로 생략하겠습니다. 더 관심 있으신 분들은 제가 개발한 [backup-utils-chart](https://github.com/younsl/charts/tree/main/charts/backup-utils) 레포지터리를 확인하세요.
 
 &nbsp;
 
