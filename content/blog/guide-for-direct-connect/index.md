@@ -41,8 +41,9 @@ AWS Direct Connect는 회사 내부 네트워크 혹은 기존 데이터 센터 
 
 #### Direct Connect Locations
 
-2022년 12월 18일 기준으로 서울 리전의 계약 가능한 Direct Connect Location 목록
+2024년 3월 6일 기준으로 서울 리전의 계약 가능한 Direct Connect Location 목록
 
+- Digital Realty ICN10, Seoul, South Korea
 - KINX, Seoul, South Korea
 - LG U+ Pyeong-Chon Mega Center, Seoul, South Korea
 
