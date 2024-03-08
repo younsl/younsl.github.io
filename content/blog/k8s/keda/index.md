@@ -417,4 +417,9 @@ Changes in replicas 패널에서는 파드 개수 유지, 스케일 인/아웃�
 
 ## 참고자료
 
+**KEDA**  
+[KEDA 홈페이지](https://keda.sh/)  
+[KEDA charts](https://github.com/kedacore/charts)
+
+**Graceful Shutdown**  
 [Kubernetes Graceful Shutdown](https://www.allssu.com/blog/kubernetes-graceful-shutdown/)

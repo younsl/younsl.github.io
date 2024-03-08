@@ -100,7 +100,7 @@ Mar 2018 ― Feb 2022
 
 ### Travel Log
 
-**2011**: Shanghai, 🇨🇳 China  
-**2016/11** : Tokyo, 🇯🇵 Japan  
-**2023/11 - 2023/12** : Las Vegas, 🇺🇸 USA  
 **2024/02** : Osaka and Kyoto, 🇯🇵 Japan  
+**2023/11 - 2023/12** : Las Vegas, 🇺🇸 USA  
+**2016/11** : Tokyo, 🇯🇵 Japan  
+**2011**: Shanghai, 🇨🇳 China
