@@ -24,9 +24,13 @@ KEDA 설치 및 운영 가이드입니다.
 
 ### KEDA
 
-[KEDA](https://keda.sh)는 Kubernetes에서 애플리케이션의 이벤트 기반 자동 스케일링을 가능하게 하는 확장 프레임워크입니다. 이는 클라우드 네이티브 애플리케이션이 리소스 사용량에 따라 탄력적으로 스케일 업과 스케일 다운을 할 수 있도록 지원합니다. KEDA는 다양한 이벤트 소스(예: 메시지 큐, 데이터베이스, 파일 시스템 등)로부터 발생하는 이벤트를 감지하고, 이에 기반하여 파드(Pod)의 수를 자동으로 조절합니다. 이를 통해 애플리케이션은 실시간 트래픽 변화에 더 민감하게 반응하면서도, 불필요한 리소스 사용을 최소화할 수 있습니다.
+![KEDA](./1.png)
 
-![KEDA 구성](./1.png)
+[KEDA](https://keda.sh)는 Kubernetes Event-driven Autoscaling의 줄임말로, Kubernetes에서 애플리케이션의 이벤트 기반 자동 스케일링을 가능하게 하는 확장 프레임워크입니다.
+
+이는 클라우드 네이티브 애플리케이션이 리소스 사용량에 따라 탄력적으로 스케일 업과 스케일 다운을 할 수 있도록 지원합니다. KEDA는 다양한 이벤트 소스(예: 메시지 큐, 데이터베이스, 파일 시스템 등)로부터 발생하는 이벤트를 감지하고, 이에 기반하여 파드(Pod)의 수를 자동으로 조절합니다. 이를 통해 애플리케이션은 실시간 트래픽 변화에 더 민감하게 반응하면서도, 불필요한 리소스 사용을 최소화할 수 있습니다.
+
+![KEDA 구성](./2.png)
 
 &nbsp;
 
@@ -303,7 +307,7 @@ keda:
 
 &nbsp;
 
-어플리케이션 헬름 차트가 배포되면 scaledObject와 HPA가 deployment에 붙어서 생성됩니다.
+어플리케이션 헬름 차트가 배포되면 scaledObject와 HPA가 deployment에 붙어서 생성됩니다. KEDA는 scaledObject 리소스만 만들어지면 HPA도 같이 자동생성되도록 동작합니다.
 
 ```bash
 kubectl get scaledobject,hpa -n default
@@ -319,12 +323,11 @@ horizontalpodautoscaler.autoscaling/keda-hpa-example-app-newrelic-throughput-sca
 
 scaledObject는 지정된 스케일러를 통해 메트릭을 주기적으로 수집하며 기준에 맞게 HorizontalPodAutoscaler의 Replicas 개수를 제어하게 됩니다.
 
-![KEDA 구성](./1.png)
+![KEDA 구성](./2.png)
 
 &nbsp;
 
-
-## 우아한 종료 고려
+### 우아한 종료(Graceful Shutdown) 처리
 
 KEDA와 HPA를 Deployment에 붙이게 되면 파드의 개수 변경에 의해 특정 파드 종료가 발생할 수 있습니다. 파드 오토스케일링 상황에서 파드의 확장<sup>Scale out</sup>은 대부분 큰 문제가 없지만, 축소<sup>Scale in</sup>될 때에는 클라이언트의 Connection 소실이 발생할 가능성이 있습니다.
 
@@ -334,9 +337,9 @@ KEDA와 HPA를 Deployment에 붙이게 되면 파드의 개수 변경에 의해 
 
 &nbsp;
 
-### 우아한 종료 관련 설정
+#### 우아한 종료 관련 설정
 
-#### preStop 훅
+##### preStop 훅
 
 HPA에 의해 파드 축소가 발생할 경우, 애플리케이션이 일찍 종료되지 않도록 커맨드 부분에 애플리케이션에서 가장 길게 실행되는 프로세스의 완료가 보장되는 최대 시간보다 길게 유휴시간을 갖도록 설정합니다.
 
@@ -363,7 +366,7 @@ spec:
 
 &nbsp;
 
-#### tGPS
+##### tGPS
 
 `spec.terminationGracePeriodSeconds` 값
 
@@ -395,7 +398,7 @@ terminationGracePeriodSeconds ≥ preStop 실행 시간 + 어플리케이션 종
 
 사전에 미리 만들어진 [Grafana 대시보드](https://github.com/kedacore/keda/blob/main/config/grafana/keda-dashboard.json)를 사용하여 KEDA 측정항목 어댑터에서 노출된 메트릭 정보를 시각화할 수 있습니다.
 
-![Grafana Dashboard 전체](./2.png)
+![Grafana Dashboard 전체](./3.png)
 
 대시보드에는 두 개의 섹션이 있습니다.
 
@@ -404,7 +407,7 @@ terminationGracePeriodSeconds ≥ preStop 실행 시간 + 어플리케이션 종
 
 &nbsp;
 
-![Grafana Dashboard의 Changes in replicas](./3.png)
+![Grafana Dashboard의 Changes in replicas](./4.png)
 
 Changes in replicas 패널에서는 파드 개수 유지, 스케일 인/아웃이 발생한 타이밍들을 모아 색깔별로 표시해 보여줍니다.
 
