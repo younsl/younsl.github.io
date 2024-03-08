@@ -178,7 +178,7 @@ replicaset.apps/keda-operator-metrics-apiserver-bd4dd4d6d    1         1        
 
 &nbsp;
 
-## 어플리케이션 적용
+## 어플리케이션 차트에 KEDA 추가
 
 KEDA 차트를 설치했으면 어플리케이션에 파드 오토 스케일링 적용이 준비 완료된 것입니다.
 
@@ -391,6 +391,50 @@ spec:
 ```bash
 terminationGracePeriodSeconds ≥ preStop 실행 시간 + 어플리케이션 종료 시간
 ```
+
+&nbsp;
+
+### ArgoCD
+
+#### 파드 개수 변경에 의한 OutOfSync 발생시 해결방법
+
+**문제점**  
+KEDA(+ HPA)를 deployment에 붙이게 되면 파드 오토스케일링이 되어 파드 개수가 유동적으로 조절됩니다. 해당 Deployment가 ArgoCD에 의해 배포된 경우, ArgoCD는 deployment의 상태값이 일치하지 않은 걸로 인지하게 되어 해당 Application의 현재 Sync 상태<sup>Current Sync Status</sup>를 Synced가 아닌 OutOfSync로 표시합니다.
+
+![ArgoCD OutOfSync 시나리오](./5.png)
+
+이는 실제 Application의 문제를 일으키지는 않지만 클러스터 관리자나 ArgoCD 사용자가 볼 때 문제가 생긴 거라고 잘못 판단할 수 있는 오해의 소지가 있기 때문에 이를 예외처리하여 정상 상태로 표시시킬 필요가 있습니다.
+
+&nbsp;
+
+**해결방법**  
+ArgoCD로 배포된 어플리케이션에서 deployment 리소스의 `/spec/replicas` 값의 비교를 하지 않도록 무시 처리해야만 합니다.
+
+&nbsp;
+
+**코드 예제**  
+ArgoCD Application 스펙에 아래와 같이 `ignoreDiffernces`를 추가합니다.  
+아래 예제 애플리케이션은 `example-app` 어플리케이션에 포함된 모든 Deployment 리소스에 대해 `spec.replicas` 값의 차이점을 무시하도록 설정합니다.
+
+```diff
+# argocd application CRD
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: example-app
+  ...
+spec:
+  ...
++ ignoreDifferences:
++ - group: apps
++   kind: Deployment
++   jsonPointers:
++     - /spec/replicas
+```
+
+
+
+자세한 해결방법은 ArgoCD 공식문서의 [Diffing Customization](https://argo-cd.readthedocs.io/en/release-1.8/user-guide/diffing/#application-level-configuration) 페이지를 참고합니다.
 
 &nbsp;
 
