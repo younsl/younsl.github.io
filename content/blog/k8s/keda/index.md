@@ -47,15 +47,20 @@ Kubernetes는 컨테이너화된 애플리케이션의 배포, 스케일링 및 
 
 ## KEDA 설치
 
-KEDA Operator를 helm 차트 방식으로 설치합니다.
+KEDA Operator를 helm 차트 방식으로 설치하는 일련의 과정을 소개합니다.
 
 &nbsp;
 
-이 가이드에서는 로컬에 차트를 다운로드 받은 후, `values.yaml` 설정을 수정한 후 설치하는 과정으로 진행합니다.
+### 버전 호환성 확인
+
+클러스터 버전에 호환되는 KEDA 버전을 맞춰야 합니다.
+KEDA 공식문서의 [**Kubernetes Comptability**](https://keda.sh/docs/2.13/operate/cluster/#kubernetes-compatibility) 페이지를 참고해서 KEDA 버전별로 지원되는 k8s 버전을 확인하고, 설치할 클러스터와 버전 문제가 없는지를 미리 확인합니다.
 
 &nbsp;
 
 ### 차트 다운로드
+
+이 가이드에서는 `helm repo add` 명령어 방식이 아닌 로컬에 KEDA 헬름 차트를 다운로드 받은 후, `values.yaml` 설정을 수정한 후 설치하는 과정으로 진행합니다.
 
 Github Cloud에 올라와 있는 [keda](https://github.com/kedacore/charts/tree/main/keda) 공식 헬름차트를 로컬에 다운로드 받습니다.
 
@@ -66,13 +71,15 @@ cd charts/keda/
 
 &nbsp;
 
+### 차트 values 설정
+
 `values.yaml`을 수정합니다.
 
-### 차트 values 설정
+&nbsp;
 
 #### 파드 고가용성 구성
 
-고가용성을 위해 `operator.replicaCount`를 기본값 `1`에서 `2`로 수정합니다. operator 파드가 2개로 배포됩니다.
+고가용성<sup>High Availability</sup>을 위해 `operator.replicaCount`를 기본값 `1`에서 `2`로 수정합니다. KEDA Operator 파드가 2개로 배포됩니다.
 
 ```diff
 # values.yaml
@@ -119,7 +126,10 @@ prometheus:
 `prometheus.metricServer.enabled`와 `prometheus.operaotr.enabled` 설정을 활성화(`true`)한 상태로 KEDA를 배포하게 되면 아래와 같이 서비스 리소스의 `8080/TCP` 포트로 메트릭 수집용 포트가 추가로 뜨게 됩니다.
 
 ```bash
-$ kubectl get svc -n keda -o wide
+kubectl get service -n keda -o wide
+```
+
+```bash
 NAME                              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)             AGE    SELECTOR
 keda-admission-webhooks           ClusterIP   172.20.xx.xx    <none>        443/TCP             129d   app=keda-admission-webhooks
 keda-operator                     ClusterIP   172.20.xxx.xx   <none>        9666/TCP,8080/TCP   129d   app=keda-operator
