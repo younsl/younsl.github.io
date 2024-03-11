@@ -1,7 +1,7 @@
 ---
 title: "keda"
 date: 2024-03-07T18:08:15+09:00
-lastmod: 2024-03-07T18:08:15+09:00
+lastmod: 2024-03-11T11:12:15+09:00
 slug: ""
 description: "Kubernetes Event Driven Autoscaler"
 keywords: []
