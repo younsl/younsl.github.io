@@ -408,6 +408,8 @@ spec:
 
 예를 들어, 애플리케이션이 완전히 종료되는데 걸리는 시간이 5초라면 `preStop`에서 유휴기간을 50초로 설정, `spec.terminationGracePeriodSeconds` 옵션을 50초보다 긴 55초로 설정하는 등의 전략을 사용할 수 있습니다. 여러 가지 값들을 설정해 보고 파드를 종료하는 테스트를 통해 최적화하는 것이 좋습니다.
 
+![Graceful shutdown in container lifecycle](./5.png)
+
 ```bash
 terminationGracePeriodSeconds ≥ preStop 실행 시간 + 어플리케이션 종료 시간
 ```
@@ -421,7 +423,7 @@ terminationGracePeriodSeconds ≥ preStop 실행 시간 + 어플리케이션 종
 **문제점**  
 KEDA(+ HPA)를 deployment에 붙이게 되면 파드 오토스케일링이 되어 파드 개수가 유동적으로 조절됩니다. 해당 Deployment가 ArgoCD에 의해 배포된 경우, ArgoCD는 deployment의 상태값이 일치하지 않은 걸로 인지하게 되어 해당 Application의 현재 Sync 상태<sup>Current Sync Status</sup>를 Synced가 아닌 OutOfSync로 표시합니다.
 
-![ArgoCD OutOfSync 시나리오](./5.png)
+![ArgoCD OutOfSync 시나리오](./6.png)
 
 이는 실제 Application의 문제를 일으키지는 않지만 클러스터 관리자나 ArgoCD 사용자가 볼 때 문제가 생긴 거라고 잘못 판단할 수 있는 오해의 소지가 있기 때문에 이를 예외처리하여 정상 상태로 표시시킬 필요가 있습니다.
 
@@ -451,8 +453,6 @@ spec:
 +   jsonPointers:
 +     - /spec/replicas
 ```
-
-
 
 자세한 해결방법은 ArgoCD 공식문서의 [Diffing Customization](https://argo-cd.readthedocs.io/en/release-1.8/user-guide/diffing/#application-level-configuration) 페이지를 참고합니다.
 
