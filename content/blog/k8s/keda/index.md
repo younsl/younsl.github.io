@@ -148,6 +148,8 @@ keda-operator-metrics-apiserver   ClusterIP   172.20.xx.xxx   <none>        443/
 
 &nbsp;
 
+### 헬름 차트 설치
+
 KEDA 헬름 차트를 클러스터에 설치합니다.
 
 ```bash
@@ -195,6 +197,52 @@ replicaset.apps/keda-operator-metrics-apiserver-6b4fff47cb   0         0        
 replicaset.apps/keda-operator-metrics-apiserver-765945cb4f   0         0         0       129d
 replicaset.apps/keda-operator-metrics-apiserver-bd4dd4d6d    1         1         1       9d
 ```
+
+&nbsp;
+
+### KEDA 커스텀 리소스 확인
+
+KEDA에서 사용하는 커스텀 리소스를 확인합니다.
+
+```bash
+kubectl api-resources --api-group keda.sh
+```
+
+```bash
+NAME                            SHORTNAMES               APIVERSION         NAMESPACED   KIND
+clustertriggerauthentications   cta,clustertriggerauth   keda.sh/v1alpha1   false        ClusterTriggerAuthentication
+scaledjobs                      sj                       keda.sh/v1alpha1   true         ScaledJob
+scaledobjects                   so                       keda.sh/v1alpha1   true         ScaledObject
+triggerauthentications          ta,triggerauth           keda.sh/v1alpha1   true         TriggerAuthentication
+```
+
+KEDA(Kubernetes Event-Driven Autoscaling)는 Kubernetes에서 이벤트 기반의 자동 스케일링을 가능하게 하는 프로젝트로, 다양한 이벤트 소스에 반응하여 워크로드의 스케일을 동적으로 조정합니다. KEDA는 커스텀 리소스 정의<sup>Custom Resource Definitions, CRDs</sup>를 사용하여 Kubernetes 클러스터 내에서 이러한 기능을 구현합니다. 여기서 언급한 두 가지 주요 커스텀 리소스는 다음과 같습니다.
+
+&nbsp;
+
+#### ScaledObject
+
+ScaledObject는 KEDA가 이벤트 소스로부터 워크로드(주로 Kubernetes Deployments, Jobs)의 스케일을 어떻게 조정할지 정의하는 커스텀 리소스입니다. 이를 통해 워크로드가 이벤트의 발생 빈도에 따라 자동으로 스케일 업/다운 할 수 있습니다.
+
+ScaledObject를 사용하여, 예를 들어, Kafka 토픽에 메시지가 쌓일 때마다 관련된 처리를 담당하는 Deployment의 파드 인스턴스 수를 늘릴 수 있습니다. 메시지 큐가 비워지면, 스케일이 다운되어 자원을 절약할 수 있습니다.
+
+ScaledObject에는 이벤트 소스, 대상 리소스(스케일 대상), 스케일링 정책(최소/최대 스케일, 트리거 세부 정보 등) 등을 지정할 수 있는 필드가 포함되어 있습니다.
+
+&nbsp;
+
+#### TriggerAuthentication
+
+TriggerAuthentication은 KEDA가 이벤트 소스에 안전하게 연결하기 위해 필요한 인증 정보를 정의하는 커스텀 리소스입니다. 이는 특정 스케일링 작업에 필요한 인증 메커니즘(예: API 키, 토큰, 시크릿 등)을 안전하게 저장하고 관리하는 방법을 제공합니다.
+
+예를 들어, Azure Service Bus나 AWS SQS와 같은 클라우드 서비스를 이벤트 소스로 사용하는 경우, 이 서비스들에 접근하기 위해 필요한 인증 정보를 TriggerAuthentication 리소스에 저장할 수 있습니다. 이렇게 하면, 해당 인증 정보를 사용하여 KEDA가 해당 이벤트 소스를 모니터링하고 워크로드의 스케일을 조정할 수 있습니다.
+
+![triggerAuthentication 구성](./3.png)
+
+TriggerAuthentication 리소스는 Kubernetes Secret, Hashicorp Vault, AWS Secrets Manager를 포함해 다양한 인증 방법을 지원하며, 이에 필요한 인증 정보(시크릿 참조, 토큰, API 키 등)를 안전하게 저장합니다.
+
+&nbsp;
+
+이 두 커스텀 리소스를 통해 KEDA는 Kubernetes에서의 이벤트 기반 스케일링을 매우 유연하고 효과적으로 구현할 수 있습니다.
 
 &nbsp;
 
@@ -408,7 +456,7 @@ spec:
 
 예를 들어, 애플리케이션이 완전히 종료되는데 걸리는 시간이 5초라면 `preStop`에서 유휴기간을 50초로 설정, `spec.terminationGracePeriodSeconds` 옵션을 50초보다 긴 55초로 설정하는 등의 전략을 사용할 수 있습니다. 여러 가지 값들을 설정해 보고 파드를 종료하는 테스트를 통해 최적화하는 것이 좋습니다.
 
-![Graceful shutdown in container lifecycle](./5.png)
+![Graceful shutdown in container lifecycle](./4.png)
 
 ```bash
 terminationGracePeriodSeconds ≥ preStop 실행 시간 + 어플리케이션 종료 시간
@@ -423,7 +471,7 @@ terminationGracePeriodSeconds ≥ preStop 실행 시간 + 어플리케이션 종
 **문제점**  
 KEDA(+ HPA)를 deployment에 붙이게 되면 파드 오토스케일링이 되어 파드 개수가 유동적으로 조절됩니다. 해당 Deployment가 ArgoCD에 의해 배포된 경우, ArgoCD는 deployment의 상태값이 일치하지 않은 걸로 인지하게 되어 해당 Application의 현재 Sync 상태<sup>Current Sync Status</sup>를 Synced가 아닌 OutOfSync로 표시합니다.
 
-![ArgoCD OutOfSync 시나리오](./6.png)
+![ArgoCD OutOfSync 시나리오](./5.png)
 
 이는 실제 Application의 문제를 일으키지는 않지만 클러스터 관리자나 ArgoCD 사용자가 볼 때 문제가 생긴 거라고 잘못 판단할 수 있는 오해의 소지가 있기 때문에 이를 예외처리하여 정상 상태로 표시시킬 필요가 있습니다.
 
@@ -462,7 +510,7 @@ spec:
 
 사전에 미리 만들어진 [Grafana 대시보드](https://github.com/kedacore/keda/blob/main/config/grafana/keda-dashboard.json)를 사용하여 KEDA 측정항목 어댑터에서 노출된 메트릭 정보를 시각화할 수 있습니다.
 
-![Grafana Dashboard 전체](./3.png)
+![Grafana Dashboard 전체](./6.png)
 
 대시보드에는 두 개의 섹션이 있습니다.
 
@@ -471,7 +519,7 @@ spec:
 
 &nbsp;
 
-![Grafana Dashboard의 Changes in replicas](./4.png)
+![Grafana Dashboard의 Changes in replicas](./7.png)
 
 Changes in replicas 패널에서는 파드 개수 유지, 스케일 인/아웃이 발생한 타이밍들을 모아 색깔별로 표시해 보여줍니다.
 
