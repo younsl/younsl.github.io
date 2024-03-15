@@ -213,13 +213,43 @@ curl \
 
 &nbsp;
 
-## 싱글 노드 설정
+## 클러스터 인프라 관리
 
-1개의 데이터 노드로 구성된 ElasticSearch 클러스터의 권장 설정은 [single-node-es.md](https://gist.github.com/angristan/9d251d853d11f265899b8a4725bff756) 문서를 참고합니다.
+### 볼륨 업그레이드
+
+OpenSearch 서비스에 의해 만들어진 ElasticSearch 클러스터는 스토리지로 EBS를 사용합니다. 관리자는 스토리지의 용량과 스펙을 변경할 수 있지만, 관리형 서비스의 특성상 크게 추상화되어 있으므로 EC2의 EBS Volume 정도로 디테일하게까지는 관리하지는 못합니다.
+
+기존에 OpenSearch 클러스터의 스토리지 용량을 늘리면 blue-green 배포가 진행되어 잠깐의 다운타임이 발생했지만, 2024년 2월 14일부터는 EC2와 동일하게 무중단으로 클러스터 볼륨 업데이트가 가능하므로 다운타임 없는 볼륨 설정 변경을 지원합니다.
+
+**관련 뉴스**  
+[Amazon OpenSearch Service, 이제 블루/그린 없이 클러스터 볼륨 업데이트 가능](https://aws.amazon.com/ko/about-aws/whats-new/2024/02/amazon-opensearch-service-update-cluster-volume-without-blue-green/)
 
 &nbsp;
 
-### 신규 인덱스의 Default 설정
+[**blue-green 배포가 발생하는 스토리지 작업 유형**](https://docs.aws.amazon.com/ko_kr/opensearch-service/latest/developerguide/managedomains-configuration-changes.html#bg)
+
+- EBS 볼륨 크기 줄이기
+- EBS 볼륨 크기, IOPS 및 처리량 변경 (마지막 변경이 진행 중이거나 다른 변경을 시도하기 전에 6시간 이상 기다리지 않은 경우)
+
+[**blue-green 배포가 발생하지 않는 스토리지 작업 유형**](https://docs.aws.amazon.com/ko_kr/opensearch-service/latest/developerguide/managedomains-configuration-changes.html#nobg)
+
+- 볼륨 크기 증가, 볼륨 유형, IOPS 및 처리량을 데이터 노드 볼륨 크기당 최대 3TiB까지 변경
+
+&nbsp;
+
+### 싱글 노드 설정
+
+싱글 노드로 구성된 ElasticSearch 클러스터의 권장 설정은 [single-node-es.md](https://gist.github.com/angristan/9d251d853d11f265899b8a4725bff756) 문서를 참고합니다.
+
+![Data node infrastructure diagram](./2.png)
+
+- 데이터 노드 1대
+- 샤드<sup>shard</sup> 1개
+- 복제본<sup>replica</sup> 없음 (0개)
+
+&nbsp;
+
+#### 신규 인덱스의 Default 설정
 
 기본 인덱스 템플릿 설정을 업데이트합니다.
 
@@ -284,7 +314,7 @@ curl \
 
 &nbsp;
 
-### 기존 인덱스 설정
+#### 기존 인덱스 설정
 
 기존 인덱스 설정을 확인합니다.
 
@@ -320,7 +350,7 @@ curl \
 
 ### ISM Policy
 
-![ISM Policy](./2.png)
+![ISM Policy](./3.png)
 
 인덱스는 처음에 hot 상태입니다. 2일 후 ISM이 인덱스를 old 상태로 전환합니다. old 상태로 전환될 떄 스토리지 공간 절약을 위해 인덱스 복제본<sup>Replicas</sup>을 0으로 변경합니다. 인덱스가 3일을 경과한 후에는 ISM이 인덱스를 삭제합니다.
 
@@ -425,4 +455,4 @@ ElasticSearch 도메인의 버전 업그레이드 완료 직후 Kibana 접근 �
 
 AWS 엔지니어가 수동 조치<sup>Manual Intervention</sup> 처리해서 해결할 수 있습니다. 이 Manual Intervention은 AWS 사용자가 Support 티켓을 올려야하며, AWS 내부팀 에스컬레이션이 된 후 처리됩니다.
 
-![Kibana 조치 다이어그램](./3.png)
+![Kibana 조치 다이어그램](./4.png)
