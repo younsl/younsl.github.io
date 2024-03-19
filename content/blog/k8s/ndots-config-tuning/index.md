@@ -275,8 +275,13 @@ options ndots:1
 
 ## 참고자료
 
+**DNS Config**  
 [How to change ndots option default value of dns in Kubernetes](https://stackoverflow.com/questions/70264378/how-to-change-ndots-option-default-value-of-dns-in-kubernetes)  
 ndots 설정 방법
 
+[Pod's DNS Config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config)  
+Kubernetes 공식문서에 언급된 Pod 에서 DNS 설정 추가하기
+
+**CoreDNS**  
 [Kubernetes의 DNS, CoreDNS를 알아보자](https://jonnung.dev/kubernetes/2020/05/11/kubernetes-dns-about-coredns/)  
 CoreDNS를 쉽고 명확하게 설명한 좋은 글입니다.
