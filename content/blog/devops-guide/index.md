@@ -1,7 +1,7 @@
 ---
 title: "DevOps Guide"
 date: 2023-07-30T15:38:15+09:00
-lastmod: 2023-11-30T03:43:25+09:00
+lastmod: 2024-03-19T18:08:25+09:00
 slug: ""
 description: "DevOps Engineer를 위한 가이드"
 keywords: []
@@ -82,6 +82,9 @@ DevOps 학습 로드맵
 
 [gruuuuu](https://gruuuuu.github.io/)  
 🇰🇷 Cloud Engineer @IBM
+
+[Support Tools](https://support.tools/)  
+🇺🇸 Principal Support Engineer
 
 [Nelson Figueroa](https://nelsonfigueroa.dev/)  
 🇺🇸 Software Engineer
