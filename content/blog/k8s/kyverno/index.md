@@ -58,6 +58,7 @@ OPA와 Kyverno 둘다 사용해본 AWS Solutions Architect의 경우, OPA 보다
 | 1.9.x | 1.24 | 1.26 |
 | 1.10.x | 1.24 | 1.26 |
 | 1.11.x | 1.25 | 1.28 |
+| 1.12.x | 1.26 | 1.29 |
 
 자세한 사항은 Kyverno 공식문서 [Compatibility Matrix](https://kyverno.io/docs/installation/#compatibility-matrix) 페이지를 참고합니다.
 
@@ -151,12 +152,12 @@ reportsController.replicas: 2
 
 ### 설치방식
 
-#### 필요 차트
+#### 필요 helm chart
 
-Kyverno를 운영하려면 2개의 헬름 차트 설치가 필요합니다.
+Kyverno를 운영하려면 2개의 helm chart 설치가 필요합니다.
 
-- **kyvenro** : (Required) Kyverno 정책 엔진 헬름 차트. kyverno 정책 엔진 관련 리소스는 모두 전용 네임스페이스인 `kyverno`에 위치하게 됩니다.
-- **kyverno-policies** : (Required) ClusterPolicy를 모아놓은 헬름 차트
+- **kyverno** : (Required) Kyverno 정책 엔진 helm chart. kyverno 정책 엔진 관련 리소스는 모두 전용 네임스페이스인 `kyverno`에 위치하게 됩니다.
+- **kyverno-policies** : (Required) ClusterPolicy를 모아놓은 helm chart
 - **policy-reporter** : (Optional) 클러스터 정책 현황을 시각화해주는 Web UI 컴포넌트입니다. 조직의 요구사항에 따라 설치하면 되며, `policy-reporter` 대신 Prometheus + Grafana 연동으로 대체할 수 있습니다.
 
 Kyverno는 [설치 방식](https://kyverno.io/docs/installation/methods/)<sup>Installation method</sup>으로 [오퍼레이터 패턴](https://kubernetes.io/ko/docs/concepts/extend-kubernetes/operator/)을 지원하지 않으며, 헬름 차트와 YAML 직접 설치 방식만 지원하고 있습니다.
@@ -165,27 +166,33 @@ Kyverno는 [설치 방식](https://kyverno.io/docs/installation/methods/)<sup>In
 
 #### 설치 순서
 
-기본적으로 Kyverno 정책 엔진인 `kyverno`를 먼저 설치한 다음, 정책 리소스 모음 차트인 `kyvenro-policies`를 배포합니다.
+기본적으로 Kyverno 정책 엔진인 `kyverno` chart를 먼저 설치한 다음, 정책 리소스 모음인 `kyvenro-policies` chart를 설치합니다.
 
-헬름 차트 레포 구조를 잡는 방법에는 특별한 공식은 없지만, 제 경우는 `git clone`을 사용해서 `kyverno`와 `kyverno-policies` 공식 차트들을 다운로드 받고 `helm install`을 사용해 설치해 운영하는 걸 선호합니다.
+helm chart 레포 구조를 잡는 방법에는 명확한 정답이나 모범 사례는 없습니다. 제 경우는 `git clone`을 사용해서 `kyverno`와 `kyverno-policies` 공식 차트들을 다운로드 받고 `helm install`을 사용해 설치해 운영하는 걸 선호합니다.
 
 아래는 `charts` 레포에 구성해놓은 디렉토리 트리 구조입니다.
 
 ```bash
 charts
 ├── kyverno
-│   ├── values.yaml
+│   ├── values_dev.yaml
+│   ├── values_qa.yaml
+│   ├── values_prd.yaml
 │   ├── Chart.yaml
 │   └── templates/
 └── kyverno-policies
-    ├── values.yaml
+    ├── values_dev.yaml
+    ├── values_qa.yaml
+    ├── values_prd.yaml
     ├── Chart.yaml
     └── templates/
 ```
 
+하나의 차트는 환경별로 `values` 파일이 분리되어 환경마다 자유롭게 차트 설정을 조정할 수 있습니다.
+
 &nbsp;
 
-차트 설치 과정을 그림으로 표현하면 다음과 같습니다.
+헬름 차트 설치 과정을 그림으로 표현하면 다음과 같습니다.
 
 ![helm 차트 설치 과정](./4.png)
 
@@ -684,7 +691,11 @@ reportController:
 이후 `helm upgrade`로 Kyverno 변경사항을 반영합니다.
 
 ```bash
-helm upgrade kyverno . -n kyverno -f values.yaml --wait
+helm upgrade \
+  kyverno . \
+  -n kyverno \
+  -f values.yaml \
+  --wait
 ```
 
 &nbsp;
@@ -700,6 +711,13 @@ kyverno-cleanup-controller      9m42s
 kyverno-reports-controller      9m42s
 ```
 
+[kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) chart에 포함되어 있는 Prometheus Operator의 동작방식을 설명합니다.
+
+1. 클러스터 관리자에 의해 `kyverno` 네임스페이스에 serviceMonitor 리소스가 새로 생성됩니다.
+2. Prometheus Operator는 kyverno servicMonitor를 자동 감지합니다. 기본적으로 Prometheus Operator Pod는 ServiceMonitor 리소스의 생성 및 변경을 지속적으로 감시합니다.
+3. 새로운 ServiceMonitor가 감지되거나 기존의 것이 업데이트되면, Prometheus Operator는 Prometheus Pod의 메트릭 수집<sup>Scrape</sup> 설정을 자동으로 업데이트합니다.
+4. 업데이트된 메트릭 수집<sup>Scrape</sup> 설정에 따라 Prometheus는 지정된 서비스로부터 메트릭을 수집하기 시작합니다.
+
 &nbsp;
 
 메트릭 제공용 서비스의 타입을 `NodePort` 말고 `LoadBalancer` 타입을 쓰는 방법도 있습니다.
@@ -709,3 +727,18 @@ kyverno-reports-controller      9m42s
 1. **ClusterIP** (Default) : 메트릭 제공을 위한 기본 포트로 TCP/8000을 사용합니다.
 2. **NodePort**
 3. **LoadBalancer**
+
+&nbsp;
+
+## 참고자료
+
+**Charts**  
+[kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)  
+[kyverno](https://github.com/kyverno/kyverno/tree/main/charts/kyverno)  
+[kyverno-policies](https://github.com/kyverno/kyverno/tree/main/charts/kyverno-policies)  
+[policy-reporter](https://github.com/kyverno/policy-reporter/tree/main/charts/policy-reporter)
+
+**Kyverno**  
+[Kyverno 공식문서](https://kyverno.io/docs/)  
+[Kyverno 설치 가이드](https://kyverno.io/docs/installation/)  
+[Kyverno Policy 저장소](https://kyverno.io/policies/)
