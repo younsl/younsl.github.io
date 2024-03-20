@@ -711,12 +711,29 @@ kyverno-cleanup-controller      9m42s
 kyverno-reports-controller      9m42s
 ```
 
+&nbsp;
+
+Kyverno의 4개 컨트롤러는 각각 메트릭 수집 전용 포트인 `8000/TCP`을 ClusterIP로 노출하게 됩니다.
+
+```bash
+$ kubectl get svc -n kyverno -o wide
+NAME                                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE    SELECTOR
+kyverno-background-controller-metrics   ClusterIP   172.xx.xxx.xxx   <none>        8000/TCP   223d   app.kubernetes.io/component=background-controller,app.kubernetes.io/instance=kyverno,app.kubernetes.io/part-of=kyverno
+kyverno-cleanup-controller              ClusterIP   172.xx.xxx.xxx   <none>        443/TCP    223d   app.kubernetes.io/component=cleanup-controller,app.kubernetes.io/instance=kyverno,app.kubernetes.io/part-of=kyverno
+kyverno-cleanup-controller-metrics      ClusterIP   172.xx.xx.xx     <none>        8000/TCP   223d   app.kubernetes.io/component=cleanup-controller,app.kubernetes.io/instance=kyverno,app.kubernetes.io/part-of=kyverno
+kyverno-reports-controller-metrics      ClusterIP   172.xx.xxx.xxx   <none>        8000/TCP   223d   app.kubernetes.io/component=reports-controller,app.kubernetes.io/instance=kyverno,app.kubernetes.io/part-of=kyverno
+kyverno-svc                             ClusterIP   172.xx.xxx.xxx   <none>        443/TCP    223d   app.kubernetes.io/component=admission-controller,app.kubernetes.io/instance=kyverno,app.kubernetes.io/part-of=kyverno
+kyverno-svc-metrics                     ClusterIP   172.xx.xx.xx     <none>        8000/TCP   223d   app.kubernetes.io/component=admission-controller,app.kubernetes.io/instance=kyverno,app.kubernetes.io/part-of=kyverno
+```
+
+&nbsp;
+
 [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) chart에 포함되어 있는 Prometheus Operator의 동작방식을 설명합니다.
 
 1. 클러스터 관리자에 의해 `kyverno` 네임스페이스에 serviceMonitor 리소스가 새로 생성됩니다.
 2. Prometheus Operator는 kyverno servicMonitor를 자동 감지합니다. 기본적으로 Prometheus Operator Pod는 ServiceMonitor 리소스의 생성 및 변경을 지속적으로 감시합니다.
 3. 새로운 ServiceMonitor가 감지되거나 기존의 것이 업데이트되면, Prometheus Operator는 Prometheus Pod의 메트릭 수집<sup>Scrape</sup> 설정을 자동으로 업데이트합니다.
-4. 업데이트된 메트릭 수집<sup>Scrape</sup> 설정에 따라 Prometheus는 지정된 서비스로부터 메트릭을 수집하기 시작합니다.
+4. 업데이트된 메트릭 수집<sup>Scrape</sup> 설정에 따라 Prometheus는 지정된 서비스로부터 메트릭을 수집하기 시작합니다. 기본값으로 수집간격 `30s`로 설정되며 이는 serviceMonitor spec에 선언되어 있습니다.
 
 &nbsp;
 
