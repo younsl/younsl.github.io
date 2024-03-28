@@ -215,6 +215,23 @@ curl \
 
 ## 클러스터 인프라 관리
 
+### EFK 스택
+
+ElasticSearch + Fluent-bit(Fluentd) + Kibana 조합을 EFK Stack이라고 합니다.
+
+![EFK Stack](./2.png)
+
+fleunt-bit은 각 노드에 동작하고 있는 파드 로그를 수집한 후, 로그 수집기인 fleuntd로 보냅니다. fleuntd는 수집 후 필터링을 적용하여 S3 버킷이나 ElasticSearch로 로그를 보냅니다.
+
+`fluentd`와 `fluent-bit`은 `fluent` 사에서 제공하는 [공식 helm chart](https://github.com/fluent/helm-charts)를 통해 쿠버네티스 클러스터에 설치하고 운영할 수 있습니다.
+
+`fleuntd`와 `fleunt-bit` 설치 및 운영 방법에는 두 가지 옵션이 있습니다:
+
+1. `fluentd`, `fluent-bit`를 각각의 헬름 차트로 설치하기
+2. `fluent-operator` 헬름 차트를 설치하여 `fluentd`와 `fluent-bit`를 한 번에 관리하고 운영하기
+
+&nbsp;
+
 ### 볼륨 업그레이드
 
 OpenSearch 서비스에 의해 만들어진 ElasticSearch 클러스터는 스토리지로 EBS를 사용합니다. 관리자는 스토리지의 용량과 스펙을 변경할 수 있지만, 관리형 서비스의 특성상 크게 추상화되어 있으므로 EC2의 EBS Volume 정도로 디테일하게까지는 관리하지는 못합니다.
@@ -241,7 +258,7 @@ OpenSearch 서비스에 의해 만들어진 ElasticSearch 클러스터는 스토
 
 싱글 노드로 구성된 ElasticSearch 클러스터의 권장 설정은 [single-node-es.md](https://gist.github.com/angristan/9d251d853d11f265899b8a4725bff756) 문서를 참고합니다.
 
-![Data node infrastructure diagram](./2.png)
+![Data node infrastructure diagram](./3.png)
 
 - 데이터 노드 1대
 - 샤드<sup>shard</sup> 1개
@@ -350,7 +367,7 @@ curl \
 
 ### ISM Policy
 
-![ISM Policy](./3.png)
+![ISM Policy](./4.png)
 
 인덱스는 처음에 hot 상태입니다. 2일 후 ISM이 인덱스를 old 상태로 전환합니다. old 상태로 전환될 떄 스토리지 공간 절약을 위해 인덱스 복제본<sup>Replicas</sup>을 0으로 변경합니다. 인덱스가 3일을 경과한 후에는 ISM이 인덱스를 삭제합니다.
 
@@ -455,4 +472,4 @@ ElasticSearch 도메인의 버전 업그레이드 완료 직후 Kibana 접근 �
 
 AWS 엔지니어가 수동 조치<sup>Manual Intervention</sup> 처리해서 해결할 수 있습니다. 이 Manual Intervention은 AWS 사용자가 Support 티켓을 올려야하며, AWS 내부팀 에스컬레이션이 된 후 처리됩니다.
 
-![Kibana 조치 다이어그램](./4.png)
+![Kibana 조치 다이어그램](./5.png)
