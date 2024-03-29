@@ -213,11 +213,79 @@ curl \
 
 &nbsp;
 
+### 템플릿 조회
+
+전체 인덱스 템플릿 목록을 조회합니다.
+
+```bash
+curl \
+  --location \
+  --request GET \
+  "$ES_ENDPOINT/_cat/templates?pretty"
+```
+
+```bash
+GET _cat/templates?pretty
+```
+
+&nbsp;
+
+실행 결과는 다음과 같이 출력됩니다.
+
+```bash
+template_1 [podlog-*] 1
+template_2 [podlog-*] 2
+template_3 [podlog-*] 3
+default    [*]        -1
+```
+
+각 라인은 한 개의 인덱스 템플릿을 나타냅니다.
+
+- **첫 번째 컬럼**: 템플릿의 이름을 나타냅니다.
+- **두 번째 컬럼**: 해당 템플릿이 적용되는 인덱스 패턴을 나타냅니다. 예를 들어, `[podlog-*]` 패턴은 `podlog-`로 시작하는 모든 인덱스에 해당 템플릿이 적용됨을 의미합니다. `[*]` 패턴은 모든 인덱스에 대해 기본적으로 적용되는 템플릿을 나타냅니다.
+- **세 번째 컬럼**: 템플릿의 적용 순서<sup>Order</sup>를 나타냅니다. 만약 한 인덱스가 여러 개의 템플릿에 해당하는 경우, 낮은 order 값을 가진 템플릿이 먼저 적용되고, 높은 order 값을 가진 템플릿이 이를 재정의합니다. 자세한 사항은 [ElasticSearch v7.1 공식문서](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-templates-v1.html#multiple-templates-v1)를 참고하세요.
+
+&nbsp;
+
+모든 인덱스 템플릿의 상세 설정을 확인합니다. 인덱스 템플릿은 `json` 형태로 작성됩니다.
+
+```bash
+# 전체 템플릿 설정 조회
+curl \
+  --location \
+  --request GET \
+  "$ES_ENDPOINT/_template?pretty"
+```
+
+```bash
+# 특정 템플릿 설정 조회
+curl \
+  --location \
+  --request GET \
+  "$ES_ENDPOINT/_template/default?pretty"
+```
+
+&nbsp;
+
+Kibana의 Dev Tools를 이용한 API 호출의 경우, 다음과 같이 실행합니다.
+
+```bash
+# 전체 템플릿 설정 조회
+GET _template?pretty
+```
+
+```bash
+# 특정 템플릿 설정 조회
+GET _template/default?pretty
+```
+
+&nbsp;
+
 ## 클러스터 인프라 관리
 
 ### EFK 스택
 
-ElasticSearch + Fluent-bit(Fluentd) + Kibana 조합을 EFK Stack이라고 합니다.
+ElasticSearch에서 EFK 스택을 사용하는 이유는 로그 관리와 모니터링을 효율적으로 수행하기 위해서입니다. EFK 스택은 **E**lasticsearch, **F**luentd, 그리고 **K**ibana로 구성됩니다. 각각의 컴포넌트가 특정 역할을 수행하여 로그 데이터를 수집, 저장, 검색, 분석 및 시각화하는데 도움을 줍니다.
 
 ![EFK Stack](./2.png)
 
