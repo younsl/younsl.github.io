@@ -527,6 +527,24 @@ Changes in replicas 패널에서는 파드 개수 유지, 스케일 인/아웃�
 
 &nbsp;
 
+## KEDA ArgoCD 등록
+
+KEDA v2.12.x 버전 차트를 argocd의 application으로 등록하게 되면 OutOfSync 표시가 되는 버그가 있습니다.
+
+![argocd에서 OutOfSync된 KEDA](./8.png)
+
+```bash
+$ kubectl get application keda -n argocd -o wide
+NAME   SYNC STATUS   HEALTH STATUS   REVISION
+keda   OutOfSync     Healthy         fbe3c161f63b4ba10ae852064e4713a8cdbb75fe
+```
+
+이 문제는 KEDA v2.13에서 해결되었기 때문에, 해결하려면 KEDA를 v2.12에서 v2.13으로 버전 업그레이드하면 됩니다.
+
+자세한 사항은 Github 이슈 [#4732](https://github.com/kedacore/keda/issues/4732#issuecomment-1948114742)를 확인합니다.
+
+&nbsp;
+
 ## 참고자료
 
 **KEDA**  
