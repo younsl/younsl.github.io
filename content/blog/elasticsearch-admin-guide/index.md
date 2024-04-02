@@ -300,6 +300,35 @@ fleunt-bit은 각 노드에 동작하고 있는 파드 로그를 수집한 후, 
 
 &nbsp;
 
+### CPU 과부하 발생 대처
+
+데이터 노드에 CPU 과부하 발생할 경우, Kibana에서 인덱스 조회시 응답을 받지 못하는 영향이 있습니다.
+
+- CPU 사용량이 15분 동안 3회 연속 80% 이상으로 유지될 경우, 클러스터에 데이터 노드를 추가하거나 더 큰 사이즈의 인스턴스로 스케일링을 고려합니다.
+- 프라이머리 노드의 JVM 메모리 압력 수치가 70~80%로 높은 경우에는 CPU 최적화 타입 보다는 `m5.large.search` 또는 `m6g.large.search`와 같은 메모리 최적화 타입으로 교체하면 문제를 해결할 수 있습니다.
+- 장기적인 해결책으로는 데이터 노드의 타입을 고성능으로 변경(스케일 업) or 데이터 노드의 개수 추가가 있습니다.
+
+&nbsp;
+
+노드의 hot_threads API를 사용하여 각 노드의 작업별 CPU 사용률 현황을 확인할 수 있습니다.
+
+```bash
+GET _nodes/hot_threads
+GET _nodes/<node_name>/hot_threads
+```
+
+&nbsp;
+
+[캣 노드 API](https://www.elastic.co/guide/en/elasticsearch/reference/current/cat-nodes.html#cat-nodes-api-query-params)를 사용하여 각 노드별 리소스 사용률의 현재 현황을 볼 수 있습니다. CPU 사용률이 가장 높은 노드의 하위 집합을 좁힐 수 있습니다.
+
+```bash
+GET _cat/nodes?v&s=cpu:desc
+```
+
+자세한 사항은 [Amazon OpenSearch Service 클러스터의 높은 CPU 사용률 문제를 해결하려면 어떻게 해야 합니까?](https://repost.aws/ko/knowledge-center/opensearch-troubleshoot-high-cpu) 공식문서를 참고합니다.
+
+&nbsp;
+
 ### 볼륨 업그레이드
 
 OpenSearch 서비스에 의해 만들어진 ElasticSearch 클러스터는 스토리지로 EBS를 사용합니다. 관리자는 스토리지의 용량과 스펙을 변경할 수 있지만, 관리형 서비스의 특성상 크게 추상화되어 있으므로 EC2의 EBS Volume 정도로 디테일하게까지는 관리하지는 못합니다.
