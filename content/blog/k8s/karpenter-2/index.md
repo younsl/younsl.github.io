@@ -128,12 +128,15 @@ kubectl annotate node ip-10-xxx-xxx-xxx.ap-northeast-2.compute.internal karpente
 
 `kubectl get node <NODE_NAME> -o yaml` 명령어로 Node 리소스의 설정을 확인해보면 `karpenter.sh/do-not-disrupt: "true"`가 새로 추가된 걸 확인할 수 있습니다.
 
-```bash
+```yaml
 apiVersion: v1
 kind: Node
 metadata:
   annotations:
     karpenter.sh/do-not-disrupt: "true"
+    ...
+  finalizers:
+  - karpenter.sh/termination
 ```
 
 &nbsp;
@@ -151,9 +154,9 @@ kubectl describe node <NODE_NAME>
 ```bash
 ...
 Events:
-  Type    Reason             Age                      From       Message
-  ----    ------             ----                     ----       -------
-  Normal  DisruptionBlocked  4m59s (x111 over 3h45m)  karpenter  Cannot disrupt Node: Disruption is blocked with the "karpenter.sh/do-not-disrupt" annotation
+  Type    Reason             Age   From       Message
+  ----    ------             ----  ----       -------
+  Normal  DisruptionBlocked  14s   karpenter  Cannot disrupt Node: Disruption is blocked with the "karpenter.sh/do-not-disrupt" annotation
 ```
 
 `"karpenter.sh/do-not-disrupt"` annotation에 의해 해당 노드는 중단 작업에서 제외된 걸 확인할 수 있습니다.
