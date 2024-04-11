@@ -157,6 +157,44 @@ Kubernetes에서는 직접적으로 YAML을 사용하여 클러스터의 리소�
 
 ### 노드 중단 예외처리
 
+Karpenter Controller가 특정 Karpenter Node 또는 중요 파드가 배치된 Karpenter Node를 중단시키지 않도록 막으려면 약속된 Annotation을 붙입니다.
+
+#### Pod level에서 설정
+
+파드에 `karpenter.sh/do-not-disrupt: "true"` 어노테이션을 설정하여 Karpenter Controller가 특정 파드를 중단 대상으로 선택하는 것을 방지할 수 있습니다.
+
+Karpenter disruption으로부터 예외처리 해야하는 워크로드 파드의 예시로는 중단하고 싶지 않은 실시간성 게임이나 중단된 경우 다시 시작해야 하는 긴 일괄 작업(예: 머신러닝 배치, 앱 빌드를 수행하는 Actions Runner)이 있습니다.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    metadata:
+      annotations:
+        karpenter.sh/do-not-disrupt: "true"
+```
+
+&nbsp;
+
+Pod의 어노테이션에 Karpenter 중단 예외처리가 정상 적용된 경우, Karpenter Node에서는 다음과 같이 `Cannot disrupt Node: Pod ... has "karpenter.sh/do-not-disrupt" annotation` 이벤트가 발생합니다.
+
+```bash
+kubectl describe node ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal
+```
+
+```bash
+Events:
+  Type    Reason             Age                   From       Message
+  ----    ------             ----                  ----       -------
+  ...     ...                ...                   ...        ...
+  Normal  DisruptionBlocked  33s                   karpenter  Cannot disrupt Node: Pod "<REDACTED>/xxx-vvj6g-z598z" has "karpenter.sh/do-not-disrupt" annotation
+```
+
+&nbsp;
+
+#### Node level에서 설정
+
 [Node-Level Controls](https://karpenter.sh/v0.35/concepts/disruption/#node-level-controls)
 
 특정 카펜터 노드에 `karpenter.sh/do-not-disrupt: "true"` 주석을 설정하여 Karpenter가 특정 노드를 자발적으로 중단하지 못하도록 차단할 수 있습니다. 예외처리 Annotation이 붙은 노드는 Karpenter Controller가 수행하는 [중단<sup>Disruption</sup>](https://karpenter.sh/docs/concepts/disruption/) 작업에서 제외되므로 어떠한 경우에도 내려가지 않습니다.
@@ -238,7 +276,47 @@ Events:
   Normal  DisruptionBlocked  14s   karpenter  Cannot disrupt Node: Disruption is blocked with the "karpenter.sh/do-not-disrupt" annotation
 ```
 
-`"karpenter.sh/do-not-disrupt"` annotation에 의해 해당 노드는 중단 작업에서 제외된 걸 확인할 수 있습니다.
+`"karpenter.sh/do-not-disrupt"` annotation에 의해 해당 노드는 중단 작업에서 제외된 걸 이벤트를 통해 확인할 수 있습니다.
+
+&nbsp;
+
+---
+
+&nbsp;
+
+### 자동화된 중단
+
+Karpenter Controller는 Kubernetes 클러스터의 리소스 사용률과 비용 효율성을 높이기 위해 클러스터 관리자 대신 클러스터 운영 업무를 수행합니다. 이는 클러스터의 스케일링과 관리를 자동화하여, 운영자가 수동으로 인프라를 조정하는 데 드는 시간과 노력을 줄여줍니다. Karpenter는 다음과 같은 주요 중단(Disruption) 작업을 통해 클러스터를 관리합니다.
+
+&nbsp;
+
+> **중요**:  
+> 예외처리용 Annotation을 파드나 Karpenter Node에 붙이면 다음 세 가지 Karpenter Controller가 수행하는 자동화된 중단작업<sup>Automated methods</sup>에서 관련 노드가 제외됩니다.
+
+1. [**Consolidation**](https://karpenter.sh/v0.36/concepts/disruption/#consolidation) (통합): 이 작업은 클러스터의 리소스 사용률을 최적화하기 위해 수행됩니다. 노드들 사이에 분산된 워크로드를 재조정하여, 사용되지 않는 노드를 축소하거나 제거함으로써 리소스를 보다 효율적으로 사용할 수 있도록 합니다. 즉, 적은 수의 노드로 같은 작업을 수행하여, 전력 소비와 비용을 절감할 수 있습니다.
+2. [**Drift**](https://karpenter.sh/v0.36/concepts/disruption/#drift) (변동): 클러스터의 상태가 원하는 구성에서 벗어나게 되는 것을 '드리프트'라고 합니다. 이는 시간이 지남에 따라 자연스럽게 발생할 수 있는데, 예를 들어, 소프트웨어 버전의 차이나 리소스 요구사항의 변경 등이 이에 해당합니다. 드리프트 작업은 이러한 변동을 감지하고, 클러스터를 원래의 또는 최적의 상태로 복원하기 위해 노드를 자동으로 업데이트하거나 교체합니다.
+3. **Expiration** (만료): 노드에 설정된 수명이 다하거나 사용하지 않는 리소스를 제거하는 과정입니다. 특정 시간 동안 사용되지 않은 노드를 자동으로 정리함으로써, 리소스를 효율적으로 관리하고 비용을 절감할 수 있습니다. 만료 작업은 오래되거나 더 이상 필요하지 않은 노드를 식별하고 제거하여, 클러스터를 최신 상태로 유지하는 데 도움을 줍니다.
+
+&nbsp;
+
+자동화된 중단 방법은 NodePool 리소스 마다 설정된 중단 예산<sup>[disruption budget](https://karpenter.sh/v0.36/concepts/disruption/#disruption-budgets)</sup>을 통해 속도를 제한할 수 있습니다.
+
+```yaml
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  ...
+spec:
+  disruption:
+    budgets:
+    - nodes: 10%
+    - duration: 10m
+      nodes: "0"
+      schedule: '@daily'
+  ...
+```
+
+이러한 작업은 클러스터의 효율성과 비용 효율성을 높이기 위해 중요합니다. 하지만, 특정 Karpenter Node가 이러한 작업의 대상이 되지 않도록 설정하려면, 예외 처리용 Annotation을 사용하여 해당 노드를 제외시킬 수 있습니다. 이는 해당 노드가 중요한 워크로드를 처리하거나, 특별한 구성이 필요한 경우 유용할 수 있습니다.
 
 &nbsp;
 
