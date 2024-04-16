@@ -410,3 +410,10 @@ spec:
 
 [Karpenter 설치하기](/blog/k8s/karpenter)  
 [karpenter 헬름 차트 버전 업그레이드](/blog/k8s/upgrade-karpenter/)
+
+&nbsp;
+
+## 참고자료
+
+[Github kube-green](https://github.com/kube-green/kube-green)  
+[kube-green docs](https://kube-green.dev/)
