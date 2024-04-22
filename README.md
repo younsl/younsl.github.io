@@ -47,10 +47,10 @@ It is recommended to use the Standard Hugo Workflow provided by Github Pages. Se
 
 ## Integrations
 
-Several plugins were integrated with this blog using the Partial function.
+Several plugins were integrated with this blog using the [partials](https://gohugo.io/templates/partials/) function.
 
-| Status | Integration Name | Description | Intg. Method |
-|--------|------------------|-------------|--------------|
+| Status | Integration Name | Description | Integration Method |
+|--------|------------------|-------------|--------------------|
 | <small>In-use</small> | Google Adsense | Google Ads | [Hugo partials](https://github.com/younsl/younsl.github.io/blob/main/layouts/partials/adsense.html) |
 | <small>In-use</small> | Utterances | Page comment plugin | [Hugo partials](https://github.com/younsl/younsl.github.io/blob/main/layouts/partials/comments.html) |
 | <small>In-use</small> | Google Search Console | SEO for Google | [Static file](https://github.com/younsl/younsl.github.io/blob/main/static/google3e664c168bbd9088.html) |
