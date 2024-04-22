@@ -10,7 +10,7 @@ tags: ["aws"]
 
 ## 개요
 
-Lambda Function에서 그룹 멘션 추가하기
+AWS의 관리형 Kafka 서비스인 MSK 클러스터 운영자를 위한 가이드
 
 &nbsp;
 
