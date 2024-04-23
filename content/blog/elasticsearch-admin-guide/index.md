@@ -1,7 +1,7 @@
 ---
 title: "elasticsearch admin guide"
 date: 2024-01-31T03:15:30+09:00
-lastmod: 2024-02-13T11:15:55+09:00
+lastmod: 2024-04-23T23:26:55+09:00
 slug: ""
 description: "DevOps Engineer를 위한 ElasticSearch 클러스터 운영 가이드"
 keywords: []
