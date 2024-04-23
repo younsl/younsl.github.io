@@ -571,3 +571,103 @@ ElasticSearch 도메인의 버전 업그레이드 완료 직후 Kibana 접근 �
 AWS 엔지니어가 수동 조치<sup>Manual Intervention</sup> 처리해서 해결할 수 있습니다. 이 Manual Intervention은 AWS 사용자가 Support 티켓을 올려야하며, AWS 내부팀 에스컬레이션이 된 후 처리됩니다.
 
 ![Kibana 조치 다이어그램](./5.png)
+
+&nbsp;
+
+## reindex
+
+Elasticsearch에서 별칭(alias) 사용을 공식적으로 권장하는 가장 중요한 이유는 별칭을 통해 인덱스 구조 변경이나 데이터 마이그레이션 시 다운타임 없이 원활하게 전환할 수 있기 때문입니다.
+
+![Alias 예시](./6.png)
+
+이는 데이터 접근을 추상화하여 애플리케이션 코드의 변경 없이도 백엔드의 인덱스를 유연하게 관리할 수 있게 해줍니다. 이로 인해 성능 최적화와 데이터 관리가 훨씬 간편해지며, 복잡한 인덱스 전략을 효과적으로 실행할 수 있습니다.
+
+![Logstash and ElasticSearch](./7.png)
+
+&nbsp;
+
+샤드 수를 5개에서 10개로 변경하면서 동일한 인덱스 이름으로 유지하려면, 기존 인덱스를 새로운 샤드 구성으로 복사하고, 이후 기존 인덱스를 삭제한 후 새 인덱스에 원래 이름을 다시 부여하는 과정을 거쳐야 합니다. 여기에서는 별칭(alias)을 사용하여 인덱스 이름을 변경하지 않고 작업을 수행할 수 있는 방법을 설명하겠습니다.
+
+**1단계: 새 인덱스 생성**  
+먼저 샤드 수를 10개로 설정한 새로운 인덱스를 생성합니다. 이 때 인덱스 이름을 임시로 다르게 설정합니다.
+
+```bash
+PUT /sample-index-reindexed
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 10,
+      "number_of_replicas": 1
+    }
+  }
+}
+```
+
+예를 들어 `sample-index-reindexed`라는 이름을 사용할 수 있습니다.
+
+&nbsp;
+
+**2단계: 데이터 리인덱싱**  
+_reindex API를 사용하여 기존 `sample-index` 인덱스의 데이터를 새로 생성한 `sample-index-reindexed` 인덱스로 복사합니다.
+
+```bash
+POST /_reindex
+{
+  "source": {
+    "index": "sample-index",
+    "size": 5000
+  },
+  "dest": {
+    "index": "sample-index-reindexed"
+  }
+}
+```
+
+&nbsp;
+
+**3단계: reindex 작업 진행상황 모니터링**  
+리인덱스 작업의 진행 상황을 실시간으로 모니터링하려면, _tasks API를 사용합니다. 이 API는 진행 중인 모든 작업의 상세한 정보를 제공합니다.
+
+```bash
+GET /_tasks?detailed=true&actions=*reindex
+```
+
+또는 모든 태스크의 요약 정보를 보고 싶다면 _cat/tasks API를 사용할 수 있습니다.
+
+```bash
+GET /_cat/tasks?v&time=m
+```
+
+&nbsp;
+
+**4단계: 기존 인덱스 삭제**  
+새 인덱스로 데이터가 성공적으로 복사된 걸 확인한 후, 기존 인덱스 `sample-index`를 삭제합니다.
+
+```bash
+DELETE /sample-index
+```
+
+&nbsp;
+
+**5단계: 새 인덱스 이름 변경**  
+새 인덱스의 이름을 기존 인덱스의 이름으로 변경합니다. 인덱스 이름을 직접 변경할 수 없으므로, 별칭을 사용하여 관리합니다.
+
+```bash
+POST /_aliases
+{
+  "actions": [
+    {
+      "add": {
+        "alias": "sample-index",
+        "index": "sample-index-reindexed"
+      }
+    }
+  ]
+}
+```
+
+```bash
+GET /_cat/aliases?v
+```
+
+&nbsp;
