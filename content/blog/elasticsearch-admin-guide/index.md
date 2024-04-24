@@ -1,5 +1,5 @@
 ---
-title: "elasticsearch admin guide"
+title: "Elasticsearch"
 date: 2024-01-31T03:15:30+09:00
 lastmod: 2024-04-23T23:26:55+09:00
 slug: ""
@@ -14,18 +14,25 @@ tags: ["webtob"]
 
 ## 개요
 
-OpenSeearch, ElasticSearch 운영자를 위한 가이드
+OpenSearch, ElasticSearch 운영자를 위한 가이드 문서입니다.
 
 &nbsp;
 
 ## 환경
 
-- AWS OpenSearch
-- Elasticsearch 7.1.1
+- Amazon OpenSearch
+- Elasticsearch 7.1
+
+&nbsp;
+
+---
 
 &nbsp;
 
 ## 샤드
+
+<details>
+<summary>자세히 보기</summary>
 
 ### 기본개념
 
@@ -62,9 +69,18 @@ podlog-2024.02.13      p      4        38
 
 - **Rollover로 용량 자동조정** : 인덱스 상태 관리<sup>ISM, Index State Management</sup> 기능을 사용하는 경우 롤오버 작업의 `max_primary_shard_size` 임계값을 `50GB`로 설정하여 샤드가 `50GB`보다 커지지 않도록 합니다.
 
+</details>
+
+&nbsp;
+
+---
+
 &nbsp;
 
 ## 제약사항
+
+<details>
+<summary>자세히 보기</summary>
 
 ### ElasticSearch 관리자의 API 제한
 
@@ -95,9 +111,18 @@ curl \
 
 위와 같이 `/_cluster/settings` API를 사용해서 `index.number_of_shards` 값을 변경하는 걸 금지하고 있습니다.
 
+</details>
+
 &nbsp;
 
-## 관리 명령어 Cheatsheet
+---
+
+&nbsp;
+
+## 관리 명령어
+
+<details>
+<summary>자세히 보기</summary>
 
 ElasticSearch 클러스터를 운영 관리할 때 주로 사용되는 명령어입니다.
 
@@ -279,9 +304,18 @@ GET _template?pretty
 GET _template/default?pretty
 ```
 
+</details>
+
+&nbsp;
+
+---
+
 &nbsp;
 
 ## 클러스터 인프라 관리
+
+<details>
+<summary>자세히 보기</summary>
 
 ### EFK 스택
 
@@ -461,7 +495,215 @@ curl \
 
 &nbsp;
 
+### ElasticSearch 업그레이드 후 Kibana 접근 불가 에러
+
+AWS 콘솔을 사용해서 ElasticSearch v6.8 → v7.1로 업그레이드한 직후 경험했던 문제.
+
+&nbsp;
+
+#### 증상
+
+Kibana URL로 접근시 503 에러코드와 함께 Http request timed out connecting 에러 발생하는 증상이었습니다.
+
+&nbsp;
+
+#### 발생 환경
+
+- **플랫폼** : AWS OpenSearch
+- **ElasticSearch** `v6.8` → `v7.1`
+- **Kibana** `v6.8` → `v7.1`
+
+ElasticSearch 도메인의 버전 업그레이드 완료 직후 Kibana 접근 불가한 상황이 발생했습니다.
+
+&nbsp;
+
+#### 원인
+
+문제의 근본 원인은 OpenSearch 도메인을 blue-green 배포가 필요한 Elasticsearch_6.8에서 Elasticsearch_7.1 버전으로 업그레이드했기 때문입니다. blue-green 배포에는 이전 클러스터에서 새 클러스터로의 인덱스 마이그레이션이 포함됩니다. 샤드 재할당이 완료되면 Kibana가 완전히 작동하게 됩니다. 이 경우 Kibana 인덱스 마이그레이션 프로세스에서 클러스터에 경쟁 조건<sup>Race condition</sup>이 발생했습니다.
+
+&nbsp;
+
+#### 해결방법
+
+AWS 엔지니어가 수동 조치<sup>Manual Intervention</sup> 처리해서 해결할 수 있습니다. 이 Manual Intervention은 AWS 사용자가 Support 티켓을 올려야하며, AWS 내부팀 에스컬레이션이 된 후 처리됩니다.
+
+![Kibana 조치 다이어그램](./5.png)
+
+</details>
+
+&nbsp;
+
+---
+
+&nbsp;
+
 ## 인덱스 관리
+
+<details>
+<summary>자세히 보기</summary>
+
+### reindex
+
+Elasticsearch에서 [별칭](https://www.elastic.co/guide/en/elasticsearch/reference/current/aliases.html)<sup>alias</sup> 사용을 공식적으로 권장하는 가장 중요한 이유는 별칭을 통해 인덱스 구조 변경이나 데이터 마이그레이션 시 다운타임 없이 원활하게 전환할 수 있기 때문입니다.
+
+![Alias & index 구성 예시](./6.png)
+
+이는 데이터 접근을 추상화하여 애플리케이션 코드의 변경 없이도 백엔드의 인덱스를 유연하게 관리할 수 있게 해줍니다. 이로 인해 성능 최적화와 데이터 관리가 훨씬 간편해지며, 복잡한 인덱스 전략을 효과적으로 실행할 수 있습니다.
+
+![Logstash and ElasticSearch](./7.png)
+
+&nbsp;
+
+샤드 수를 5개에서 10개로 변경하면서 동일한 인덱스 이름으로 유지하려면, 기존 인덱스를 새로운 샤드 구성으로 복사하고, 이후 기존 인덱스를 삭제한 후 새 인덱스에 원래 이름을 다시 부여하는 과정을 거쳐야 합니다. 여기에서는 별칭<sup>alias</sup>을 사용하여 인덱스 이름을 변경하지 않고 작업을 수행할 수 있는 방법을 설명하겠습니다.
+
+&nbsp;
+
+**1단계: 새 인덱스 생성**  
+먼저 샤드 수를 10개로 설정한 새로운 인덱스를 생성합니다. 이 때 인덱스 이름을 임시로 다르게 설정합니다.
+
+```bash
+PUT /sample-index-reindexed
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 10,
+      "number_of_replicas": 1
+    }
+  }
+}
+```
+
+예를 들어 `sample-index-reindexed`라는 이름을 사용할 수 있습니다.
+
+인덱스 생성이 완료되면 다음과 같은 결과가 출력됩니다.
+
+```bash
+{
+  "acknowledged" : true,
+  "shards_acknowledged" : true,
+  "index" : "sample-index-reindexed"
+}
+```
+
+&nbsp;
+
+**2단계: 데이터 리인덱싱**  
+[_reindex API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-reindex.html)를 사용하여 기존 `sample-index` 인덱스의 데이터를 새로 생성한 `sample-index-reindexed` 인덱스로 복사합니다.
+
+```bash
+POST /_reindex?wait_for_completion=false
+{
+  "source": {
+    "index": "sample-index",
+    "size": 5000
+  },
+  "dest": {
+    "index": "sample-index-reindexed"
+  }
+}
+```
+
+> **백그라운드에서 reindex task 실행하기**  
+> Elasticsearch에서 _reindex 작업을 백그라운드로 실행하려면, 작업을 비동기적으로 실행하도록 설정해야 합니다. 이를 위해 `wait_for_completion=false` 쿼리 파라미터를 _reindex API 요청에 추가할 수 있습니다. 이 설정을 사용하면 Elasticsearch는 작업을 시작하고 즉시 제어를 반환하며, 작업은 서버의 백그라운드에서 계속 실행됩니다.
+
+&nbsp;
+
+위 reindex API를 실행하면 reindex task를 식별할 수 있는 고유한 task_id를 아래와 같이 반환합니다. 이 task_id를 사용하여 나중에 작업 진행상황을 확인하거나 작업을 취소할 수 있습니다.
+
+```bash
+{
+  "task" : "rBjSH0p4THm3cxU6tTrHvw:586801806"
+}
+```
+
+&nbsp;
+
+**3단계: reindex 작업 진행상황 모니터링**  
+reindex 작업의 진행 상황을 실시간으로 모니터링하려면, [_tasks API](https://www.elastic.co/guide/en/elasticsearch/reference/current/tasks.html)를 사용합니다. 이 API는 진행 중인 모든 작업의 상세한 정보를 제공합니다.
+
+```bash
+GET /_tasks?detailed=true&actions=*reindex
+```
+
+또는 모든 태스크의 요약 정보를 보고 싶다면 [_cat/tasks API](https://www.elastic.co/guide/en/elasticsearch/reference/current/cat-tasks.html)를 사용할 수 있습니다.
+
+```bash
+GET /_cat/tasks?v&time=m
+```
+
+&nbsp;
+
+**reindex 작업 취소방법**  
+먼저, 취소하고자 하는 _reindex 작업의 `task_id`를 확인해야 합니다. 작업 ID는 _tasks API를 사용하여 확인할 수 있습니다.
+
+```bash
+GET /_cat/tasks?v&detailed&s=running_time:desc
+```
+
+출력에서 `action` 컬럼이 `indices:data/write/reindex`인 항목을 찾아 해당 작업의 `task_id`를 확인합니다. `task_id`는 일반적으로 `노드ID:작업번호` 형식으로 제공됩니다.
+
+&nbsp;
+
+Elasticsearch에서 진행 중인 [_reindex](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-reindex.html) 작업을 취소하려면, 해당 작업의 고유한 `task_id`를 사용하여 [tasks API](https://www.elastic.co/guide/en/elasticsearch/reference/current/tasks.html#task-cancellation)를 통해 작업을 취소할 수 있습니다.
+
+> **중요**: 해당 작업이 `cancellable` 속성을 `true`로 설정한 경우에만 취소가 가능합니다.
+
+```bash
+POST /_tasks/<task_id>/_cancel
+```
+
+&nbsp;
+
+예를 들어, task_id가 rBjSH0p4THm3cxU6tTrHvw:571108043인 작업을 취소하고 싶다면, 다음과 같이 요청합니다.
+
+```bash
+POST /_tasks/rBjSH0p4THm3cxU6tTrHvw:571108043/_cancel
+```
+
+&nbsp;
+
+**4단계: 기존 인덱스 삭제**  
+새 인덱스로 데이터가 성공적으로 복사된 걸 확인한 후, 기존 인덱스 `sample-index`를 삭제합니다.
+
+```bash
+DELETE /sample-index
+```
+
+&nbsp;
+
+**5단계: 새 인덱스 이름 변경**  
+
+**별칭 추가**  
+새 인덱스에 기존 인덱스의 별칭을 추가하여 검색 및 기타 작업이 중단 없이 계속될 수 있도록 합니다. 아래의 API 요청은 `sample-index-reindexed`라는 새 인덱스에 `sample-index`라는 별칭<sup>Alias</sup>을 추가하는 예시를 보여줍니다.
+
+```bash
+POST /_aliases
+{
+  "actions": [
+    {
+      "add": {
+        "alias": "sample-index",
+        "index": "sample-index-reindexed"
+      }
+    }
+  ]
+}
+```
+
+이 과정을 통해 사용자 및 ElasticSearch를 바라보는 서버들은 `sample-index`라는 이름으로 계속 데이터에 접근할 수 있으며, 실제 데이터는 `sample-index-reindexed` 인덱스에 저장됩니다.
+
+![Alias & index 구성 예시](./6.png)
+
+&nbsp;
+
+**별칭 확인**  
+별칭이 정상적으로 추가되었는지 확인하기 위해 [_cat/aliases API](https://www.elastic.co/guide/en/elasticsearch/reference/current/cat-alias.html)를 사용할 수 있습니다. 이 API는 모든 별칭과 그에 연결된 인덱스 목록을 보여줍니다.
+
+```bash
+GET /_cat/aliases?v
+```
+
+&nbsp;
 
 ### ISM Policy
 
@@ -534,140 +776,4 @@ curl \
 
 자세한 사항은 [인덱스 상태 관리](https://docs.aws.amazon.com/ko_kr/opensearch-service/latest/developerguide/ism.html#ism-example)를 참고합니다.
 
-&nbsp;
-
-## Kibana
-
-### ElasticSearch 업그레이드 후 Kibana 접근 불가 에러
-
-AWS 콘솔을 사용해서 ElasticSearch v6.8 → v7.1로 업그레이드한 직후 경험했던 문제.
-
-&nbsp;
-
-#### 증상
-
-Kibana URL로 접근시 503 에러코드와 함께 Http request timed out connecting 에러 발생하는 증상이었습니다.
-
-&nbsp;
-
-#### 발생 환경
-
-- **플랫폼** : AWS OpenSearch
-- **ElasticSearch** `v6.8` → `v7.1`
-- **Kibana** `v6.8` → `v7.1`
-
-ElasticSearch 도메인의 버전 업그레이드 완료 직후 Kibana 접근 불가한 상황이 발생했습니다.
-
-&nbsp;
-
-#### 원인
-
-문제의 근본 원인은 OpenSearch 도메인을 blue-green 배포가 필요한 Elasticsearch_6.8에서 Elasticsearch_7.1 버전으로 업그레이드했기 때문입니다. blue-green 배포에는 이전 클러스터에서 새 클러스터로의 인덱스 마이그레이션이 포함됩니다. 샤드 재할당이 완료되면 Kibana가 완전히 작동하게 됩니다. 이 경우 Kibana 인덱스 마이그레이션 프로세스에서 클러스터에 경쟁 조건이 발생했습니다.
-
-&nbsp;
-
-#### 해결방법
-
-AWS 엔지니어가 수동 조치<sup>Manual Intervention</sup> 처리해서 해결할 수 있습니다. 이 Manual Intervention은 AWS 사용자가 Support 티켓을 올려야하며, AWS 내부팀 에스컬레이션이 된 후 처리됩니다.
-
-![Kibana 조치 다이어그램](./5.png)
-
-&nbsp;
-
-## reindex
-
-Elasticsearch에서 별칭<sup>alias</sup> 사용을 공식적으로 권장하는 가장 중요한 이유는 별칭을 통해 인덱스 구조 변경이나 데이터 마이그레이션 시 다운타임 없이 원활하게 전환할 수 있기 때문입니다.
-
-![Alias 예시](./6.png)
-
-이는 데이터 접근을 추상화하여 애플리케이션 코드의 변경 없이도 백엔드의 인덱스를 유연하게 관리할 수 있게 해줍니다. 이로 인해 성능 최적화와 데이터 관리가 훨씬 간편해지며, 복잡한 인덱스 전략을 효과적으로 실행할 수 있습니다.
-
-![Logstash and ElasticSearch](./7.png)
-
-&nbsp;
-
-샤드 수를 5개에서 10개로 변경하면서 동일한 인덱스 이름으로 유지하려면, 기존 인덱스를 새로운 샤드 구성으로 복사하고, 이후 기존 인덱스를 삭제한 후 새 인덱스에 원래 이름을 다시 부여하는 과정을 거쳐야 합니다. 여기에서는 별칭<sup>alias</sup>을 사용하여 인덱스 이름을 변경하지 않고 작업을 수행할 수 있는 방법을 설명하겠습니다.
-
-**1단계: 새 인덱스 생성**  
-먼저 샤드 수를 10개로 설정한 새로운 인덱스를 생성합니다. 이 때 인덱스 이름을 임시로 다르게 설정합니다.
-
-```bash
-PUT /sample-index-reindexed
-{
-  "settings": {
-    "index": {
-      "number_of_shards": 10,
-      "number_of_replicas": 1
-    }
-  }
-}
-```
-
-예를 들어 `sample-index-reindexed`라는 이름을 사용할 수 있습니다.
-
-&nbsp;
-
-**2단계: 데이터 리인덱싱**  
-_reindex API를 사용하여 기존 `sample-index` 인덱스의 데이터를 새로 생성한 `sample-index-reindexed` 인덱스로 복사합니다.
-
-```bash
-POST /_reindex
-{
-  "source": {
-    "index": "sample-index",
-    "size": 5000
-  },
-  "dest": {
-    "index": "sample-index-reindexed"
-  }
-}
-```
-
-&nbsp;
-
-**3단계: reindex 작업 진행상황 모니터링**  
-reindex 작업의 진행 상황을 실시간으로 모니터링하려면, _tasks API를 사용합니다. 이 API는 진행 중인 모든 작업의 상세한 정보를 제공합니다.
-
-```bash
-GET /_tasks?detailed=true&actions=*reindex
-```
-
-또는 모든 태스크의 요약 정보를 보고 싶다면 _cat/tasks API를 사용할 수 있습니다.
-
-```bash
-GET /_cat/tasks?v&time=m
-```
-
-&nbsp;
-
-**4단계: 기존 인덱스 삭제**  
-새 인덱스로 데이터가 성공적으로 복사된 걸 확인한 후, 기존 인덱스 `sample-index`를 삭제합니다.
-
-```bash
-DELETE /sample-index
-```
-
-&nbsp;
-
-**5단계: 새 인덱스 이름 변경**  
-새 인덱스의 이름을 기존 인덱스의 이름으로 변경합니다. 인덱스 이름을 직접 변경할 수 없으므로, 별칭<sup>alias</sup>을 사용하여 관리합니다.
-
-```bash
-POST /_aliases
-{
-  "actions": [
-    {
-      "add": {
-        "alias": "sample-index",
-        "index": "sample-index-reindexed"
-      }
-    }
-  ]
-}
-```
-
-```bash
-GET /_cat/aliases?v
-```
-
-&nbsp;
+</details>
