@@ -12,7 +12,7 @@ showAdvertisement: false
 
 ### Younsung Lee
 
-DevOps Engineer
+DevOps Engineer and Cluster Nerd. Interested in [distributed computing](https://en.wikipedia.org/wiki/Distributed_computing).
 
 **Contact**: [`github`](https://github.com/younsl) [`cysl@kakao.com`](mailto:cysl@kakao.com)
 
