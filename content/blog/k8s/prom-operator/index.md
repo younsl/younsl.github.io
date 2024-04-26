@@ -658,6 +658,190 @@ grafana:
 
 &nbsp;
 
+### (Optional) Google OAuth 연동
+
+Grafana에 로그인할 때 직접 유저를 생성하는 방식 말고도 구글 계정을 통해 로그인할 수 있습니다. 이 때 Grafana와 GCP OAuth 2 연동이 필요합니다.
+
+- 보안상의 이유로 Grafana v7.1 버전 이상에서는 OAuth Client Secret 값 등을 `value.yaml` 파일에 평문으로 입력할 시 `kube-prometheus-stack` 차트 설치가 거부됩니다.
+- Grafana에서 지원하는 [Variable Expansion](https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#variable-expansion) 기능을 사용하면 `values.yaml` 파일에 Google OAuth 비밀번호와 같은 시크릿 정보를 입력할 필요 없이 숨길 수 있습니다.
+- 간단한 해결 방법은 Grafana Helm 차트에 `assertNoLeakedSecrets: false` 값을 추가 하고 강제 설치하는 것이지만 권장되지는 않습니다.
+
+```yaml
+# values for kube-prometheus-stack
+...
+grafana:
+  # assertNoLeakedSecrets is a helper function defined in _helpers.tpl that checks if secret
+  # values are not exposed in the rendered grafana.ini configmap. It is enabled by default.
+  #
+  # To pass values into grafana.ini without exposing them in a configmap, use variable expansion:
+  # https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#variable-expansion
+  #
+  # Alternatively, if you wish to allow secret values to be exposed in the rendered grafana.ini configmap,
+  # you can disable this check by setting assertNoLeakedSecrets to false.
+  assertNoLeakedSecrets: false
+  ...
+```
+
+&nbsp;
+
+**문제 증상**  
+`values.yaml` 파일에 Google oauth 관련 비밀번호와 ID 값이 일반 텍스트로 포함되어 있는 경우 `kube-prometheus-stack` 차트 설치가 거부됩니다.
+
+```bash
+helm upgrade \
+  kube-prometheus-stack . \
+  --install \
+  --create-namespace \
+  --namespace monitoring \
+  --values values.yaml \
+  --wait
+```
+
+```bash
+Error: UPGRADE FAILED: execution error at (kube-prometheus-stack/charts/grafana/templates/statefulset.yaml:28:28): Sensitive key 'auth.google.client_secret' should not be defined explicitly in values. Use variable expansion instead. You can disable this client-side validation by changing the value of assertNoLeakedSecrets
+```
+
+&nbsp;
+
+이 `Sensitive key` 오류 메시지는 Grafana Helm 차트에 포함된 `_helpers.tpl`에 선언된 조건문에 의해 트리거됩니다.
+
+Grafana 7.3.0 helm 차트의 `_helpers.tpl` 파일 내용 중 일부:
+
+```go
+  {{- if $.Values.assertNoLeakedSecrets -}}
+      {{- $grafanaIni := index .Values "grafana.ini" -}}
+      {{- range $_, $secret := $sensitiveKeysYaml.sensitiveKeys -}}
+        {{- $currentMap := $grafanaIni -}}
+        {{- $shouldContinue := true -}}
+        {{- range $index, $elem := $secret.path -}}
+          {{- if and $shouldContinue (hasKey $currentMap $elem) -}}
+            {{- if eq (len $secret.path) (add1 $index) -}}
+              {{- if not (regexMatch "\\$(?:__(?:env|file|vault))?{[^}]+}" (index $currentMap $elem)) -}}
+                {{- fail (printf "Sensitive key '%s' should not be defined explicitly in values. Use variable expansion instead. You can disable this client-side validation by changing the value of assertNoLeakedSecrets." (join "." $secret.path)) -}}
+              {{- end -}}
+            {{- else -}}
+              {{- $currentMap = index $currentMap $elem -}}
+            {{- end -}}
+          {{- else -}}
+              {{- $shouldContinue = false -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+  {{- end -}}
+{{- end -}}
+```
+
+[관련 코드 링크](https://github.com/grafana/helm-charts/blob/grafana-7.3.0/charts/grafana/templates/_helpers.tpl#L258-L278)
+
+&nbsp;
+
+**해결방법**  
+Google OAuth 클라이언트 ID와 비밀번호가 포함된 새 비밀번호 리소스를 만듭니다. 이 Secret은 Grafana 파드와 같은 네임스페이스에 위치해야 합니다.
+
+```bash
+kubectl create secret generic kube-prometheus-stack-grafana-oauth \
+  --from-literal GF_AUTH_GOOGLE_CLIENT_ID="<REDACTED>" \
+  --from-literal GF_AUTH_GOOGLE_CLIENT_SECRET="<REDACTED>" \
+  --namespace monitoring
+```
+
+```bash
+secret/kube-prometheus-stack-grafana-oauth created
+```
+
+&nbsp;
+
+`kube-prometheus-stack` 헬름 차트에 `grafana.ini` 값을 추가합니다.
+
+> **참고**:  
+> [Variable Expansion](https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#variable-expansion) 기능은 Grafana v7.1 이상에서만 사용할 수 있습니다.
+
+```yaml
+# values.yaml for kube-promethue-stack
+...
+## Using default values from https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
+##
+grafana:
+  envFromSecret: kube-prometheus-stack-grafana-oauth
+
+  grafana.ini:
+    security:
+      cookie_secure: false
+    dashboard:
+      min_refresh_interal: 60s
+    auth.google:
+      enabled: true
+      allow_sign_up: true
+      auto_login: false
+      # Variable expansion is only availble in Grafana 7.1+
+      # https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#variable-expansion
+      client_id: $__env{GF_AUTH_GOOGLE_CLIENT_ID}
+      client_secret: $__env{GF_AUTH_GOOGLE_CLIENT_SECRET}
+      scopes: openid email profile
+      auth_url: https://accounts.google.com/o/oauth2/v2/auth
+      token_url: https://oauth2.googleapis.com/token
+      api_url: https://openidconnect.googleapis.com/v1/userinfo
+```
+
+&nbsp;
+
+아래 Grafana의 Variable Expansion이 적용된 `values`를 자세히 살펴보겠습니다.
+
+```yaml
+# values.yaml for kube-promethue-stack
+grafana:
+  grafana.ini:
+      ...
+      client_id: $__env{GF_AUTH_GOOGLE_CLIENT_ID}
+      ...
+```
+
+위 설정의 경우, Variable Expansion의 Env Provider를 통해 Grafana Pod에 설정된 `GF_AUTH_GOOGLE_CLIENT_ID` 환경변수를 `client_id`로 대신 쓰겠다는 의미입니다.
+
+&nbsp;
+
+EKS 클러스터에 `kube-prometheus-stack` 차트를 설치(또는 업그레이드)합니다.
+
+```bash
+helm upgrade \
+  kube-prometheus-stack . \
+  --install \
+  --create-namespace \
+  --namespace monitoring \
+  --values values.yaml \
+  --wait
+```
+
+```bash
+Release "kube-prometheus-stack" has been upgraded. Happy Helming!
+NAME: kube-prometheus-stack
+LAST DEPLOYED: Thu Feb 15 15:43:27 2024
+NAMESPACE: monitoring
+STATUS: deployed
+REVISION: 9
+NOTES:
+kube-prometheus-stack has been installed. Check its status by running:
+  kubectl --namespace monitoring get pods -l "release=kube-prometheus-stack"
+
+Visit https://github.com/prometheus-operator/kube-prometheus for instructions on how to create & configure Alertmanager and Prometheus instances using the Operator.
+```
+
+&nbsp;
+
+Google OAuth Client ID와 Secret은 환경 변수로 Grafana Pod에 주입됩니다. 이러한 환경 변수는 이전 단계에서 생성한 kubernetes Secret 리소스에서 가져옵니다.
+
+```bash
+$ kubectl exec -it -n monitoring kube-prometheus-stack-grafana-0 -- env | grep GF_AUTH_GOOGLE_CLIENT_
+GF_AUTH_GOOGLE_CLIENT_ID=<REDACTED>-<REDACTED>.apps.googleusercontent.com
+GF_AUTH_GOOGLE_CLIENT_SECRET=<REDACTED>
+```
+
+요약하자면 Grafana의 [Variable Expansion](https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#variable-expansion) 기능을 이용하면 `values.yaml`에 민감한 시크릿을 평문 입력 없이도 Grafana와 Google OAuth 2를 연동할 수 있습니다.
+
+더 자세한 사항은 grafana chart [issue#2896](https://github.com/grafana/helm-charts/issues/2896#issuecomment-1945496592)을 참조하세요.
+
+&nbsp;
+
 #### 대시보드 추가
 
 관리자 계정의 로그인 정보를 사용해서 Grafana에 로그인합니다.
