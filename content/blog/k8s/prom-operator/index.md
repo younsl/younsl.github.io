@@ -14,9 +14,9 @@ tags: ["devops", "kubernetes", "monitoring", "prometheus"]
 
 ## 개요
 
-Prometheus Operator로 다른 Application Pod의 메트릭을 수집하고, Grafana의 대시보드로 출력하는 방법을 소개합니다.
+Prometheus Operator를 사용하여 다른 애플리케이션 파드들의 메트릭을 수집하고 Grafana 대시보드에 표시하는 방법에 대한 가이드입니다. 이 과정에서는 [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) 헬름 차트를 활용하여 쿠버네티스 클러스터에 Grafana와 Prometheus를 설치하고 설정합니다.
 
-쿠버네티스 클러스터 관리와 모니터링을 담당하는 DevOps Engineer를 대상으로 작성된 가이드입니다.
+이 가이드는 쿠버네티스 클러스터의 관리와 모니터링을 담당하는 DevOps 엔지니어를 대상으로 합니다.
 
 &nbsp;
 
