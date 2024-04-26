@@ -788,12 +788,7 @@ grafana:
 아래 Grafana의 Variable Expansion이 적용된 `values`를 자세히 살펴보겠습니다.
 
 ```yaml
-# values.yaml for kube-promethue-stack
-grafana:
-  grafana.ini:
-      ...
       client_id: $__env{GF_AUTH_GOOGLE_CLIENT_ID}
-      ...
 ```
 
 위 설정의 경우, Variable Expansion의 Env Provider를 통해 Grafana Pod에 설정된 `GF_AUTH_GOOGLE_CLIENT_ID` 환경변수를 `client_id`로 대신 쓰겠다는 의미입니다.
