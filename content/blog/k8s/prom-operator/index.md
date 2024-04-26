@@ -893,9 +893,13 @@ Prometheus Operator를 사용하면 다음과 같은 장점이 있습니다.
 
 ## 참고자료
 
+**Prometheus Opeator**  
 [Prometheus Operator 공식문서](https://prometheus-operator.dev)
 
-[Actions Runner Controller 대시보드](https://grafana.com/grafana/dashboards/19382-horizontalrunnerautoscalers/)
+**Grafana**  
+[Variable Expansion](https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#variable-expansion)  
+[How to handle sensitive values in chart 7.1.0?](https://github.com/grafana/helm-charts/issues/2896#issuecomment-1945496592)
 
+**Actions Runner Controller**  
+[Actions Runner Controller 대시보드](https://grafana.com/grafana/dashboards/19382-horizontalrunnerautoscalers/)  
 [Actions Runner Controller 구성](/blog/k8s/actions-runner-admin-guide/)  
-쿠버네티스 클러스터에 ARC<sup>Actions Runner Controller</sup>를 설치하는 가이드입니다.
