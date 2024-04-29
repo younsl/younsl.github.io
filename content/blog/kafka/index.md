@@ -90,3 +90,54 @@ replica.lag.time.max.ms = 30000
 ```
 
 &nbsp;
+
+---
+
+&nbsp;
+
+### 계층형 스토리지
+
+[계층형 스토리지](https://docs.aws.amazon.com/ko_kr/msk/latest/developerguide/msk-tiered-storage.html)는 사용자가 자주 접근하지 않는 데이터를 자동으로 더 저렴한 스토리지 계층으로 이동시키는 기능을 말합니다. Kafka의 주요 사용 사례 중 하나는 대량의 로그 또는 이벤트 데이터를 저장하고, 이를 실시간으로 분석하는 것입니다. 이러한 데이터 중 일부는 생성 후 단기간에 많이 사용되지만, 시간이 지남에 따라 접근 빈도가 줄어들 수 있습니다.
+
+MSK의 계층형 스토리지 기능을 사용하면, 이러한 Cold 데이터를 자동으로 더 저렴한 스토리지로 이동시켜 비용을 절감할 수 있습니다. 예를 들어, 초기에는 SSD와 같은 고성능 스토리지에 데이터를 저장했다가, 일정 기간이 지나면 자동으로 HDD 같은 저비용 스토리지로 옮겨지게 됩니다. 이는 특히 데이터를 장기간 보관해야 하는 경우 비용 효율적입니다.
+
+이 기능은 비용을 절감하면서도, 필요할 때 빠른 접근이 가능하도록 유지하기 위해 중요합니다. 사용자는 데이터의 저장 위치나 성능에 대해 걱정하지 않고, MSK 서비스가 자동으로 관리해주는 편리함을 누릴 수 있습니다.
+
+&nbsp;
+
+계층형 스토리지<sup>Tiered storage</sup>의 사용 조건
+
+- 계층형 스토리지가 활성화된 Amazon MSK 클러스터는 버전 3.6.0 또는 2.8.2.tiered를 사용해야 합니다.
+- 계층형 스토리지는 브로커 유형 t3.small을 지원하지 않습니다.
+
+MSK 클러스터에서 위 2개 조건이 충족되면 계층형 스토리지<sup>Tiered Storage</sup> 기능을 사용할 수 있습니다.
+
+&nbsp;
+
+테라폼 MSK 모듈에서 Tiered Storage 기능을 활성화하려면 `storage_mode` 값을 `LOCAL`(default)이 아닌 `TIERED`로 변경합니다.
+
+```terraform
+#================
+# MSK Cluster
+#================
+module "msk_cluster" {
+  ...
+
+  name                        = local.name
+  kafka_version               = "3.6.0"
+  number_of_broker_nodes      = 3
+  broker_node_az_distribution = "DEFAULT"
+
+  # Valid values: `null`, `PER_TOPIC_PER_PARTITION`, `PER_BROKER`, `PER_TOPIC_PER_BROKER`
+  # https://docs.aws.amazon.com/msk/latest/developerguide/metrics-details.html
+  enhanced_monitoring = "PER_TOPIC_PER_PARTITION"
+
+  broker_node_storage_info = {
+    ebs_storage_info = {
+      volume_size = 500
+    }
+  }
+
+  # Broker node's storage autoscaling
+  storage_mode               = "TIERED"
+```
