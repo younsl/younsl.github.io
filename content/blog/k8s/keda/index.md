@@ -539,9 +539,14 @@ NAME   SYNC STATUS   HEALTH STATUS   REVISION
 keda   OutOfSync     Healthy         fbe3c161f63b4ba10ae852064e4713a8cdbb75fe
 ```
 
-이 문제는 KEDA v2.13에서 해결되었기 때문에, 해결하려면 KEDA를 v2.12에서 v2.13으로 버전 업그레이드하면 됩니다.
+이 문제는 결과적으로 KEDA의 특정 버전에서만 발생하는 버그입니다. [KEDA 메인테이너의 답변](https://github.com/kedacore/keda/issues/4732#issuecomment-1908775894)에 의하면 KEDA v2.13 버전 이상부터 해결되었습니다.
 
-자세한 사항은 Github 이슈 [#4732](https://github.com/kedacore/keda/issues/4732#issuecomment-1948114742)를 확인합니다.
+&nbsp;
+
+요약하면 APIService 리소스의 `OutOfSync` 표시 문제를 해결하는 방법은 크게 2가지입니다.
+
+1. **KEDA v2.13 이상으로 버전 업그레이드해서 해결하기** (권장)
+2. **ArgoCD에서 설정 차이를 무시하도록 설정하기** : 자세한 해결방법은 [#4732](https://github.com/kedacore/keda/issues/4732#issuecomment-2082067738)를 참고합니다.
 
 &nbsp;
 
