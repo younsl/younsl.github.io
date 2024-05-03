@@ -497,11 +497,64 @@ IMDS 모드는 aws-node-termination-handler 파드를 데몬셋을 통해 배포
 
 &nbsp;
 
+### 파드의 우아한 종료
+
+쿠버네티스에서 파드의 우아한 종료(Graceful Shutdown)는 애플리케이션을 안전하게 종료하도록 보장하는 중요한 과정입니다. 이를 위해 tGPS<sup>terminationGracePeriodSeconds</sup>와 preStop 후크를 조합하여 사용할 수 있습니다.
+
+#### 관련 파드 spec
+
+1. **`spec.terminationGracePeriodSeconds`** : 줄여서 tGPS라고도 합니다. `spec.terminationGracePeriodSeconds`는 파드가 종료 신호를 받은 후 실제로 종료되기 전까지 기다리는 시간을 설정합니다. 이 시간 동안 파드는 마지막 작업을 처리하고 리소스를 안전하게 해제할 수 있습니다. 기본값은 `30`초이며, 이를 조정하여 필요한 만큼의 시간을 설정할 수 있습니다.
+2. **`preStop` 훅의 역할** : `preStop` 후크는 파드가 종료 신호를 받은 직후, 실제 종료 프로세스가 시작되기 전에 실행되는 커맨드나 HTTP 요청입니다. 이를 통해 파드는 종료에 필요한 사전 작업을 실행할 수 있습니다(예: 세션 저장, 로그 백업 등).
+
+&nbsp;
+
+#### 종료 신호가 발생하는 상황
+
+쿠버네티스에서 파드에 종료 신호가 보내지는 여러 가지 상황이 있습니다:
+
+- **파드 스케일링**: 파드를 스케일 다운할 때, 쿠버네티스는 초과된 파드 인스턴스를 종료합니다.
+- **배포 업데이트**: 새 버전의 컨테이너 이미지로 업데이트하거나 구성 변경이 있을 때, 기존 파드가 종료되고 새로운 파드가 생성됩니다.
+- **자원 부족**: 노드에서 자원 부족이 발생하면, 스케줄러가 파드를 다른 노드로 이동시키기 위해 종료할 수 있습니다.
+- **수동 삭제**: 사용자가 명령어나 API를 통해 파드를 직접 삭제하는 경우.
+- **노드 유지보수**: 노드가 유지보수 모드로 들어가거나 재시작되어야 할 때, 해당 노드의 파드들이 종료됩니다.
+
+&nbsp;
+
+#### 파드의 우아한 종료 설정 예시
+
+아래는 `terminationGracePeriodSeconds`와 `preStop` 훅을 조합해서 쿠버네티스 파드의 우아한 종료<sup>Graceful Shutdown</sup>를 설정한 예시입니다.
+
+```yaml
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-pod
+spec:
+  # [1] 파드 종료 대기 시간을 60초로 설정
+  terminationGracePeriodSeconds: 60
+  containers:
+  - name: example-container
+    image: nginx
+    lifecycle:
+      preStop:
+        exec:
+          # [2] 종료 전 55초 동안 대기
+          command: ["sh", "-c", "sleep 55"]
+```
+
+이 예시에서 `terminationGracePeriodSeconds` 값은 `60`초로 설정되어 있습니다. 컨테이너는 종료 신호 수신 후 preStop 후크로 지정된 `sleep 55` 커맨드가 실행되며, 이 커맨드는 종료 전 `55`초 동안 파드를 대기 상태로 유지합니다. 이 시간 동안 파드는 마지막 데이터 처리, DB 커넥션 해제, 리소스 할당 해제 등 필요한 작업을 완료할 수 있습니다.
+
+이 방법을 통해 파드의 우아한 종료가 보장되며, 애플리케이션의 안정성을 높이고 데이터 손실 위험을 줄일 수 있습니다.
+
+&nbsp;
+
 ## 정리
 
 - NTH(Node Termination Handler)는 쿠버네티스 클러스터에 깔아쓰는 데몬셋 에드온입니다. NTH를 사용하면 스팟 인스턴스 및 메인터넌스 스케줄과 같은 EC2 인스턴스 관련 이벤트들을 자동 처리할 수 있습니다.
 - NTH의 동작방식은 크게 2개이며 IMDS 모드와 Queue 모드를 지원합니다.
 - 모드에 따라 자동 처리할 수 있는 인스턴스 이벤트 타입 범위가 다르며, Queue 모드가 더 넓은 이벤트 처리 범위를 가지고 있습니다.
+- NTH에 의해 노드가 drain 처리되더라도 그 위에서 구동되는 파드들이 우아하게 종료되도록 `preStop`과 `spec.terminationGracePeriodSeconds`를 조합하도록 보강해야 합니다.
 
 &nbsp;
 
