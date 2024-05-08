@@ -1,5 +1,5 @@
 ---
-title: "NTH hack"
+title: "NTH"
 date: 2023-06-11T22:29:40+09:00
 lastmod: 2024-01-31T09:52:45+09:00
 slug: ""

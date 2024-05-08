@@ -12,20 +12,7 @@ showAdvertisement: false
 
 ### Younsung Lee
 
-DevOps Engineer and Cluster Nerd. Interested in [distributed computing](https://en.wikipedia.org/wiki/Distributed_computing).
-
-**Contact**: [`github`](https://github.com/younsl) [`cysl@kakao.com`](mailto:cysl@kakao.com)
-
-<!--
-**Gadgets**  
-2023-09-27 기준
-
-| **모델명**             | **구매장소**            | **구매일자** | **금액**     |
-|----------------------|-----------------------|------------|-------------|
-| Macbook Air M2       | Apple Store 강남       | 2023-04-07 | 1,690,000 ₩ |
-| iPhone 14            | Apple Store 가로수길    | 2022-10-26 | 1,250,000 ₩ |
-| AirPods 3            | Apple 공식 홈페이지      | 2022-10-30 | 269,000 ₩   |
--->
+DevOps Engineer. [`Github`](https://github.com/younsl) [`email`](mailto:cysl@kakao.com).
 
 &nbsp;
 
@@ -94,13 +81,13 @@ Mar 2018 ― Feb 2022
 
 ### Certification
 
-![HCVA](./images/8-hcva.png " ") &nbsp; ![CKA](./images/6-cka.png "Certified Kubernetes Administrator. 2022.09.13 ― 2025.09.13.") &nbsp; ![SAP](./images/5-sap.png "AWS Certified Solutions Architect - Professional. 2023.05.21 - 2026.05.21") &nbsp; ![DVA](./images/4-dva.png "AWS Certified Developer - 2023.05.18 - 2026.05.18") &nbsp; ![SOA](./images/3-soa.png "AWS Certified SysOps Administrator - 2023.05.13 - 2026.05.13") &nbsp; ![CLF](./images/2-clf.png "AWS Certified Cloud Practitioner - 2023.05.04 - 2026.05.21") &nbsp; ![SAA](./images/1-saa.png "AWS Certified Solutions Architect - Associate. 2020.06.26 ― 2026.05.21")
+![CKA](./images/6-cka.png "Certified Kubernetes Administrator. 2022.09.13 ― 2025.09.13.") &nbsp; ![SAP](./images/5-sap.png "AWS Certified Solutions Architect - Professional. 2023.05.21 - 2026.05.21") &nbsp; ![DVA](./images/4-dva.png "AWS Certified Developer - 2023.05.18 - 2026.05.18") &nbsp; ![SOA](./images/3-soa.png "AWS Certified SysOps Administrator - 2023.05.13 - 2026.05.13") &nbsp; ![CLF](./images/2-clf.png "AWS Certified Cloud Practitioner - 2023.05.04 - 2026.05.21") &nbsp; ![SAA](./images/1-saa.png "AWS Certified Solutions Architect - Associate. 2020.06.26 ― 2026.05.21")
 
 &nbsp;
 
-### Travel Log
+### Community contributions
 
-**2024/02** : Osaka and Kyoto, 🇯🇵 Japan  
-**2023/11 - 2023/12** : Las Vegas, 🇺🇸 USA  
-**2016/11** : Tokyo, 🇯🇵 Japan  
-**2011**: Shanghai, 🇨🇳 China
+[#2896](https://github.com/grafana/helm-charts/issues/2896#issuecomment-1945496592) <sup>grafana/helm-charts</sup>  
+[#245](https://github.com/aws/aws-network-policy-agent/issues/245) <sup>aws/aws-network-policy-agent</sup>  
+[#4732](https://github.com/kedacore/keda/issues/4732#issuecomment-2082067738) <sup>kedacore/keda</sup>  
+[#567](https://github.com/fjogeleit/yaml-update-action/issues/567#issuecomment-2099794536) <sup>fjogeleit/yaml-update-action</sup>
