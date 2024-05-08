@@ -323,16 +323,31 @@ webhookURL: ""
 
 #### webhookTemplate (선택사항)
 
-헬름차트의 `webhookTemplates` 값을 수정하면 NTH가 보내는 알람 메세지 템플릿을 커스터마이징 할 수 있습니다.  
-혹은 별도의 ConfigMap(또는 Secret)에 템플릿 정보를 저장한 후, 불러오는 방법도 있습니다.
+헬름차트의 `webhookTemplates` 값을 수정하면 Node Termination Handler 파드가 보내는 슬랙 알람 메세지 템플릿을 커스터마이징 할 수 있습니다.
+
+&nbsp;
+
+`webhookTemplate` 설정을 보기 편하게 줄바꿈을 적용해야할 경우, `YAML`에서 지원하는 [Folded Scalar](https://yaml.org/spec/1.2-old/spec.html#style/block/folded)<sup>`>`</sup>를 사용해서 아래와 같이 설정합니다.
 
 ```yaml
 # values.yaml
 # webhookTemplate if specified, replaces the default webhook message template.
-webhookTemplate: “{\”text\”:\”:rotating_light:*INSTANCE INTERRUPTION NOTICE*:rotating_light:\n*_EventID:_* `{{ .EventID }}`\n*_Environment:_* `<env_name>`\n*_InstanceId:_* `{{ .InstanceID }}`\n*_InstanceType:_* `{{ .InstanceType }}`\n*_Start Time:_* `{{ .StartTime }}`\n*_Description:_* {{ .Description }}\”}”
+webhookTemplate: >
+  {
+    "text": ":rotating_light: *EC2 스팟 인스턴스가 중단될 예정입니다.* :rotating_light:\n
+    *_Account:_* `{{ .AccountId }}`\n
+    *_Instance ID:_* `{{ .InstanceID }}`\n
+    *_Node Name:_* `{{ .NodeName }}`\n
+    *_Instance Type:_* `{{ .InstanceType }}`\n
+    *_Start Time:_* `{{ .StartTime }}`\n
+    *_Description:_* {{ .Description }}\n
+    *_Affected Pod(s):_* `{{ .Pods }}`"
+  }
 ```
 
-![커스터마이징한 Slack 메세지 예시](./7.png)
+![Folded Scalar를 사용하여 줄바꿈 적용된 Slack 알람 예시](./7.png)
+
+`webhookTemplate` 설정 외에도 별도의 ConfigMap(또는 Secret) 리소스에 슬랙 템플릿 정보를 저장한 후, 불러오는 방법도 있습니다.
 
 &nbsp;
 
