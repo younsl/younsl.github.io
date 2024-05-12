@@ -8,7 +8,7 @@ Personal tech blog.
 
 ## Installation
 
-**Prerequisite**: You need to install hugo `v0.119.0` or higher
+**Prerequisite**: You need to install [hugo](https://github.com/gohugoio/hugo) `v0.119.0` or higher
 
 ```bash
 brew install hugo
