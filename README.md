@@ -32,7 +32,7 @@ git submodule update themes/etch
 
 Check the submodule status.
 
-```bash
+```console
 $ git submodule status
  3286754ceb4e01b4995551f06ffd0a7c43000fe6 themes/etch (heads/master)
 ```
