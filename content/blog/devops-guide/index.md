@@ -65,6 +65,8 @@ DevOps 학습 로드맵
 
 [SRE Checklist](https://github.com/bregman-arie/sre-checklist)
 
+[Site Reliability Engineer Interview Preparation Guide](https://github.com/mxssl/sre-interview-prep-guide)
+
 [What's the Difference Between DevOps and SRE?](https://www.youtube.com/watch?v=uTEL8Ff1Zvk)
 
 &nbsp;
