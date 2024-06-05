@@ -87,7 +87,4 @@ Mar 2018 ― Feb 2022
 
 ### Community contributions
 
-[#2896](https://github.com/grafana/helm-charts/issues/2896#issuecomment-1945496592) <sup>grafana/helm-charts</sup>  
-[#245](https://github.com/aws/aws-network-policy-agent/issues/245) <sup>aws/aws-network-policy-agent</sup>  
-[#4732](https://github.com/kedacore/keda/issues/4732#issuecomment-2082067738) <sup>kedacore/keda</sup>  
-[#567](https://github.com/fjogeleit/yaml-update-action/issues/567#issuecomment-2099794536) <sup>fjogeleit/yaml-update-action</sup>
+[younsl/charts](https://github.com/younsl/charts)
