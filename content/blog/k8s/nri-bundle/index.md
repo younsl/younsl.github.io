@@ -344,17 +344,31 @@ kube-state-metrics:
 
 #### Deployment 히스토리 보관 수 조정
 
-```diff
-# deployment.yaml
+Deployment `spec` 설정 중 하나인 `revisionHistoryLimit`는 Kubernetes에서 Deployment의 롤아웃 기록을 보관할 최대 개수를 설정하는 속성입니다. 기본적으로 `10`개의 이전 버전이 보관되며, 이 제한을 초과하면 가장 오래된 배포 기록부터 삭제됩니다.
+
+```yaml
 apiVersion: apps/v1
 kind: Deployment
-...
+metadata:
+  # ...
 spec:
-- revisionHistoryLimit: 10
-+ revisionHistoryLimit: 0
+  revisionHistoryLimit: 10
 ```
 
-`revisionHistoryLimit`을 기본값 `10` → `0`으로 줄이는 경우, **20%의 데이터를 절감**할 수 있습니다. 대신 Deployment의 률백이 필요없는 경우에만 `revisionHistoryLimit`을 `0`으로 지정하도록 합니다.
+이는 시스템의 리소스를 효율적으로 사용하고 필요시 이전 버전으로 롤백할 수 있는 기능을 제공합니다.
+
+&nbsp;
+
+`revisionHistoryLimit`을 기본값 `10` → `0`으로 줄이는 경우, **20%의 데이터를 절감**할 수 있습니다. 대신 Deployment의 롤백이 필요없는 경우에만 `revisionHistoryLimit`을 `0`으로 지정하도록 합니다.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # ...
+spec:
+  revisionHistoryLimit: 0
+```
 
 &nbsp;
 
