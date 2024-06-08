@@ -24,14 +24,14 @@ May 30, 2023 ― Present <small>(1 yr 1 mo)</small>
 AWS, GCP, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops
 
 - Manage and operate 6 EKS clusters in a multi-stage environment: experienced EKS versions v1.24 to v1.27.
-- Operate Kubernetes policy engine <sup>Kyverno</sup> and Node Termination Handler. [[1](/blog/k8s/kyverno/)] [[2](/blog/k8s/nth/)]
-- Improve scalability by applying pod autoscaling based on Throughput Per Seconds metric using KEDA in the production environment. [[1](/blog/k8s/keda/)]
+- Operate Kubernetes policy engine <sup>Kyverno</sup> and Node Termination Handler. _[1](/blog/k8s/kyverno/) [2](/blog/k8s/nth/)_
+- Improve scalability by applying pod autoscaling based on Throughput Per Seconds metric using KEDA in the production environment. _[1](/blog/k8s/keda/)_
 - Automate repetitive operational tasks.
 - Operate CI/CD pipeline based on Github Actions Workflow and ArgoCD.
-- Build and operate MSK Cluster and OpenSearch Cluster. [[1](/blog/kafka/)] [[2](/blog/elasticsearch-admin-guide/)]
-- Build and operate Github Enterprise Server, Github Enterprise backup utilities and Actions Runner Controller. [[1](/blog/ghe-backup-utils/)] [[2](/blog/k8s/actions-runner-admin-guide/)]
-- Containerize github enterprise backup server <sup>[backup-utils](https://github.com/github/backup-utils)</sup> and migrate workload from EC2 to kubernetes cronJob for leveraging dedicated EKS cluster.
-- Develop and release helm chart for backup-utils as a maintainer. [[1](https://github.com/younsl/charts/tree/main/charts)]
+- Build and operate RabbitMQ, MSK Cluster and OpenSearch Cluster. _[1](/blog/kafka/) [2](/blog/elasticsearch-admin-guide/)_
+- Build and operate Github Enterprise Server, Github Enterprise backup utilities and Actions Runner Controller. _[1](/blog/ghe-backup-utils/) [2](/blog/k8s/actions-runner-admin-guide/)_
+- Containerize github enterprise backup server and migrate workload from EC2 to kubernetes cronJob for leveraging dedicated EKS cluster.
+- Develop and release backup-utils helm chart as a maintainer. _[1](https://github.com/younsl/charts/tree/main/charts)_
 - Provision and operate multi-account AWS infrastructure using terraform modules.
 - Integrate private networking between GCP and AWS to connect GCP Service APIs from EKS Pods.
 
@@ -42,10 +42,10 @@ Sep 5, 2022 ― Apr 7, 2023 <small>(7 mos)</small>
 
 AWS, Kubernetes, Istio, Observability, CI/CD, Terraform, MLOps, Infrastructure Ops
 
-- Acquired electronic finance business license #2022-483 after building multi-account AWS infrastructure for 3 months from September to December 2022. [[1](https://www.fsc.go.kr/po040200/79214?srchCtgry=&curPage=&srchKey=&srchText=&srchBeginDt=&srchEndDt)]
-- Managed and operated 2 EKS clusters in a multi-stage environment: experienced EKS versions v1.24 to v1.25. [[1](https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/kubernetes-versions.html#kubernetes-release-calendar)]
+- Acquired electronic finance business license #2022-483 after building multi-account AWS infrastructure for 3 months from September to December 2022. _[1](https://www.fsc.go.kr/po040200/79214?srchCtgry=&curPage=&srchKey=&srchText=&srchBeginDt=&srchEndDt)_
+- Managed and operated 2 EKS clusters in a multi-stage environment: experienced EKS versions v1.24 to v1.25. _[1](https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/kubernetes-versions.html#kubernetes-release-calendar)_
 - Provisioned and operated multi-stage AWS infrastructure using terraform.
-- FinOps: Optimized multi-account infrastructure and reduced monthly AWS cost from $6800 to $4800, 30% monthly cost savings from Jan 2023 to Mar 2023.
+- Optimized multi-account infrastructure and reduced monthly AWS cost from $6800 to $4800, 30% monthly cost savings from Jan 2023 to Mar 2023.
 
 &nbsp;
 
