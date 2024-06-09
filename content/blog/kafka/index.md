@@ -8,6 +8,10 @@ keywords: []
 tags: ["aws"]
 ---
 
+{{< toc >}}
+
+&nbsp;
+
 ## 개요
 
 AWS의 관리형 Kafka 서비스인 MSK 클러스터 운영자를 위한 가이드
@@ -117,9 +121,9 @@ MSK 클러스터에서 위 2개 조건이 충족되면 계층형 스토리지<su
 테라폼 MSK 모듈에서 Tiered Storage 기능을 활성화하려면 `storage_mode` 값을 `LOCAL`(default)이 아닌 `TIERED`로 변경합니다.
 
 ```terraform
-#================
+#-------------------------
 # MSK Cluster
-#================
+#-------------------------
 module "msk_cluster" {
   ...
 
