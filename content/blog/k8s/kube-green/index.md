@@ -419,7 +419,7 @@ spec:
 
 #### KEDA
 
-특정 시간대에 파드의 scale-to-zero를 적용하는 것은 `kube-green`만 가능한 것이 아닙니다. KEDA<sup>Kubernetes-based Event Driven Autoscaling</sup>의 경우도 Cron Scaler를 사용하여 scale-to-zero를 지원합니다.
+특정 시간대에 파드의 scale-to-zero를 적용하는 것은 `kube-green`만 가능한 것은 아닙니다. KEDA<sup>Kubernetes-based Event Driven Autoscaling</sup>의 경우도 Cron Scaler를 사용하여 scale-to-zero를 지원합니다.
 
 ![KEDA cron-scaler](./6.png)
 
@@ -438,7 +438,7 @@ triggerauthentications          ta,triggerauth           keda.sh/v1alpha1   true
 
 &nbsp;
 
-아래는 cron scaler를 사용하여 한국시간 기준으로 매일 오전 9시부터 ~ 18시까지만 10개의 파드를 운영하고, 업무시간 외에는 비용 절감을 위해 scale-to-zero를 구현하는 예제입니다.
+아래는 cron scaler를 사용하여 한국시간<sup>KST</sup> 기준으로 매일 오전 9시부터 ~ 18시까지만 10개의 파드를 운영하고, 업무시간 외에는 비용 절감을 위해 scale-to-zero를 구현하는 예제입니다.
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
