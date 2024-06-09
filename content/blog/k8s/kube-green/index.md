@@ -415,7 +415,66 @@ spec:
 
 &nbsp;
 
+### 다른 대안
+
+#### KEDA
+
+특정 시간대에 파드의 scale-to-zero를 적용하는 것은 `kube-green`만 가능한 것이 아닙니다. KEDA<sup>Kubernetes-based Event Driven Autoscaling</sup>의 경우도 Cron Scaler를 사용하여 scale-to-zero를 지원합니다.
+
+![KEDA cron-scaler](./6.png)
+
+&nbsp;
+
+scale-to-zero를 구현하기 위해 KEDA는 커스텀 리소스로 `ScaledObject`를 사용합니다. `kubectl` 명령어를 사용해서 KEDA에서 사용하는 Custom Resource 목록을 조회할 수 있습니다.
+
+```bash
+$ kubectl api-resources --api-group keda.sh
+NAME                            SHORTNAMES               APIVERSION         NAMESPACED   KIND
+clustertriggerauthentications   cta,clustertriggerauth   keda.sh/v1alpha1   false        ClusterTriggerAuthentication
+scaledjobs                      sj                       keda.sh/v1alpha1   true         ScaledJob
+scaledobjects                   so                       keda.sh/v1alpha1   true         ScaledObject
+triggerauthentications          ta,triggerauth           keda.sh/v1alpha1   true         TriggerAuthentication
+```
+
+&nbsp;
+
+아래는 cron scaler를 사용하여 한국시간 기준으로 매일 오전 9시부터 ~ 18시까지만 10개의 파드를 운영하고, 업무시간 외에는 비용 절감을 위해 scale-to-zero를 구현하는 예제입니다.
+
+```yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: cron-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: my-deployment
+  minReplicaCount: 0
+  cooldownPeriod: 300
+  triggers:
+  - type: cron
+    metadata:
+      timezone: "Asia/Seoul" # The acceptable values would be a value from the IANA Time Zone Database.
+      start: "0 9 * * *"     # At 9:00 AM
+      end: "0 18 * * *"      # At 6:00 PM
+      desiredReplicas: "5"
+```
+
+- 근무 시간 외에 scale-to-zero를 적용하려면 ScaledObject에서 `minReplicaCount: 0`을 설정하고 근무 시간 동안에 `desiredReplicas`로 복제본을 늘려야 합니다.
+- 기본적으로 ScaledObject의 `cooldownPeriod` 설정은 5분(300초)이므로 실제 파드 축소는 cron 일정 종료 매개변수로부터 5분 후에 발생합니다.
+
+KEDA에 대한 더 자세한 정보는 [KEDA 공식 홈페이지](https://keda.sh/)와 [KEDA Github](https://github.com/kedacore/keda)에서 확인 가능합니다.
+
+&nbsp;
+
 ## 참고자료
 
+**kube-green**  
 [Github kube-green](https://github.com/kube-green/kube-green)  
 [kube-green docs](https://kube-green.dev/)
+
+**KEDA**  
+[KEDA docs](https://keda.sh/)  
+[Github keda](https://github.com/kedacore/keda)
