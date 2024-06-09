@@ -411,6 +411,8 @@ spec:
 [Karpenter 설치하기](/blog/k8s/karpenter)  
 [karpenter 헬름 차트 버전 업그레이드](/blog/k8s/upgrade-karpenter/)
 
+쿠버네티스 클러스터의 노드 오토스케일러인 CA<sup>Cluster Autsocaler</sup> 보다는 AWS에서 제공하는 Karpenter가 새 노드를 띄우는 시간이 빠르기 때문에 되도록이면 Karpenter 사용을 권장합니다.
+
 &nbsp;
 
 ## 참고자료
