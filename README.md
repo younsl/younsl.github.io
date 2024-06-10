@@ -37,13 +37,32 @@ $ git submodule status
  3286754ceb4e01b4995551f06ffd0a7c43000fe6 themes/etch (heads/master)
 ```
 
-## Run for development
+### Running hugo server
 
 Generate your blog site using [etch](https://github.com/LukasJoswiak/etch) theme.
 
 ```bash
 hugo server -t etch
 open http://localhost:1313
+```
+
+If you want to run hugo server locally using the container, use this [dockerfile](https://github.com/younsl/box/tree/main/box/dockerfiles/hugo) with bootstrap script.
+
+```bash
+# Build blog container
+docker build -t hugo:dev .
+
+# Run blog container with local blog files mounted
+export LOCAL_REPO_PATH=$HOME/github/younsl/younsl.github.io
+docker run -d --name hugo -p 1313:1313 -v ${LOCAL_REPO_PATH}:/app hugo:dev
+```
+
+Verify the blog container is running.
+
+```console
+$ docker ps
+CONTAINER ID   IMAGE         COMMAND                  CREATED        STATUS        PORTS                    NAMES
+5fc4d6457641   hugo:latest   "hugo server -t etch…"   12 hours ago   Up 12 hours   0.0.0.0:1313->1313/tcp   hugo
 ```
 
 ## Deployment
