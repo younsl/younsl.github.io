@@ -231,8 +231,13 @@ Go proverbs
 
 ![DevOps vs SRE](./1.png)
 
+데브옵스 엔지니어는 소프트웨어 통합 및 배포에 중점을 맞추는 데 비해, SRE는 이미 작동하고 있는 서비스의 운영과 모니터링, 장애 대응에 초점을 맞춥니다.
+
 [What's the Difference Between DevOps and SRE? (class SRE implements DevOps)](https://www.youtube.com/watch?v=uTEL8Ff1Zvk)  
 SRE와 DevOps의 차이점을 설명해주는 구글 발표 영상
+
+[Benefits of Collaborated SRE and DevOps Team!](https://www.linkedin.com/pulse/benefits-collaborated-sre-devops-team-shailender-singh/)  
+Microsoft의 SRE가 남긴 글 (linkedin)
 
 &nbsp;
 
