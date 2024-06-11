@@ -36,6 +36,7 @@
 # Hugo
 #----------------------------------
 .hugo_build.lock
+public/
 
 resources/
 # resources caches some files to speed up generation.
