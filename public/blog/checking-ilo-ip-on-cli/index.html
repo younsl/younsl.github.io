@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/checking-ilo-ip-on-cli/" />
+    <title>ipmitool 명령어로 HP iLO IP 확인</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>ipmitool 명령어로 HP iLO IP 확인</h1>
+        <div>
+                <time>Updated August 30, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>CLI 환경에서 <code>ipmitool</code> 명령어를 사용하면 HP iLO IP 주소를 원격으로 확인할 수 있습니다.</p>
+<p>서버에 <code>ipmitool</code>만 설치되어 있다면 HP iLO IP를 조사하기 위해 데이터센터까지 들어갈 필요가 없습니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<ul>
+<li><strong>Vendor</strong> : HP</li>
+<li><strong>Model</strong> : ProLiant DL380 Gen9</li>
+<li><strong>OS</strong> : Red Hat Enterprise Linux Server release 6.5 (Santiago)</li>
+<li><strong>Architecture</strong> : x86_64</li>
+<li><strong>Shell</strong> : bash</li>
+<li><strong>Package</strong> : ipmitool-1.8.11</li>
+</ul>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="ipmi">IPMI</h3>
+<p>IPMI<sup>Intelligent Platform Management Interface</sup>는 서버 관리를 위한 관리 인터페이스로 원격지나 로컬 서버의 상태를 파악하고 제어할 수 있는 기능을 제공합니다.<br>
+따라서 많은 수의 서버를 관리하는 환경에서는 IPMI를 유용하게 활용될 수 있습니다.<br>
+요즘 나오는 대부분의 서버용 메인보드는 IPMI를 기본적으로 지원합니다.</p>
+<p><a href="https://www.ibm.com/docs/ko/power9?topic=ipmi-overview">IBM | IPMI 개요</a></p>
+<p> </p>
+<h2 id="전제조건">전제조건</h2>
+<p><code>ipmitool</code> 패키지가 설치된 시스템</p>
+<blockquote>
+<p><strong>참고사항</strong><br>
+<code>ipmitool</code>은 IPMI(Intelligent Platform Management Interface)를 지원하는 장치를 모니터링, 구성 및 관리하는 CLI 유틸리티입니다.</p>
+</blockquote>
+<p><code>ipmitool</code> 패키지 설치 방법은 이 글의 주제를 벗어나는 내용이기 떄문에 생략하겠습니다.</p>
+<p> </p>
+<h2 id="설정방법">설정방법</h2>
+<h3 id="1-ipmi-패키지-확인">1. ipmi 패키지 확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ rpm -qa <span class="p">|</span> grep ipmitool
+</span></span><span class="line"><span class="cl">ipmitool-1.8.11-16.el6.x86_64
+</span></span></code></pre></div><p>ipmitool <code>1.8.11</code> 버전의 패키지가 설치되어 있습니다.</p>
+<p> </p>
+<h3 id="2-ipmi-서비스-시작">2. ipmi 서비스 시작</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ service ipmi start
+</span></span><span class="line"><span class="cl">Starting ipmi drivers: <span class="o">[</span>  OK  <span class="o">]</span>
+</span></span></code></pre></div><p>ipmi 서비스를 시작합니다.</p>
+<p> </p>
+<h3 id="3-ilo-ip-확인">3. iLO IP 확인</h3>
+<p>현재 서버에 설정된 iLO IP 정보를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ipmitool lan print
+</span></span></code></pre></div><p> </p>
+<p>명령어 실행 결과는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Set in Progress         : Set Complete
+</span></span><span class="line"><span class="cl">Auth Type Support       : 
+</span></span><span class="line"><span class="cl">Auth Type Enable        : Callback : 
+</span></span><span class="line"><span class="cl">                        : User     : 
+</span></span><span class="line"><span class="cl">                        : Operator : 
+</span></span><span class="line"><span class="cl">                        : Admin    : 
+</span></span><span class="line"><span class="cl">                        : OEM      : 
+</span></span><span class="line"><span class="cl">IP Address Source       : Static Address
+</span></span><span class="line"><span class="cl">IP Address              : 192.168.0.120
+</span></span><span class="line"><span class="cl">Subnet Mask             : 255.255.255.0
+</span></span><span class="line"><span class="cl">MAC Address             : 98:f2:b3:3b:fa:3e
+</span></span><span class="line"><span class="cl">SNMP Community String   : 
+</span></span><span class="line"><span class="cl">BMC ARP Control         : ARP Responses Enabled, Gratuitous ARP Disabled
+</span></span><span class="line"><span class="cl">Default Gateway IP      : 0.0.0.0
+</span></span><span class="line"><span class="cl">802.1q VLAN ID          : Disabled
+</span></span><span class="line"><span class="cl">802.1q VLAN Priority    : <span class="m">0</span>
+</span></span><span class="line"><span class="cl">RMCP+ Cipher Suites     : 0,1,2,3
+</span></span><span class="line"><span class="cl">Cipher Suite Priv Max   : XuuaXXXXXXXXXXX
+</span></span><span class="line"><span class="cl">                        :     <span class="nv">X</span><span class="o">=</span>Cipher Suite Unused
+</span></span><span class="line"><span class="cl">                        :     <span class="nv">c</span><span class="o">=</span>CALLBACK
+</span></span><span class="line"><span class="cl">                        :     <span class="nv">u</span><span class="o">=</span>USER
+</span></span><span class="line"><span class="cl">                        :     <span class="nv">o</span><span class="o">=</span>OPERATOR
+</span></span><span class="line"><span class="cl">                        :     <span class="nv">a</span><span class="o">=</span>ADMIN
+</span></span><span class="line"><span class="cl">                        :     <span class="nv">O</span><span class="o">=</span>OEM
+</span></span></code></pre></div><p>서버 하드웨어 제조사가 HP일 경우, <code>ipmitool lan print</code> 명령어 결과에 나오는 <code>IP Address</code> 는 iLO IP와 동일한 의미입니다.</p>
+<p>ipmi 서비스가 실행되어 있지 않을 경우, 제대로 결과를 반환하지 않습니다.<br>
+<code>ipmitool lan print</code> 명령어 실행시 응답이 없을 경우, ipmi 서비스가 잘 동작하고 있는 상태인지 확인해야 합니다.</p>
+<p> </p>
+<h3 id="4-ilo-ip-설정">4. iLO IP 설정</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1">## (1) 고정(Static) IP 설정</span>
+</span></span><span class="line"><span class="cl">$ ipmitool lan <span class="nb">set</span> <span class="m">1</span> ipsrc static
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">## (2) IP 설정</span>
+</span></span><span class="line"><span class="cl">$ ipmitool lan <span class="nb">set</span> <span class="m">1</span> ipaddr 10.10.10.10
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">## (3) Subnet Mask 설정</span>
+</span></span><span class="line"><span class="cl">$ ipmitool lan <span class="nb">set</span> <span class="m">1</span> netmask 255.255.255.0
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">## (4) Default Gateway IP 설정</span>
+</span></span><span class="line"><span class="cl">$ ipmitool lan <span class="nb">set</span> <span class="m">1</span> defgw ipaddr 10.10.10.1
+</span></span></code></pre></div><p>서버 하드웨어 환경에 따라 channel 번호는 반드시 <code>1</code>이 아닌 다른 수일수도 있으므로 주의합니다.</p>
+<p> </p>
+<h4 id="ipmitool-lan-set-명령어-형식">ipmitool lan set 명령어 형식</h4>
+<p><code>ipmitool lan set</code> 명령어만 치면 설정 관련 명령어 사용법이 나오므로 참고할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ipmitool lan <span class="nb">set</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">usage: lan <span class="nb">set</span> &lt;channel&gt; &lt;command&gt; &lt;parameter&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">LAN <span class="nb">set</span> command/parameter options:
+</span></span><span class="line"><span class="cl">  ipaddr &lt;x.x.x.x&gt;               Set channel IP address
+</span></span><span class="line"><span class="cl">  netmask &lt;x.x.x.x&gt;              Set channel IP netmask
+</span></span><span class="line"><span class="cl">  macaddr &lt;x:x:x:x:x:x&gt;          Set channel MAC address
+</span></span><span class="line"><span class="cl">  defgw ipaddr &lt;x.x.x.x&gt;         Set default gateway IP address
+</span></span><span class="line"><span class="cl">  defgw macaddr &lt;x:x:x:x:x:x&gt;    Set default gateway MAC address
+</span></span><span class="line"><span class="cl">  bakgw ipaddr &lt;x.x.x.x&gt;         Set backup gateway IP address
+</span></span><span class="line"><span class="cl">  bakgw macaddr &lt;x:x:x:x:x:x&gt;    Set backup gateway MAC address
+</span></span><span class="line"><span class="cl">  password &lt;password&gt;            Set session password <span class="k">for</span> this channel
+</span></span><span class="line"><span class="cl">  snmp &lt;community string&gt;        Set SNMP public community string
+</span></span><span class="line"><span class="cl">  user                           Enable default user <span class="k">for</span> this channel
+</span></span><span class="line"><span class="cl">  access &lt;on<span class="p">|</span>off&gt;                Enable or disable access to this channel
+</span></span><span class="line"><span class="cl">  alert &lt;on<span class="p">|</span>off&gt;                 Enable or disable PEF alerting <span class="k">for</span> this channel
+</span></span><span class="line"><span class="cl">  arp respond &lt;on<span class="p">|</span>off&gt;           Enable or disable BMC ARP responding
+</span></span><span class="line"><span class="cl">  arp generate &lt;on<span class="p">|</span>off&gt;          Enable or disable BMC gratuitous ARP generation
+</span></span><span class="line"><span class="cl">  arp interval &lt;seconds&gt;         Set gratuitous ARP generation interval
+</span></span><span class="line"><span class="cl">  vlan id &lt;off<span class="p">|</span>&lt;id&gt;&gt;             Disable or <span class="nb">enable</span> VLAN and <span class="nb">set</span> ID <span class="o">(</span>1-4094<span class="o">)</span>
+</span></span><span class="line"><span class="cl">  vlan priority &lt;priority&gt;       Set vlan priority <span class="o">(</span>0-7<span class="o">)</span>
+</span></span><span class="line"><span class="cl">  auth &lt;level&gt; &lt;type,..&gt;         Set channel authentication types
+</span></span><span class="line"><span class="cl">    <span class="nv">level</span>  <span class="o">=</span> CALLBACK, USER, OPERATOR, ADMIN
+</span></span><span class="line"><span class="cl">    <span class="nb">type</span>   <span class="o">=</span> NONE, MD2, MD5, PASSWORD, OEM
+</span></span><span class="line"><span class="cl">  ipsrc &lt;source&gt;                 Set IP Address <span class="nb">source</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">none</span>   <span class="o">=</span> unspecified <span class="nb">source</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">static</span> <span class="o">=</span> address manually configured to be static
+</span></span><span class="line"><span class="cl">    <span class="nv">dhcp</span>   <span class="o">=</span> address obtained by BMC running DHCP
+</span></span><span class="line"><span class="cl">    <span class="nv">bios</span>   <span class="o">=</span> address loaded by BIOS or system software
+</span></span><span class="line"><span class="cl">  cipher_privs XXXXXXXXXXXXXXX   Set RMCP+ cipher suite privilege levels
+</span></span><span class="line"><span class="cl">    <span class="nv">X</span> <span class="o">=</span> Cipher Suite Unused
+</span></span><span class="line"><span class="cl">    <span class="nv">c</span> <span class="o">=</span> CALLBACK
+</span></span><span class="line"><span class="cl">    <span class="nv">u</span> <span class="o">=</span> USER
+</span></span><span class="line"><span class="cl">    <span class="nv">o</span> <span class="o">=</span> OPERATOR
+</span></span><span class="line"><span class="cl">    <span class="nv">a</span> <span class="o">=</span> ADMIN
+</span></span><span class="line"><span class="cl">    <span class="nv">O</span> <span class="o">=</span> OEM
+</span></span></code></pre></div><p> </p>
+<h3 id="5-ilo-설정-변경사항-적용">5. iLO 설정 변경사항 적용</h3>
+<p>IP 설정 적용을 위해 BMC<sup>Baseboard Management Controller</sup>를 리부팅합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ipmitool mc reset cold
+</span></span></code></pre></div><p> </p>
+<h4 id="bmc">BMC</h4>
+<p><strong>개념</strong><br>
+IPMI<sup>Intelligent Platform Management Interface</sup> 유틸리티의 핵심 하드웨어 칩으로, 관리자들이 서버와 데스크톱에 대한 원격으로 긴급 모니터링하는데 활용합니다.</p>
+<p><strong>핵심 기능과 역할</strong><br>
+BMC 칩의 핵심기능은 CPU, Fan, 전원부(Power Supply), VGA<sup>Video Graphic Array</sup> 카드 등 각 하드웨어 부품(Component)에 설치된 센서들과 통신을 통해 상태를 모니터링하고, 발생하는 이벤트를 기록합니다. 원격으로 복구, 제어 등의 기능을 수행할 수도 있습니다.</p>
+<p> </p>
+<p>이것으로 iLO IP를 확인, 설정하는 작업이 완료되었습니다.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

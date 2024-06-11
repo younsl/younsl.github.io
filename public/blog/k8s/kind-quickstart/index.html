@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/k8s/kind-quickstart/" />
+    <title>kind 쿠버네티스 구축</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>kind 쿠버네티스 구축</h1>
+        <div>
+                <time>Updated May 27, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#배경지식">배경지식</a>
+      <ul>
+        <li><a href="#kind">kind</a></li>
+        <li><a href="#kind-아키텍쳐">kind 아키텍쳐</a></li>
+      </ul>
+    </li>
+    <li><a href="#환경">환경</a>
+      <ul>
+        <li><a href="#로컬-환경">로컬 환경</a></li>
+      </ul>
+    </li>
+    <li><a href="#준비사항">준비사항</a></li>
+    <li><a href="#single-node-클러스터-구성">single node 클러스터 구성</a>
+      <ul>
+        <li><a href="#1-docker-desktop-설치">1. docker desktop 설치</a></li>
+        <li><a href="#2-kind-설치">2. kind 설치</a></li>
+        <li><a href="#3-kubectl-설치">3. kubectl 설치</a></li>
+        <li><a href="#4-cluster-생성">4. cluster 생성</a></li>
+        <li><a href="#5-cluster-목록-확인">5. cluster 목록 확인</a></li>
+        <li><a href="#6-조작할-cluster-변경">6. 조작할 cluster 변경</a></li>
+        <li><a href="#7-클러스터-상태-확인">7. 클러스터 상태 확인</a></li>
+        <li><a href="#8-클러스터-삭제">8. 클러스터 삭제</a></li>
+      </ul>
+    </li>
+    <li><a href="#더-나아가서">더 나아가서</a>
+      <ul>
+        <li><a href="#multi-node-클러스터-구성">multi node 클러스터 구성</a></li>
+        <li><a href="#리소스-정리">리소스 정리</a></li>
+      </ul>
+    </li>
+    <li><a href="#결론">결론</a></li>
+    <li><a href="#주의사항">주의사항</a>
+      <ul>
+        <li><a href="#m1-호환성-문제">M1 호환성 문제</a></li>
+      </ul>
+    </li>
+    <li><a href="#참고자료">참고자료</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>macOS 환경에서 kind를 설치한 후 간편하게 로컬 쿠버네티스 환경을 구축할 수 있습니다.</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="kind">kind</h3>
+<p><a href="https://kind.sigs.k8s.io/">kind</a>는 Kubernetes IN Docker의 줄임말로 도커 컨테이너를 이용해 손쉽게 로컬 환경에서 kubernetes 클러스터를 구축할 수 있는 소프트웨어입니다.</p>
+<p><img src="./1.png" alt="kind logo"></p>
+<p><code>kind</code>와 유사한 오픈소스로는 <a href="https://kubernetes.io/ko/docs/tutorials/hello-minikube/">minikube</a>, <a href="https://k3s.io/">k3s</a>가 있습니다. 로컬 환경에서 쿠버네티스 관련 개발하거나 쿠버네티스 클러스터 실습이 필요할 경우 kind를 이용하면 간편하고 빠르게 확인할 수 있습니다.</p>
+<p> </p>
+<h3 id="kind-아키텍쳐">kind 아키텍쳐</h3>
+<p><a href="https://kind.sigs.k8s.io/docs/design/initial/">kind의 아키텍처</a>는 다음과 같습니다.</p>
+<p><img src="./2.png" alt="kind architecture"></p>
+<p>kind가 생성한 1대의 쿠버네티스 노드는 알고보면 1개의 도커 컨테이너입니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<h3 id="로컬-환경">로컬 환경</h3>
+<ul>
+<li><strong>Hardware</strong> : MacBook Pro (13&quot;, M1, 2020)</li>
+<li><strong>OS</strong> : macOS Monterey 12.0.1</li>
+<li><strong>패키지 관리자</strong> : Homebrew 3.3.6</li>
+<li><strong>docker desktop</strong> 4.3.0 (<code>Docker version 20.10.11, build dea9396</code>) : 쿠버네티스 기능 활성화, 패키지 관리자 Homebrew를 사용해서 설치</li>
+<li><strong>kind</strong> v0.11.1 : 패키지 관리자 Homebrew를 사용해서 설치</li>
+<li><strong>kubectl</strong> v1.22.4 : 패키지 관리자 Homebrew를 사용해서 설치</li>
+</ul>
+<p> </p>
+<h2 id="준비사항">준비사항</h2>
+<p>macOS용 패키지 관리자인 <a href="https://brew.sh">brew</a>가 미리 설치되어 있어야 합니다.</p>
+<p> </p>
+<h2 id="single-node-클러스터-구성">single node 클러스터 구성</h2>
+<h3 id="1-docker-desktop-설치">1. docker desktop 설치</h3>
+<p>kind로 쿠버네티스 클러스터를 생성하려면 먼저 docker desktop이 설치되어 있어야 합니다.</p>
+<p>docker desktop을 brew로 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ brew install --cask docker
+</span></span><span class="line"><span class="cl">Running <span class="sb">`</span>brew update --preinstall<span class="sb">`</span>...
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Auto-updated Homebrew!
+</span></span><span class="line"><span class="cl">Updated <span class="m">2</span> taps <span class="o">(</span>homebrew/core and homebrew/cask<span class="o">)</span>.
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Updated Formulae
+</span></span><span class="line"><span class="cl">Updated <span class="m">48</span> formulae.
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Updated Casks
+</span></span><span class="line"><span class="cl">Updated <span class="m">21</span> casks.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading https://desktop.docker.com/mac/main/arm64/71786/Docker.dmg
+</span></span><span class="line"><span class="cl"><span class="c1">######################################################################## 100.0%</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Installing Cask <span class="nv">docker</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Moving App <span class="s1">&#39;Docker.app&#39;</span> to <span class="s1">&#39;/Applications/Docker.app&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Linking Binary <span class="s1">&#39;docker-compose.bash-completion&#39;</span> to <span class="s1">&#39;/opt/homebrew/etc/bash_completion.d/docker-compose&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Linking Binary <span class="s1">&#39;docker.zsh-completion&#39;</span> to <span class="s1">&#39;/opt/homebrew/share/zsh/site-functions/_docker&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Linking Binary <span class="s1">&#39;docker.fish-completion&#39;</span> to <span class="s1">&#39;/opt/homebrew/share/fish/vendor_completions.d/docker.fish&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Linking Binary <span class="s1">&#39;docker-compose.fish-completion&#39;</span> to <span class="s1">&#39;/opt/homebrew/share/fish/vendor_completions.d/docker-compose.f
+</span></span></span><span class="line"><span class="cl"><span class="s1">==&gt; Linking Binary &#39;</span>docker-compose.zsh-completion<span class="s1">&#39; to &#39;</span>/opt/homebrew/share/zsh/site-functions/_docker_compose<span class="s1">&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">==&gt; Linking Binary &#39;</span>docker.bash-completion<span class="s1">&#39; to &#39;</span>/opt/homebrew/etc/bash_completion.d/docker<span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl">🍺  docker was successfully installed!
+</span></span></code></pre></div><p>패키지 관리자인 Homebrew로 도커를 설치할 때 <code>--cask</code> 옵션을 줘서 GUI 환경에서 docker desktop을 설치합니다.</p>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ brew info docker
+</span></span><span class="line"><span class="cl">Warning: Treating docker as a formula. For the cask, use homebrew/cask/docker
+</span></span><span class="line"><span class="cl">docker: stable 20.10.11 <span class="o">(</span>bottled<span class="o">)</span>, HEAD
+</span></span><span class="line"><span class="cl">Pack, ship and run any application as a lightweight container
+</span></span><span class="line"><span class="cl">https://www.docker.com/
+</span></span><span class="line"><span class="cl">Conflicts with:
+</span></span><span class="line"><span class="cl">  docker-completion <span class="o">(</span>because docker already includes these completion scripts<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Not installed
+</span></span><span class="line"><span class="cl">From: https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/docker.rb
+</span></span><span class="line"><span class="cl">License: Apache-2.0
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Dependencies
+</span></span><span class="line"><span class="cl">Build: go ✘, go-md2man ✘
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Options
+</span></span><span class="line"><span class="cl">--HEAD
+</span></span><span class="line"><span class="cl">	Install HEAD <span class="nv">version</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Analytics
+</span></span><span class="line"><span class="cl">install: 52,619 <span class="o">(</span><span class="m">30</span> days<span class="o">)</span>, 154,260 <span class="o">(</span><span class="m">90</span> days<span class="o">)</span>, 509,552 <span class="o">(</span><span class="m">365</span> days<span class="o">)</span>
+</span></span><span class="line"><span class="cl">install-on-request: 52,245 <span class="o">(</span><span class="m">30</span> days<span class="o">)</span>, 153,216 <span class="o">(</span><span class="m">90</span> days<span class="o">)</span>, 503,828 <span class="o">(</span><span class="m">365</span> days<span class="o">)</span>
+</span></span><span class="line"><span class="cl">build-error: <span class="m">4</span> <span class="o">(</span><span class="m">30</span> days<span class="o">)</span>
+</span></span></code></pre></div><p>docker 안정화 버전(<code>stable</code>) <code>20.10.11</code>이 설치된 상태입니다.</p>
+<p> </p>
+<p><img src="./3.jpg" alt="Launchpad에서 설치된 도커 확인"></p>
+<p>런치패드에서 확인해보면 Docker가 새로 생성된 걸 알 수 있습니다.</p>
+<p> </p>
+<h3 id="2-kind-설치">2. kind 설치</h3>
+<h4 id="설치">설치</h4>
+<p>kind도 docker desktop과 동일하게 brew를 이용해 최신버전을 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ brew install kind
+</span></span><span class="line"><span class="cl">Running <span class="sb">`</span>brew update --preinstall<span class="sb">`</span>...
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Auto-updated Homebrew!
+</span></span><span class="line"><span class="cl">Updated <span class="m">1</span> tap <span class="o">(</span>homebrew/core<span class="o">)</span>.
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Updated Formulae
+</span></span><span class="line"><span class="cl">Updated <span class="m">2</span> formulae.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading https://ghcr.io/v2/homebrew/core/kind/manifests/0.11.1
+</span></span><span class="line"><span class="cl"><span class="c1">######################################################################## 100.0%</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading https://ghcr.io/v2/homebrew/core/kind/blobs/sha256:836dda92f4ab17324edd3ebc8614fb84a55923388df87dc2be4
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading from https://pkg-containers.githubusercontent.com/ghcr1/blobs/sha256:836dda92f4ab17324edd3ebc8614fb84a
+</span></span><span class="line"><span class="cl"><span class="c1">######################################################################## 100.0%</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Pouring kind--0.11.1.arm64_monterey.bottle.tar.gz
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Caveats
+</span></span><span class="line"><span class="cl">zsh completions have been installed to:
+</span></span><span class="line"><span class="cl">  /opt/homebrew/share/zsh/site-functions
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Summary
+</span></span><span class="line"><span class="cl">🍺  /opt/homebrew/Cellar/kind/0.11.1: <span class="m">8</span> files, 8.4MB
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Running <span class="sb">`</span>brew cleanup kind<span class="sb">`</span>...
+</span></span><span class="line"><span class="cl">Disable this behaviour by setting HOMEBREW_NO_INSTALL_CLEANUP.
+</span></span><span class="line"><span class="cl">Hide these hints with HOMEBREW_NO_ENV_HINTS <span class="o">(</span>see <span class="sb">`</span>man brew<span class="sb">`</span><span class="o">)</span>
+</span></span></code></pre></div><p> </p>
+<h4 id="버전-확인">버전 확인</h4>
+<p>설치된 kind의 버전을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind version
+</span></span><span class="line"><span class="cl">kind v0.11.1 go1.17.2 darwin/arm64
+</span></span></code></pre></div><p> </p>
+<h3 id="3-kubectl-설치">3. kubectl 설치</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ brew install kubectl
+</span></span></code></pre></div><p>homebrew 패키지 관리자를 이용해 kubectl을 설치합니다.</p>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl version
+</span></span><span class="line"><span class="cl">Client Version: version.Info<span class="o">{</span>Major:<span class="s2">&#34;1&#34;</span>, Minor:<span class="s2">&#34;22&#34;</span>, GitVersion:<span class="s2">&#34;v1.22.4&#34;</span>, GitCommit:<span class="s2">&#34;b695d79d4f967c403a96986f1750a35eb75e75f1&#34;</span>, GitTreeState:<span class="s2">&#34;clean&#34;</span>, BuildDate:<span class="s2">&#34;2021-11-17T15:41:42Z&#34;</span>, GoVersion:<span class="s2">&#34;go1.16.10&#34;</span>, Compiler:<span class="s2">&#34;gc&#34;</span>, Platform:<span class="s2">&#34;darwin/arm64&#34;</span><span class="o">}</span>
+</span></span><span class="line"><span class="cl">Server Version: version.Info<span class="o">{</span>Major:<span class="s2">&#34;1&#34;</span>, Minor:<span class="s2">&#34;21&#34;</span>, GitVersion:<span class="s2">&#34;v1.21.1&#34;</span>, GitCommit:<span class="s2">&#34;5e58841cce77d4bc13713ad2b91fa0d961e69192&#34;</span>, GitTreeState:<span class="s2">&#34;clean&#34;</span>, BuildDate:<span class="s2">&#34;2021-05-21T23:06:30Z&#34;</span>, GoVersion:<span class="s2">&#34;go1.16.4&#34;</span>, Compiler:<span class="s2">&#34;gc&#34;</span>, Platform:<span class="s2">&#34;linux/arm64&#34;</span><span class="o">}</span>
+</span></span></code></pre></div><p><code>kubectl</code> 명령어의 동작 상태를 확인하기 위해 version을 체크합니다.</p>
+<p> </p>
+<h3 id="4-cluster-생성">4. cluster 생성</h3>
+<p><code>kind</code>로 쿠버네티스 클러스터를 생성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind create cluster
+</span></span><span class="line"><span class="cl">Creating cluster <span class="s2">&#34;kind&#34;</span> ...
+</span></span><span class="line"><span class="cl"> ✓ Ensuring node image <span class="o">(</span>kindest/node:v1.21.1<span class="o">)</span> 🖼
+</span></span><span class="line"><span class="cl"> ✓ Preparing nodes 📦
+</span></span><span class="line"><span class="cl"> ✓ Writing configuration 📜
+</span></span><span class="line"><span class="cl"> ✓ Starting control-plane 🕹️
+</span></span><span class="line"><span class="cl"> ✓ Installing CNI 🔌
+</span></span><span class="line"><span class="cl"> ✓ Installing StorageClass 💾
+</span></span><span class="line"><span class="cl">Set kubectl context to <span class="s2">&#34;kind-kind&#34;</span>
+</span></span><span class="line"><span class="cl">You can now use your cluster with:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">kubectl cluster-info --context kind-kind
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/#community 🙂
+</span></span></code></pre></div><p>쿠버네티스 클러스터를 생성할 때 이름을 따로 지정해주지 않으면 기본값으로 <code>kind</code>라는 이름으로 생성됩니다.</p>
+<p> </p>
+<p>클러스터를 생성할 때 <code>--name</code> 옵션을 사용해서 클러스터 이름을 지정할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind create cluster --name kind-2
+</span></span><span class="line"><span class="cl">Creating cluster <span class="s2">&#34;kind-2&#34;</span> ...
+</span></span><span class="line"><span class="cl"> ✓ Ensuring node image <span class="o">(</span>kindest/node:v1.21.1<span class="o">)</span> 🖼
+</span></span><span class="line"><span class="cl"> ✓ Preparing nodes 📦
+</span></span><span class="line"><span class="cl"> ✓ Writing configuration 📜
+</span></span><span class="line"><span class="cl"> ✓ Starting control-plane 🕹️
+</span></span><span class="line"><span class="cl"> ✓ Installing CNI 🔌
+</span></span><span class="line"><span class="cl"> ✓ Installing StorageClass 💾
+</span></span><span class="line"><span class="cl">Set kubectl context to <span class="s2">&#34;kind-kind-2&#34;</span>
+</span></span><span class="line"><span class="cl">You can now use your cluster with:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">kubectl cluster-info --context kind-kind-2
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Have a nice day! 👋
+</span></span></code></pre></div><p>이번에는 <code>kind-2</code> 라는 이름으로 지정해서 클러스터를 생성합니다.</p>
+<p> </p>
+<h3 id="5-cluster-목록-확인">5. cluster 목록 확인</h3>
+<p><code>kind</code>로 생성한 클러스터 목록을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind get clusters
+</span></span><span class="line"><span class="cl">kind
+</span></span><span class="line"><span class="cl">kind-2
+</span></span></code></pre></div><p>처음에 생성한 <code>kind</code> 클러스터, 이후 생성한 <code>kind-2</code> 클러스터가 존재합니다.</p>
+<p> </p>
+<h3 id="6-조작할-cluster-변경">6. 조작할 cluster 변경</h3>
+<p><code>kind-kind-2</code> 클러스터를 조작하기 위해서는 context를 <code>kind-kind-2</code>로 변경합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl cluster-info --context kind-kind-2
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Kubernetes control plane is running at https://127.0.0.1:61332
+</span></span><span class="line"><span class="cl">CoreDNS is running at https://127.0.0.1:61332/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">To further debug and diagnose cluster problems, use <span class="s1">&#39;kubectl cluster-info dump&#39;</span>.
+</span></span></code></pre></div><p> </p>
+<p>이제 현재 context 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl config get-contexts
+</span></span><span class="line"><span class="cl">CURRENT   NAME             CLUSTER          AUTHINFO         NAMESPACE
+</span></span><span class="line"><span class="cl">          docker-desktop   docker-desktop   docker-desktop
+</span></span><span class="line"><span class="cl">          kind-kind        kind-kind        kind-kind
+</span></span><span class="line"><span class="cl">*         kind-kind-2      kind-kind-2      kind-kind-2
+</span></span></code></pre></div><p>현재 context 값이 <code>kind-kind-2</code>로 변경되었습니다.</p>
+<p> </p>
+<h3 id="7-클러스터-상태-확인">7. 클러스터 상태 확인</h3>
+<h4 id="node-상태-확인">node 상태 확인</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get node
+</span></span><span class="line"><span class="cl">NAME                   STATUS   ROLES                  AGE   VERSION
+</span></span><span class="line"><span class="cl">kind-2-control-plane   Ready    control-plane,master   64s   v1.21.1
+</span></span></code></pre></div><p>1대의 control-plane(<code>kind-2-control-plane</code>)이 생성되었습니다.</p>
+<p>현재 이 노드의 상태는 정상 동작중(<code>Ready</code>)입니다.</p>
+<p> </p>
+<h4 id="pod-상태-확인">pod 상태 확인</h4>
+<p>현재 클러스터에서 전체 파드 목록을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get pod -A
+</span></span><span class="line"><span class="cl">NAMESPACE            NAME                                           READY   STATUS    RESTARTS   AGE
+</span></span><span class="line"><span class="cl">kube-system          coredns-558bd4d5db-4v54r                       1/1     Running   <span class="m">0</span>          76s
+</span></span><span class="line"><span class="cl">kube-system          coredns-558bd4d5db-6dsqk                       1/1     Running   <span class="m">0</span>          76s
+</span></span><span class="line"><span class="cl">kube-system          etcd-kind-2-control-plane                      1/1     Running   <span class="m">0</span>          88s
+</span></span><span class="line"><span class="cl">kube-system          kindnet-cwbkv                                  1/1     Running   <span class="m">0</span>          77s
+</span></span><span class="line"><span class="cl">kube-system          kube-apiserver-kind-2-control-plane            1/1     Running   <span class="m">0</span>          88s
+</span></span><span class="line"><span class="cl">kube-system          kube-controller-manager-kind-2-control-plane   1/1     Running   <span class="m">0</span>          88s
+</span></span><span class="line"><span class="cl">kube-system          kube-proxy-6nkmp                               1/1     Running   <span class="m">0</span>          77s
+</span></span><span class="line"><span class="cl">kube-system          kube-scheduler-kind-2-control-plane            1/1     Running   <span class="m">0</span>          88s
+</span></span><span class="line"><span class="cl">local-path-storage   local-path-provisioner-547f784dff-266sv        1/1     Running   <span class="m">0</span>          76s
+</span></span></code></pre></div><p><code>kube-system</code> 네임스페이스에 위치하는 파드들은 클러스터가 동작하는 데 필요한 필수 파드들입니다.</p>
+<p>모든 Pod가 정상적으로 동작중(<code>Running</code>)인 상태입니다.</p>
+<p> </p>
+<h3 id="8-클러스터-삭제">8. 클러스터 삭제</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind delete cluster
+</span></span><span class="line"><span class="cl">Deleting cluster <span class="s2">&#34;kind&#34;</span> ...
+</span></span></code></pre></div><p>클러스터 삭제시 <code>--name &lt;클러스터 이름&gt;</code> 옵션으로 클러스터 이름을 지정해주지 않으면, 기본 클러스터인 <code>kind</code>를 삭제하게 됩니다.</p>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind get clusters
+</span></span><span class="line"><span class="cl">kind-2
+</span></span></code></pre></div><p><code>kind-2</code> 클러스터는 아직 남아있습니다.</p>
+<p> </p>
+<p>이제 <code>kind-2</code> 클러스터도 삭제합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind delete cluster --name kind-2
+</span></span><span class="line"><span class="cl">Deleting cluster <span class="s2">&#34;kind-2&#34;</span> ...
+</span></span></code></pre></div><p> </p>
+<p><code>kind-2</code> 클러스터 삭제 후 다시 클러스터 목록을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind get clusters
+</span></span><span class="line"><span class="cl">No kind clusters found.
+</span></span></code></pre></div><p><code>kind</code>와 <code>kind-2</code> 클러스터를 모두 삭제했기 때문에 조회 결과는 없다.</p>
+<p> </p>
+<h2 id="더-나아가서">더 나아가서</h2>
+<h3 id="multi-node-클러스터-구성">multi node 클러스터 구성</h3>
+<h4 id="생성">생성</h4>
+<p>멀티노드는 단일 노드가 아닌 여러 대의 노드가 구성된 클러스터 환경을 의미합니다.</p>
+<p> </p>
+<p>멀티노드 운영을 위해서는 호스트 환경의 리소스(CPU, Memory)가 많이 필요하기 때문에, 클러스터 생성 전에 미리 Docker deskop의 리소스 할당량(Resources)을 늘려야 합니다.</p>
+<p>macOS 또는 Windows에서 Kubernetes를 빌드하는 경우 Docker 엔진을 실행하는 가상 머신(VM) 전용으로 최소 6GB의 RAM이 필요합니다. 메모리 권장 할당량은 8GB입니다.</p>
+<p><img src="./4.png" alt="Docker desktop에서 리소스 설정"></p>
+<p>자세한 사항은 <a href="https://kind.sigs.k8s.io/docs/user/quick-start/#settings-for-docker-desktop">kind 공식문서</a>를 참고하세요.</p>
+<p> </p>
+<h4 id="yaml-작성">yaml 작성</h4>
+<p>쿠버네티스 클러스터 설정이 담긴 yaml 파일을 작성한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat <span class="s">&lt;&lt; EOF &gt; kind-multi-node-clusters.yaml
+</span></span></span><span class="line"><span class="cl"><span class="s">---
+</span></span></span><span class="line"><span class="cl"><span class="s"># three node (two workers) cluster config
+</span></span></span><span class="line"><span class="cl"><span class="s">kind: Cluster
+</span></span></span><span class="line"><span class="cl"><span class="s">apiVersion: kind.x-k8s.io/v1alpha4
+</span></span></span><span class="line"><span class="cl"><span class="s">nodes:
+</span></span></span><span class="line"><span class="cl"><span class="s">- role: control-plane
+</span></span></span><span class="line"><span class="cl"><span class="s">- role: worker
+</span></span></span><span class="line"><span class="cl"><span class="s">- role: worker
+</span></span></span><span class="line"><span class="cl"><span class="s">EOF</span>
+</span></span></code></pre></div><p>클러스터 구성은 1대의 control-plane + 2대의 worker node 이다.</p>
+<p> </p>
+<h4 id="클러스터-생성">클러스터 생성</h4>
+<p>작성한 클러스터 yaml 파일을 적용하여 클러스터를 생성한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind create cluster <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --config kind-multi-node-clusters.yaml <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --name multinode
+</span></span></code></pre></div><p>미리 작성한 매니페스트 파일(<code>.yaml</code>)을 사용해서 클러스터를 생성할 때에는 <code>--config &lt;설정파일 이름&gt;</code> 옵션을 사용하면 된다.</p>
+<p> </p>
+<p>클러스터 생성이 완료되는 데에 약 1분 정도 소요된다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind create cluster <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --config kind-multi-node-clusters.yaml <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --name multinode
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Creating cluster <span class="s2">&#34;multinode&#34;</span> ...
+</span></span><span class="line"><span class="cl"> ✓ Ensuring node image <span class="o">(</span>kindest/node:v1.21.1<span class="o">)</span> 🖼
+</span></span><span class="line"><span class="cl"> ✓ Preparing nodes 📦 📦 📦
+</span></span><span class="line"><span class="cl"> ✓ Writing configuration 📜
+</span></span><span class="line"><span class="cl"> ✓ Starting control-plane 🕹️
+</span></span><span class="line"><span class="cl"> ✓ Installing CNI 🔌
+</span></span><span class="line"><span class="cl"> ✓ Installing StorageClass 💾
+</span></span><span class="line"><span class="cl"> ✓ Joining worker nodes 🚜
+</span></span><span class="line"><span class="cl">Set kubectl context to <span class="s2">&#34;kind-multinode&#34;</span>
+</span></span><span class="line"><span class="cl">You can now use your cluster with:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">kubectl cluster-info --context kind-multinode
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Thanks <span class="k">for</span> using kind! 😊
+</span></span></code></pre></div><p> </p>
+<p><code>multinode</code> 클러스터 생성이 완료되면 자동적으로 context가 새로 생성된 클러스터로 변경된다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl config current-context
+</span></span><span class="line"><span class="cl">kind-multinode
+</span></span></code></pre></div><p>현재 위치한 context는 <code>kind-multinode</code>이다.</p>
+<p> </p>
+<h4 id="노드-확인">노드 확인</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get node
+</span></span><span class="line"><span class="cl">NAME                      STATUS   ROLES                  AGE     VERSION
+</span></span><span class="line"><span class="cl">multinode-control-plane   Ready    control-plane,master   4m32s   v1.21.1
+</span></span><span class="line"><span class="cl">multinode-worker          Ready    &lt;none&gt;                 4m2s    v1.21.1
+</span></span><span class="line"><span class="cl">multinode-worker2         Ready    &lt;none&gt;                 4m1s    v1.21.1
+</span></span></code></pre></div><p>3대의 노드 상태가 모두 정상 동작중(<code>Ready</code>)이다.</p>
+<ul>
+<li>ROLES 값에 <code>control-plane,master</code>가 있으면 Master Node다.</li>
+<li>ROLES 값이 <code>&lt;none&gt;</code>이면 Worker Node다.</li>
+<li>물론 <code>NAME</code>에 붙은 control-plane과 worker로도 구분 가능하다.</li>
+</ul>
+<p> </p>
+<h3 id="리소스-정리">리소스 정리</h3>
+<p>멀티노드 클러스터 실습이 끝났다면 클러스터 환경을 정리<sup>clean-up</sup>한다.</p>
+<p>kind 클러스터 전체 목록을 확인한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind get clusters
+</span></span><span class="line"><span class="cl">kind
+</span></span><span class="line"><span class="cl">multinode
+</span></span></code></pre></div><p> </p>
+<p><code>multinode</code> 클러스터를 삭제한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind delete cluster --name multinode
+</span></span><span class="line"><span class="cl">Deleting cluster <span class="s2">&#34;multinode&#34;</span> ...
+</span></span></code></pre></div><p> </p>
+<p><code>multinode</code> 클러스터가 삭제되었다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kind get clusters
+</span></span><span class="line"><span class="cl">kind
+</span></span></code></pre></div><p> </p>
+<h2 id="결론">결론</h2>
+<p>멀티노드 실습을 마지막으로 kind의 설치 및 사용법에 대한 포스팅을 마치겠다.</p>
+<p> </p>
+<h2 id="주의사항">주의사항</h2>
+<h3 id="m1-호환성-문제">M1 호환성 문제</h3>
+<p>2021년 12월 6일 기준으로 Apple Silicon<sup>M1</sup>이 탑재된 맥북은 아직 출시된 지 얼마 지나지 않아서 호환성이 박살난 상태로, Virtual Box 설치를 지원하지 않아 쿠버네티스 실습을 하는 데에 제한이 있다.</p>
+<p>만약 macOS에서 docker 컨테이너가 아닌 virtualbox 환경과 같은 가상화 클러스터로 구성하고 싶다면 macOS 전용 하이퍼바이저인 hyperkit을 활용하도록 하자.</p>
+<p>나도 여러 방면에서 kubernetes 구축 방법을 찾아보고 있지만 버그와 아직 막막한 M1의 호환성에 막혀 절망하고 있는 중이다.<br>
+M1 호환성 문제는 시간이 차차 해결해줄 거라고 예상한다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://kind.sigs.k8s.io/docs/user/quick-start/">kind 공식 Quick Start 가이드 문서</a></p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

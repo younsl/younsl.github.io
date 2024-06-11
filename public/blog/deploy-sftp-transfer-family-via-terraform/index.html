@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/deploy-sftp-transfer-family-via-terraform/" />
+    <title>AWS Transfer Family 테라폼 구축하기</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>AWS Transfer Family 테라폼 구축하기</h1>
+        <div>
+                <time>Updated June 4, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#배경지식">배경지식</a>
+      <ul>
+        <li><a href="#aws-transfer-family">AWS Transfer Family</a></li>
+        <li><a href="#aws-transfer-family의-장단점">AWS Transfer Family의 장단점</a></li>
+      </ul>
+    </li>
+    <li><a href="#환경">환경</a>
+      <ul>
+        <li><a href="#로컬-환경">로컬 환경</a></li>
+      </ul>
+    </li>
+    <li><a href="#준비사항">준비사항</a></li>
+    <li><a href="#transfer-family-구성하기">Transfer Family 구성하기</a>
+      <ul>
+        <li><a href="#테라폼-코드-다운로드">테라폼 코드 다운로드</a></li>
+        <li><a href="#코드-수정">코드 수정</a></li>
+        <li><a href="#aws-cli-권한-확인">AWS CLI 권한 확인</a></li>
+      </ul>
+    </li>
+    <li><a href="#sftp-인프라-구축">SFTP 인프라 구축</a>
+      <ul>
+        <li><a href="#테라폼-배포">테라폼 배포</a></li>
+        <li><a href="#ssh-키-생성">SSH 키 생성</a></li>
+        <li><a href="#sftp-유저의-ssh-키-등록">SFTP 유저의 SSH 키 등록</a></li>
+        <li><a href="#sftp-접속">SFTP 접속</a></li>
+        <li><a href="#파일-업로드-테스트">파일 업로드 테스트</a></li>
+        <li><a href="#실습환경-정리">실습환경 정리</a></li>
+      </ul>
+    </li>
+    <li><a href="#참고자료">참고자료</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>테라폼을 사용해 AWS Transfer Family와 <abbr title="Simple Storage Service">S3</abbr>를 배포해서 서비스해보는 과정입니다.</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="aws-transfer-family">AWS Transfer Family</h3>
+<p><a href="https://aws.amazon.com/ko/aws-transfer-family/">AWS Transfer Family</a>는 FTP, FTPS, SFTP 서버의 관리형 서비스입니다.</p>
+<p><img src="./1.png" alt="AWS Transfer Family 작동방식"></p>
+<p> </p>
+<h3 id="aws-transfer-family의-장단점">AWS Transfer Family의 장단점</h3>
+<h4 id="장점">장점</h4>
+<ol>
+<li>
+<p><strong>관리형 서비스</strong>: AWS Transfer Family는 완전히 관리되는 서비스이므로 서버 관리 및 인프라 구성에 대한 부담이 없습니다. 이로 인해 개발자는 파일 전송에 집중할 수 있습니다.</p>
+</li>
+<li>
+<p><strong>확장성</strong>: AWS Transfer Family는 트래픽 규모에 따라 자동으로 인프라가 확장되므로 대량의 파일 전송 작업에 대해서도 높은 성능과 안정성을 유지할 수 있습니다.</p>
+</li>
+<li>
+<p><strong>다양한 프로토콜 지원</strong>: AWS Transfer Family는 FTP(파일 전송 프로토콜), FTPS(암호화된 파일 전송 프로토콜), SFTP(SSH 파일 전송 프로토콜) 등 다양한 프로토콜을 지원합니다. 이는 기존에 사용하던 프로토콜을 그대로 유지하면서 AWS Transfer Family로 전환할 수 있음을 의미합니다.</p>
+</li>
+<li>
+<p><strong>보안</strong>: AWS Transfer Family는 AWS Identity and Access Management(IAM)과 통합되어 강력한 보안을 제공합니다. SFTP 프로토콜의 경우, 클라이언트 키 기반의 인증을 통해 보안을 강화할 수 있습니다.</p>
+</li>
+</ol>
+<p> </p>
+<h4 id="단점">단점</h4>
+<ol>
+<li>
+<p><strong>가격</strong>: AWS Transfer Family는 데이터 전송 및 저장에 대한 비용을 부과합니다. 파일 전송 작업의 규모나 빈도에 따라 비용이 증가할 수 있습니다. 특히 대규모 파일 전송 작업을 수행하는 경우, 비용이 높아질 수 있으므로 이를 고려해야 합니다.</p>
+</li>
+<li>
+<p><strong>제한된 고급 기능</strong>: AWS Transfer Family는 기본적인 파일 전송 요구 사항을 충족시키는 데에는 탁월합니다. 하지만 고급 기능이나 특정 사용자 정의 요구 사항을 처리하기에는 제한적일 수 있습니다. 예를 들어, 복잡한 데이터 전송 룰, 자동화된 작업 스케줄링, 고급 보안 요구사항 등을 처리해야 하는 경우 AWS Transfer Family의 기능만으로는 한계가 있을 수 있습니다. 이 경우에는 보다 커스텀화된 파일전송 솔루션을 고려해야 할 수 있습니다.</p>
+</li>
+</ol>
+<p> </p>
+<p>테라폼으로 구성할 AWS 아키텍처는 다음과 같습니다.</p>
+<p><img src="./2.png" alt="Architecture of AWS Transfer Family" title="테라폼으로 구축할 Transfer Family 아키텍처"></p>
+<p>Transfer Family 사용자가 SFTP 서버에 로그인할 때는 ID, Password 방식이 아닌 SSH 키페어 인증으로 로그인하게 됩니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<h3 id="로컬-환경">로컬 환경</h3>
+<ul>
+<li><strong>OS</strong> : macOS Monterey 12.4 (M1 Pro)</li>
+<li><strong>Shell</strong> : zsh + oh-my-zsh</li>
+<li><strong>Terraform v1.2.3</strong></li>
+<li><strong>AWS CLI 2.7.7</strong></li>
+</ul>
+<p> </p>
+<h2 id="준비사항">준비사항</h2>
+<ul>
+<li>테라폼이 설치되어 있어야 합니다.</li>
+<li>테라폼으로 AWS 리소스를 배포하기 위해서 AWS CLI에 충분한 권한이 부여되어 있어야 합니다.</li>
+<li>AWS CLI가 설치되어 있어야 합니다.</li>
+</ul>
+<p> </p>
+<h2 id="transfer-family-구성하기">Transfer Family 구성하기</h2>
+<h3 id="테라폼-코드-다운로드">테라폼 코드 다운로드</h3>
+<p>AWS Transfer Family 리소스 생성에 필요한 테라폼 코드 전체를 다운로드 받습니다.</p>
+<p><a href="https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/younsl/box/tree/main/example/aws-transfer-family/terraform-codes">Terraform 코드 다운로드</a></p>
+<p>다운로드 받은 <code>terraform-codes.zip</code> 파일을 압축해제합니다.</p>
+<p> </p>
+<h4 id="코드-구조">코드 구조</h4>
+<p>다운로드 받은 <a href="https://github.com/younsl/box/tree/main/example/aws-transfer-family/terraform-codes">terraform-codes</a> 디렉토리의 구조입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">.
+</span></span><span class="line"><span class="cl">└── terraform-codes
+</span></span><span class="line"><span class="cl">    ├── outputs.tf
+</span></span><span class="line"><span class="cl">    ├── provider.tf
+</span></span><span class="line"><span class="cl">    ├── route53.tf               <span class="c1"># Route 53</span>
+</span></span><span class="line"><span class="cl">    ├── s3.tf                    <span class="c1"># S3 Bucket</span>
+</span></span><span class="line"><span class="cl">    ├── sftp-server-hostname.tf  <span class="c1"># SFTP Server</span>
+</span></span><span class="line"><span class="cl">    ├── sftp-server-iam.tf       <span class="c1"># SFTP Server</span>
+</span></span><span class="line"><span class="cl">    ├── sftp-server.tf           <span class="c1"># SFTP Server</span>
+</span></span><span class="line"><span class="cl">    ├── transfer-user-iam.tf     <span class="c1"># SFTP User</span>
+</span></span><span class="line"><span class="cl">    ├── transfer-user.tf         <span class="c1"># SFTP User</span>
+</span></span><span class="line"><span class="cl">    └── variables.tf             <span class="c1"># AWS Region</span>
+</span></span></code></pre></div><p>디렉토리 안에는 Transfer Family와 관련된 모든 AWS 리소스에 대한 테라폼 코드가 포함되어 있습니다.</p>
+<ul>
+<li>SFTP Server (AWS Transfer Family)</li>
+<li>IAM Role</li>
+<li>S3 Bucket</li>
+<li>Route 53</li>
+</ul>
+<p> </p>
+<h4 id="local-exec-설명">local-exec 설명</h4>
+<p>테라폼에서는 SFTP 서버 리소스에 대한 Hostname 설정을 지원하지 않습니다.<br>
+이런 이유 때문에 SFTP 서버 리소스에 대한 Custom Hostname 설정만 AWS Provider가 아닌 local-exec Provisioner + AWS CLI 조합을 사용합니다.</p>
+<p><code>sftp-server-hostname.tf</code> 파일이 SFTP 서버 리소스에 <code>aws:transfer:customHostname</code> 태그를 붙이면 Hostname 설정이 완료됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-terraform" data-lang="terraform"><span class="line"><span class="cl"><span class="kr">resource</span> <span class="s2">&#34;null_resource&#34;</span> <span class="s2">&#34;service_managed_sftp_custom_hostname&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="na">depends_on</span> = <span class="p">[</span><span class="nx">aws_transfer_server</span><span class="p">.</span><span class="nx">service_managed_sftp</span><span class="p">]</span><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">  # 테라폼이 local-exec 프로비저너를 사용해서
+</span></span></span><span class="line"><span class="cl"><span class="c1">  # 로컬에서 직접 AWS CLI 명령어를 실행한다.
+</span></span></span><span class="line"><span class="cl"><span class="c1">  # 생성한 transfer family 서버 리소스에
+</span></span></span><span class="line"><span class="cl"><span class="c1">  # `aws:transfer:customHostname` 태그를 붙인다.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">  provisioner</span> <span class="s2">&#34;local-exec&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="na">command</span> = <span class="o">&lt;&lt;EOF</span><span class="s">
+</span></span></span><span class="line"><span class="cl"><span class="s">aws transfer tag-resource \
+</span></span></span><span class="line"><span class="cl"><span class="s">  --arn &#39;${aws_transfer_server.service_managed_sftp.arn}&#39; \
+</span></span></span><span class="line"><span class="cl"><span class="s">  --tags &#39;Key=aws:transfer:customHostname,Value=sftp.rocket.dev&#39; \
+</span></span></span><span class="line"><span class="cl"><span class="s">  --region &#39;ap-northeast-2&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s"></span><span class="o">EOF</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="코드-수정">코드 수정</h3>
+<p>테라폼으로 AWS 리소스를 생성하기 전에 각자 환경에 맞게 코드를 수정합니다.</p>
+<h4 id="s3-버킷-이름">S3 버킷 이름</h4>
+<p>S3 버킷은 글로벌 환경에서 유니크한 이름을 가져야 합니다.<br>
+<code>variables.tf</code>에서 S3 버킷 이름을 다른 사람과 겹치지 않도록 변경해주세요.<br>
+변경하지 않으면 버킷 이름이 중복되는 오류가 발생해 S3 버킷 생성에 실패하게 됩니다.</p>
+<h4 id="리전">리전</h4>
+<p>디폴트 값으로 SFTP 서버가 서울 리전<sup>ap-northeast-2</sup>에 배포되도록 설정되어 있습니다.<br>
+리전 변경이 필요한 경우 <code>variables.tf</code>를 수정합니다.</p>
+<p> </p>
+<h3 id="aws-cli-권한-확인">AWS CLI 권한 확인</h3>
+<p><code>terraform init</code> 명령어를 실행하기 전에 AWS CLI에 Administrator 권한이 부여되어 있어야 합니다.</p>
+<p>AWS CLI에서 현재 자신이 어떤 IAM User를 사용하고 있는지 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ aws sts get-caller-identity
+</span></span><span class="line"><span class="cl"><span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;UserId&#34;</span>: <span class="s2">&#34;AIDAXQOVWG6FYM3OPCLJX&#34;</span>,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;Account&#34;</span>: <span class="s2">&#34;111111111111&#34;</span>,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;Arn&#34;</span>: <span class="s2">&#34;arn:aws:iam::111111111111:user/tf-admin&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div><p>제가 사용할 IAM User인 tf-admin의 경우, AWS 관리형 정책인 <a href="https://docs.aws.amazon.com/ko_kr/IAM/latest/UserGuide/access_policies_job-functions.html#jf_administrator"><code>AdministratorAccess</code></a>이 부여되어 있습니다.</p>
+<p> </p>
+<h2 id="sftp-인프라-구축">SFTP 인프라 구축</h2>
+<h3 id="테라폼-배포">테라폼 배포</h3>
+<h4 id="terraform-init">terraform init</h4>
+<p>충분한 AWS CLI의 권한이 부여된 상태에서 <code>terraform-codes</code> 디렉토리로 이동합니다.</p>
+<p>테라폼 초기화를 실행합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform init
+</span></span></code></pre></div><p><code>terraform init</code> 명령어에는 Terraform 구성 파일이 들어있는 작업 디렉토리를 초기화하고 Provider를 설치하는 등의 과정이 포함되어 있습니다.</p>
+<p> </p>
+<p><code>terraform init</code> 명령어를 수행하면 생성되는 <code>.terraform.lock.hcl</code> 파일에서 설정된 Terraform Provider 버전 정보를 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat .terraform.lock.hcl
+</span></span><span class="line"><span class="cl"><span class="c1"># This file is maintained automatically by &#34;terraform init&#34;.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Manual edits may be lost in future updates.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">provider <span class="s2">&#34;registry.terraform.io/hashicorp/aws&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">version</span>     <span class="o">=</span> <span class="s2">&#34;4.19.0&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">constraints</span> <span class="o">=</span> <span class="s2">&#34;~&gt; 4.0&#34;</span>
+</span></span><span class="line"><span class="cl">  ...
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">provider <span class="s2">&#34;registry.terraform.io/hashicorp/null&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">version</span>     <span class="o">=</span> <span class="s2">&#34;3.1.1&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">constraints</span> <span class="o">=</span> <span class="s2">&#34;~&gt; 3.1&#34;</span>
+</span></span><span class="line"><span class="cl">  ...
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div><p> </p>
+<p>SFTP 인프라 구축을 위한 terraform provider는 두 가지를 사용합니다.</p>
+<table>
+<thead>
+<tr>
+<th>Provider Name</th>
+<th>Version</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://registry.terraform.io/providers/hashicorp/aws/latest">hashicorp/aws</a></td>
+<td>4.19.0</td>
+<td>SFTP와 관련된 모든 AWS 리소스 생성</td>
+</tr>
+<tr>
+<td><a href="https://registry.terraform.io/providers/hashicorp/null/3.1.1">hashicorp/null</a></td>
+<td>3.1.1</td>
+<td>SFTP 서버의 Custom Hostname 설정</td>
+</tr>
+</tbody>
+</table>
+<p><strong>null provider</strong>는 사용자의 로컬 터미널에서 AWS CLI를 실행해 SFTP 서버 리소스에 Custom Hostname 태그를 추가합니다.<br>
+자세한 동작방식은 <code>sftp-server-hostname.tf</code> 파일에서 확인할 수 있습니다.</p>
+<p> </p>
+<h4 id="terraform-plan">terraform plan</h4>
+<p><code>terraform plan</code> 명령어로 배포될 리소스들의 정보를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform plan
+</span></span></code></pre></div><p> </p>
+<h4 id="terraform-apply">terraform apply</h4>
+<p>이후 리소스 배포를 실시합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform apply
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Apply complete! Resources: <span class="m">13</span> added, <span class="m">0</span> changed, <span class="m">0</span> destroyed.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Outputs:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">bucket-name <span class="o">=</span> <span class="s2">&#34;rocket-x82q-sftp-bucket&#34;</span>
+</span></span><span class="line"><span class="cl">sftp-server-endpoint <span class="o">=</span> <span class="s2">&#34;s-993ae220554f4c50a.server.transfer.ap-northeast-2.amazonaws.com&#34;</span>
+</span></span><span class="line"><span class="cl">sftp-server-id <span class="o">=</span> <span class="s2">&#34;s-993ae220554f4c50a&#34;</span>
+</span></span><span class="line"><span class="cl">sftp-username <span class="o">=</span> <span class="s2">&#34;alice&#34;</span>
+</span></span></code></pre></div><p>13개의 AWS 리소스를 문제없이 배포했습니다.</p>
+<p>Route 53에 개인 소유 도메인이 없는 분들은 아쉽게도 <code>sftp-server-endpoint</code> 값으로 SFTP 서버에 로그인해야 합니다.</p>
+<p> </p>
+<h3 id="ssh-키-생성">SSH 키 생성</h3>
+<p>테라폼으로 리소스 배포가 완료된 이후
+SFTP Transfer 유저가 사용할 SSH 키페어를 생성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ssh-keygen -f sftp-alice
+</span></span><span class="line"><span class="cl">Generating public/private rsa key pair.
+</span></span><span class="line"><span class="cl">Enter passphrase <span class="o">(</span>empty <span class="k">for</span> no passphrase<span class="o">)</span>:
+</span></span><span class="line"><span class="cl">Enter same passphrase again:
+</span></span><span class="line"><span class="cl">Your identification has been saved in sftp-alice
+</span></span><span class="line"><span class="cl">Your public key has been saved in sftp-alice.pub
+</span></span><span class="line"><span class="cl">The key fingerprint is:
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p>passphrase는 빈칸으로 입력 후 <kbd>Enter</kbd> 를 입력해서 키 페어를 생성합니다.</p>
+<p> </p>
+<p>생성된 SSH 키 파일을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls sftp-alice*
+</span></span><span class="line"><span class="cl">sftp-alice     sftp-alice.pub
+</span></span></code></pre></div><p>비밀키 <code>sftp-alice</code>와 공개키 <code>sftp-alice.pub</code>이 생성된 걸 확인할 수 있습니다.</p>
+<p> </p>
+<h3 id="sftp-유저의-ssh-키-등록">SFTP 유저의 SSH 키 등록</h3>
+<p>SFTP 유저가 서버에 접속하려면 SSH 키를 미리 SFTP 서버에 등록해야 합니다.</p>
+<p><img src="./3.png" alt="SSH Key pair architecture" title="SFTP 사용자가 SFTP 서버에 접속하는 아키텍처"></p>
+<p>공개키의 내용을 확인하고 복사합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat sftp-alice.pub
+</span></span><span class="line"><span class="cl">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCpmWwof7SgjqepEgFYkHEZEfR84Za7WBKM2b5wvWvPN4u/RcksOXXmn9LMEvLH6ZMx27tBq1Lh/fJet/QKLtntYBjS9WIwsgI2szJRYoiTxpbJOz6vuh13XIO8YUeirb4KLkpMbnj7vkAuU6BGJ5WHgTcVgzM1sPgqNLVxOHy4p2EmKkz1z3EDMolhUm9v0COMw4+8YW78HBizuBdLmIP23o9pNfnKBTtnNHtaIFhJi9f1OK4IvMM+n+sBikrA8mtmMPoTS+agsSFi+LIcqdj00cbm8KAcMtYImQSIjhcUGG+0aPjePOI0Qkj0D0+00GdIxGhJsgbRt+chDHfs1jWQ6ha0SK6Pl3ceQHLtb4mskhQQu78ObTVbt0VNsoRnzhdHVxgisVZGqGsJhY1ahbr0BZn//XrN7zfzRCU203qlbJc76GMWVM+SLNi3zOJYF/rbDJgpIoIwEvqppSrWQUfcPQo0VRxJY1suVd0ms0xeoWjd0sSbIhowBIcASJxQ0X0<span class="o">=</span> xxxxx@xxxxxui-MacBookPro.local
+</span></span></code></pre></div><p>AWS Management Console로 돌아가서 아까 생성한 SSH 공개키(<code>sftp-alice.pub</code>)를 Transfer User에 등록합니다.</p>
+<p><img src="./4.png" alt="User에 SSH public key를 등록 화면 1" title="SSH public key 등록"></p>
+<p>공개키 <code>sftp-alice.pub</code>의 내용을 그대로 복사해서 넣어주세요.<br>
+그 후 [Add key] 버튼을 눌러 SSH 공개키를 등록합니다.</p>
+<p><img src="./5.png" alt="User에 SSH public key를 등록 화면 2" title="SSH public key 등록"></p>
+<p>SFTP 서버 세팅이 끝났습니다.</p>
+<p> </p>
+<h3 id="sftp-접속">SFTP 접속</h3>
+<p>이제 SFTP 사용자가 로컬 환경에 설치된 SFTP Client 프로그램을 사용해 서버에 접근하면 됩니다.</p>
+<p><img src="./6.png" alt="SFTP 접속 경로"></p>
+<p> </p>
+<p>SFTP 접속 명령어는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sftp -i private_key_file sftp_username@sftp_server_endpoint
+</span></span></code></pre></div><p>테라폼 코드를 실행하면 Route 53의 Zone과 Record가 생성됩니다.<br>
+그러나 제 경우는 개인 소유의 도메인이 없어서 SFTP에 접속할 때 도메인 대신 Server Endpoint로 접속하게 되었습니다.</p>
+<p>Server Endpoint 주소는 <code>terraform apply</code>로 생성이 완료된 후 마지막 라인 <code>Outputs</code>에 자동 출력됩니다.</p>
+<p> </p>
+<p>제 환경에서 실제 실행한 명령어는 아래와 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sftp -i sftp-alice alice@s-4798bd8d19d646609.server.transfer.ap-northeast-2.amazonaws.com
+</span></span></code></pre></div><p> </p>
+<p>SFTP 서버에 정상적으로 로그인하면 다음과 같은 메세지가 출력되면서 프롬프트가 <code>sftp&gt;</code>로 변경됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Connected to s-4798bd8d19d646609.server.transfer.ap-northeast-2.amazonaws.com.
+</span></span><span class="line"><span class="cl">sftp&gt;
+</span></span></code></pre></div><p> </p>
+<p>SFTP 사용자가 최초 로그인했을 때 위치한 디렉토리 경로는 각 유저의 홈 디렉토리인 걸 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sftp&gt; <span class="nb">pwd</span>
+</span></span><span class="line"><span class="cl">Remote working directory: /rocket-x82q-sftp-bucket/alice
+</span></span></code></pre></div><p> </p>
+<p><code>help</code> 명령어를 실행해서 전체 SFTP 명령어 리스트를 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sftp&gt; <span class="nb">help</span>
+</span></span><span class="line"><span class="cl">Available commands:
+</span></span><span class="line"><span class="cl">bye                                Quit sftp
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> path                            Change remote directory to <span class="s1">&#39;path&#39;</span>
+</span></span><span class="line"><span class="cl">chgrp <span class="o">[</span>-h<span class="o">]</span> grp path                Change group of file <span class="s1">&#39;path&#39;</span> to <span class="s1">&#39;grp&#39;</span>
+</span></span><span class="line"><span class="cl">chmod <span class="o">[</span>-h<span class="o">]</span> mode path               Change permissions of file <span class="s1">&#39;path&#39;</span> to <span class="s1">&#39;mode&#39;</span>
+</span></span><span class="line"><span class="cl">chown <span class="o">[</span>-h<span class="o">]</span> own path                Change owner of file <span class="s1">&#39;path&#39;</span> to <span class="s1">&#39;own&#39;</span>
+</span></span><span class="line"><span class="cl">df <span class="o">[</span>-hi<span class="o">]</span> <span class="o">[</span>path<span class="o">]</span>                    Display statistics <span class="k">for</span> current directory or
+</span></span><span class="line"><span class="cl">                                   filesystem containing <span class="s1">&#39;path&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">exit</span>                               Quit sftp
+</span></span><span class="line"><span class="cl">get <span class="o">[</span>-afpR<span class="o">]</span> remote <span class="o">[</span>local<span class="o">]</span>         Download file
+</span></span><span class="line"><span class="cl"><span class="nb">help</span>                               Display this <span class="nb">help</span> text
+</span></span><span class="line"><span class="cl">lcd path                           Change <span class="nb">local</span> directory to <span class="s1">&#39;path&#39;</span>
+</span></span><span class="line"><span class="cl">lls <span class="o">[</span>ls-options <span class="o">[</span>path<span class="o">]]</span>            Display <span class="nb">local</span> directory listing
+</span></span><span class="line"><span class="cl">lmkdir path                        Create <span class="nb">local</span> directory
+</span></span><span class="line"><span class="cl">ln <span class="o">[</span>-s<span class="o">]</span> oldpath newpath            Link remote file <span class="o">(</span>-s <span class="k">for</span> symlink<span class="o">)</span>
+</span></span><span class="line"><span class="cl">lpwd                               Print <span class="nb">local</span> working directory
+</span></span><span class="line"><span class="cl">ls <span class="o">[</span>-1afhlnrSt<span class="o">]</span> <span class="o">[</span>path<span class="o">]</span>             Display remote directory listing
+</span></span><span class="line"><span class="cl">lumask <span class="nb">umask</span>                       Set <span class="nb">local</span> <span class="nb">umask</span> to <span class="s1">&#39;umask&#39;</span>
+</span></span><span class="line"><span class="cl">mkdir path                         Create remote directory
+</span></span><span class="line"><span class="cl">progress                           Toggle display of progress meter
+</span></span><span class="line"><span class="cl">put <span class="o">[</span>-afpR<span class="o">]</span> <span class="nb">local</span> <span class="o">[</span>remote<span class="o">]</span>         Upload file
+</span></span><span class="line"><span class="cl"><span class="nb">pwd</span>                                Display remote working directory
+</span></span><span class="line"><span class="cl">quit                               Quit sftp
+</span></span><span class="line"><span class="cl">reget <span class="o">[</span>-fpR<span class="o">]</span> remote <span class="o">[</span>local<span class="o">]</span>        Resume download file
+</span></span><span class="line"><span class="cl">rename oldpath newpath             Rename remote file
+</span></span><span class="line"><span class="cl">reput <span class="o">[</span>-fpR<span class="o">]</span> <span class="nb">local</span> <span class="o">[</span>remote<span class="o">]</span>        Resume upload file
+</span></span><span class="line"><span class="cl">rm path                            Delete remote file
+</span></span><span class="line"><span class="cl">rmdir path                         Remove remote directory
+</span></span><span class="line"><span class="cl">symlink oldpath newpath            Symlink remote file
+</span></span><span class="line"><span class="cl">version                            Show SFTP version
+</span></span><span class="line"><span class="cl">!command                           Execute <span class="s1">&#39;command&#39;</span> in <span class="nb">local</span> shell
+</span></span><span class="line"><span class="cl">!                                  Escape to <span class="nb">local</span> shell
+</span></span><span class="line"><span class="cl">?                                  Synonym <span class="k">for</span> <span class="nb">help</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="파일-업로드-테스트">파일 업로드 테스트</h3>
+<p>S3에 업로드를 테스트하기 위한 샘플 파일을 생성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">echo</span> <span class="s2">&#34;hello world.&#34;</span> &gt;&gt; helloworld.txt
+</span></span></code></pre></div><p> </p>
+<p>SFTP 서버에 다시 접속합니다.<br>
+로컬 파일시스템의 현재 경로에 있는 파일 목록을 조회합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sftp&gt; lls .
+</span></span><span class="line"><span class="cl">helloworld.txt
+</span></span></code></pre></div><p> </p>
+<p>방금 로컬에 생성한 <code>helloworld.txt</code> 파일을 SFTP 서버에 업로드합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sftp&gt; put helloworld.txt helloworld.txt
+</span></span><span class="line"><span class="cl">Uploading helloworld.txt to /rocket-x82q-sftp-bucket/alice/helloworld.txt
+</span></span><span class="line"><span class="cl">helloworld.txt                                                                                                                                                                      100%   <span class="m">13</span>     1.0KB/s   00:00
+</span></span></code></pre></div><p>위와 같이 <code>100%</code> 출력이 되며 파일 업로드가 완료됩니다.</p>
+<p> </p>
+<p>실제 파일이 저장되는 장소는 백엔드 스토리지인 S3 버킷이라는 사실을 명심해야 합니다.</p>
+<p><img src="./7.png" alt="실제로 파일 업로드시 저장되는 위치 설명"></p>
+<p> </p>
+<p><code>ls</code> 명령어로 파일이 S3에 업로드된 걸 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sftp&gt; ls
+</span></span><span class="line"><span class="cl">helloworld.txt  
+</span></span></code></pre></div><p> </p>
+<p>SFTP 서버를 빠져나온 다음, AWS CLI에서 S3 버킷 안에 들어있는 오브젝트를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sftp&gt; <span class="nb">exit</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ aws s3 ls s3://rocket-x82q-sftp-bucket/alice/
+</span></span><span class="line"><span class="cl">2022-06-17 03:10:51         <span class="m">13</span> helloworld.txt
+</span></span></code></pre></div><p>S3 버킷에 파일이 업로드된 걸 확인할 수 있습니다.</p>
+<p> </p>
+<h3 id="실습환경-정리">실습환경 정리</h3>
+<h4 id="terraform-destroy">terraform destroy</h4>
+<p>실습이 종료된 후에는 비용 청구가 발생하는 걸 방지하기 위해 테라폼으로 생성한 리소스를 모두 삭제합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform destroy
+</span></span></code></pre></div><p>AWS Transfer Family의 SFTP 서버가 저렴한 비용은 아닙니다.<br>
+실습이 끝난 후에는 <strong>반드시</strong> 테라폼으로 생성한 모든 AWS 리소스를 삭제해주세요.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://aws.amazon.com/ko/aws-transfer-family/pricing/">AWS Transfer Family 요금</a></p>
+<p>SFTP 엔드포인트 비용이 1시간당 $0.30 입니다. 굉장히 부담스러운 가격입니다.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

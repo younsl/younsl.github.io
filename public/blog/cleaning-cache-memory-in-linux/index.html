@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/cleaning-cache-memory-in-linux/" />
+    <title>리눅스 캐시 메모리 비우기</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>리눅스 캐시 메모리 비우기</h1>
+        <div>
+                <time>Updated August 13, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>리눅스 서버에서 명령어를 통해 캐시 메모리를 정리해 여유 메모리를 확보할 수 있다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<ul>
+<li><strong>OS</strong> : Red Hat Enterprise Linux Server release 5.x</li>
+<li><strong>Shell</strong> : bash</li>
+</ul>
+<p> </p>
+<h2 id="해결법">해결법</h2>
+<h3 id="1-메모리-사용량-요약-확인">1. 메모리 사용량 요약 확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ free -g
+</span></span><span class="line"><span class="cl">             total       used       free     shared    buffers     cached
+</span></span><span class="line"><span class="cl">Mem:            <span class="m">62</span>         <span class="m">62</span>          <span class="m">0</span>          <span class="m">0</span>          <span class="m">0</span>         <span class="m">55</span>
+</span></span><span class="line"><span class="cl">-/+ buffers/cache:          <span class="m">6</span>         <span class="m">56</span>
+</span></span><span class="line"><span class="cl">Swap:           <span class="m">62</span>          <span class="m">3</span>         <span class="m">59</span>
+</span></span></code></pre></div><p>전체 메모리(<code>total</code>) 62GB 중 55GB가 캐시 메모리(<code>cached</code>)로 잡혀있다.</p>
+<p> </p>
+<h3 id="2-메모리-사용량-상세-확인">2. 메모리 사용량 상세 확인</h3>
+<h4 id="기본-단위kb로-보기">기본 단위(kB)로 보기</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat /proc/meminfo <span class="p">|</span> column -t
+</span></span><span class="line"><span class="cl">MemTotal:         <span class="m">66004284</span>     kB
+</span></span><span class="line"><span class="cl">MemFree:          <span class="m">211724</span>       kB
+</span></span><span class="line"><span class="cl">Buffers:          <span class="m">759392</span>       kB
+</span></span><span class="line"><span class="cl">Cached:           <span class="m">58053888</span>     kB
+</span></span><span class="line"><span class="cl">SwapCached:       <span class="m">2245728</span>      kB
+</span></span><span class="line"><span class="cl">Active:           <span class="m">11509948</span>     kB
+</span></span><span class="line"><span class="cl">Inactive:         <span class="m">53444952</span>     kB
+</span></span><span class="line"><span class="cl">HighTotal:        <span class="m">0</span>            kB
+</span></span><span class="line"><span class="cl">HighFree:         <span class="m">0</span>            kB
+</span></span><span class="line"><span class="cl">LowTotal:         <span class="m">66004284</span>     kB
+</span></span><span class="line"><span class="cl">LowFree:          <span class="m">211724</span>       kB
+</span></span><span class="line"><span class="cl">SwapTotal:        <span class="m">65537156</span>     kB
+</span></span><span class="line"><span class="cl">SwapFree:         <span class="m">62276916</span>     kB
+</span></span><span class="line"><span class="cl">Dirty:            <span class="m">1056</span>         kB
+</span></span><span class="line"><span class="cl">Writeback:        <span class="m">0</span>            kB
+</span></span><span class="line"><span class="cl">AnonPages:        <span class="m">6139572</span>      kB
+</span></span><span class="line"><span class="cl">Mapped:           <span class="m">42920</span>        kB
+</span></span><span class="line"><span class="cl">Slab:             <span class="m">668696</span>       kB
+</span></span><span class="line"><span class="cl">PageTables:       <span class="m">36240</span>        kB
+</span></span><span class="line"><span class="cl">NFS_Unstable:     <span class="m">0</span>            kB
+</span></span><span class="line"><span class="cl">Bounce:           <span class="m">0</span>            kB
+</span></span><span class="line"><span class="cl">CommitLimit:      <span class="m">98539296</span>     kB
+</span></span><span class="line"><span class="cl">Committed_AS:     <span class="m">11802812</span>     kB
+</span></span><span class="line"><span class="cl">VmallocTotal:     <span class="m">34359738367</span>  kB
+</span></span><span class="line"><span class="cl">VmallocUsed:      <span class="m">295112</span>       kB
+</span></span><span class="line"><span class="cl">VmallocChunk:     <span class="m">34359442931</span>  kB
+</span></span><span class="line"><span class="cl">HugePages_Total:  <span class="m">0</span>
+</span></span><span class="line"><span class="cl">HugePages_Free:   <span class="m">0</span>
+</span></span><span class="line"><span class="cl">HugePages_Rsvd:   <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Hugepagesize:     <span class="m">2048</span>         kB
+</span></span></code></pre></div><p><code>column -t</code> : 출력결과를 칸에 맞게 정렬해서 가독성을 높여주는 명령어<br>
+확인결과 전체 메모리(<code>MemTotal</code>)의 87%가 캐시 메모리(<code>Cached</code>)로 잡혀있다.</p>
+<p> </p>
+<h4 id="gb-단위로-보기">GB 단위로 보기</h4>
+<p>kB 단위로 보는게 불편하면 GB 단위로 변환시켜 볼 수도 있다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ awk <span class="s1">&#39;$3==&#34;kB&#34;{$2=$2/1024/1024;$3=&#34;GB&#34;} 1&#39;</span> /proc/meminfo <span class="p">|</span> column -t
+</span></span><span class="line"><span class="cl">MemTotal:         62.9466     GB
+</span></span><span class="line"><span class="cl">MemFree:          0.191048    GB
+</span></span><span class="line"><span class="cl">Buffers:          0.724033    GB
+</span></span><span class="line"><span class="cl">Cached:           55.3696     GB
+</span></span><span class="line"><span class="cl">SwapCached:       2.14169     GB
+</span></span><span class="line"><span class="cl">Active:           10.6456     GB
+</span></span><span class="line"><span class="cl">Inactive:         51.3047     GB
+</span></span><span class="line"><span class="cl">HighTotal:        <span class="m">0</span>           GB
+</span></span><span class="line"><span class="cl">HighFree:         <span class="m">0</span>           GB
+</span></span><span class="line"><span class="cl">LowTotal:         62.9466     GB
+</span></span><span class="line"><span class="cl">LowFree:          0.191048    GB
+</span></span><span class="line"><span class="cl">SwapTotal:        62.5011     GB
+</span></span><span class="line"><span class="cl">SwapFree:         59.3919     GB
+</span></span><span class="line"><span class="cl">Dirty:            0.00088501  GB
+</span></span><span class="line"><span class="cl">Writeback:        <span class="m">0</span>           GB
+</span></span><span class="line"><span class="cl">AnonPages:        5.8541      GB
+</span></span><span class="line"><span class="cl">Mapped:           0.0409317   GB
+</span></span><span class="line"><span class="cl">Slab:             0.636795    GB
+</span></span><span class="line"><span class="cl">PageTables:       0.0345459   GB
+</span></span><span class="line"><span class="cl">NFS_Unstable:     <span class="m">0</span>           GB
+</span></span><span class="line"><span class="cl">Bounce:           <span class="m">0</span>           GB
+</span></span><span class="line"><span class="cl">CommitLimit:      93.9744     GB
+</span></span><span class="line"><span class="cl">Committed_AS:     11.3072     GB
+</span></span><span class="line"><span class="cl">VmallocTotal:     <span class="m">32768</span>       GB
+</span></span><span class="line"><span class="cl">VmallocUsed:      0.281441    GB
+</span></span><span class="line"><span class="cl">VmallocChunk:     32767.7     GB
+</span></span><span class="line"><span class="cl">HugePages_Total:  <span class="m">0</span>
+</span></span><span class="line"><span class="cl">HugePages_Free:   <span class="m">0</span>
+</span></span><span class="line"><span class="cl">HugePages_Rsvd:   <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Hugepagesize:     0.00195312  GB
+</span></span></code></pre></div><p>전체 메모리(<code>MemTotal</code>) 64GB 중에서 캐시 메모리(<code>Cached</code>)를 55GB 쓰고, 버퍼 메모리(<code>Buffers</code>)는 0.7GB 사용중.<br>
+여유 메모리(<code>MemFree</code>) 값이 0.1GB로 너무 낮다.</p>
+<p> </p>
+<h3 id="3-캐시-메모리-정리">3. 캐시 메모리 정리</h3>
+<h4 id="메모리-사용량-모니터링">메모리 사용량 모니터링</h4>
+<p>캐시 메모리 정리 전에 <u>메모리 사용량 변화를 모니터링 하기 위해</u> 세션을 하나 더 띄워서 <code>watch -d -n1 &quot;free -g&quot;</code> 명령어를 실행한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ watch -d -n1 <span class="s2">&#34;free -g&#34;</span>
+</span></span></code></pre></div><p>1초 간격으로 <code>free -g</code> 명령어를 실행하는 명령어.<br>
+<code>-d</code> 옵션은 변경된 값을 하이라이팅 해서 가독성을 높여준다.</p>
+<p> </p>
+<h4 id="sync">sync</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sync
+</span></span></code></pre></div><p>캐시 메모리에 있는 변동사항을 하드디스크에 옮겨서 쓰기(Write)</p>
+<p> </p>
+<h4 id="캐시-메모리-정리">캐시 메모리 정리</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">echo</span> <span class="m">3</span> &gt; /proc/sys/vm/drop_caches
+</span></span></code></pre></div><p>캐시 메모리를 정리한다. 정리대상은 pagecache, dentry, inode 이다.</p>
+<p>캐시 메모리 정리 소요시간은 서버 환경과 캐시 메모리 용량에 따라 다른데 보통 10초 안으로 정리가 완료된다.</p>
+<p> </p>
+<h5 id="용어설명">용어설명</h5>
+<ul>
+<li><strong>pagecache</strong> : 파일의 입출력(I/O)의 속도와 퍼포먼스를 높이기 위해 시스템이 할당한 메모리 영역(임시 메모리 저장소). 예를 들어 어떤 경로의 파일을 한 번 읽어들이면 시스템이 해당 파일 내용을 임시메모리에 저장시키는데 이후에 해당 파일을 다시 읽을 때 이를 새로 읽어들이지 않고 이 메모리에서 바로 불러오면 디스크의 읽기/쓰기 속도가 빨라지므로 효율이 높아짐. 윈도우 OS의 페이지 파일 같은 역할.</li>
+<li><strong>dentry</strong> : directory entry의 줄임말로 예를 들어 /usr/share 같은 경로에서 usr과 share를 지칭.</li>
+<li><strong>inode</strong> : 파일과 디렉토리에 관한 정보를 담고 있는 자료구조. 예를 들어 파일의 퍼미션 정보, 디스크 상의 파일의 물리적 위치, 크기, 생성된 일시 정보 등을 저장.</li>
+</ul>
+<p> </p>
+<h5 id="drop_caches-의미">drop_caches 의미</h5>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">echo</span> <span class="m">1</span> &gt; /proc/sys/vm/drop_caches  <span class="c1"># To free pagecache</span>
+</span></span><span class="line"><span class="cl">$ <span class="nb">echo</span> <span class="m">2</span> &gt; /proc/sys/vm/drop_caches  <span class="c1"># To free dentries and inodes</span>
+</span></span><span class="line"><span class="cl">$ <span class="nb">echo</span> <span class="m">3</span> &gt; /proc/sys/vm/drop_caches  <span class="c1"># To free pagecache, dentries and inodes</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="4-메모리-반환-결과-확인">4. 메모리 반환 결과 확인</h3>
+<h4 id="메모리-사용량-요약-확인">메모리 사용량 요약 확인</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ free -g                                                                                                       
+</span></span><span class="line"><span class="cl">             total       used       free     shared    buffers     cached
+</span></span><span class="line"><span class="cl">Mem:            <span class="m">62</span>         <span class="m">12</span>         <span class="m">50</span>          <span class="m">0</span>          <span class="m">0</span>          <span class="m">5</span>
+</span></span><span class="line"><span class="cl">-/+ buffers/cache:          <span class="m">6</span>         <span class="m">56</span>
+</span></span><span class="line"><span class="cl">Swap:           <span class="m">62</span>          <span class="m">3</span>         <span class="m">59</span>
+</span></span></code></pre></div><p><code>-g</code> : GB 단위로 보여준다.</p>
+<p> </p>
+<h4 id="메모리-사용량-상세-확인">메모리 사용량 상세 확인</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ awk <span class="s1">&#39;$3==&#34;kB&#34;{$2=$2/1024/1024;$3=&#34;GB&#34;} 1&#39;</span> /proc/meminfo <span class="p">|</span> column -t
+</span></span><span class="line"><span class="cl">MemTotal:         62.9466     GB
+</span></span><span class="line"><span class="cl">MemFree:          48.9179     GB
+</span></span><span class="line"><span class="cl">Buffers:          0.0405312   GB
+</span></span><span class="line"><span class="cl">Cached:           7.78165     GB
+</span></span><span class="line"><span class="cl">SwapCached:       2.14169     GB
+</span></span><span class="line"><span class="cl">Active:           8.87233     GB
+</span></span><span class="line"><span class="cl">Inactive:         4.87525     GB
+</span></span><span class="line"><span class="cl">HighTotal:        <span class="m">0</span>           GB
+</span></span><span class="line"><span class="cl">HighFree:         <span class="m">0</span>           GB
+</span></span><span class="line"><span class="cl">LowTotal:         62.9466     GB
+</span></span><span class="line"><span class="cl">LowFree:          48.9179     GB
+</span></span><span class="line"><span class="cl">SwapTotal:        62.5011     GB
+</span></span><span class="line"><span class="cl">SwapFree:         59.3919     GB
+</span></span><span class="line"><span class="cl">Dirty:            0.00118637  GB
+</span></span><span class="line"><span class="cl">Writeback:        <span class="m">0</span>           GB
+</span></span><span class="line"><span class="cl">AnonPages:        5.92254     GB
+</span></span><span class="line"><span class="cl">Mapped:           0.0409355   GB
+</span></span><span class="line"><span class="cl">Slab:             0.11797     GB
+</span></span><span class="line"><span class="cl">PageTables:       0.0352592   GB
+</span></span><span class="line"><span class="cl">NFS_Unstable:     <span class="m">0</span>           GB
+</span></span><span class="line"><span class="cl">Bounce:           <span class="m">0</span>           GB
+</span></span><span class="line"><span class="cl">CommitLimit:      93.9744     GB
+</span></span><span class="line"><span class="cl">Committed_AS:     11.2496     GB
+</span></span><span class="line"><span class="cl">VmallocTotal:     <span class="m">32768</span>       GB
+</span></span><span class="line"><span class="cl">VmallocUsed:      0.281441    GB
+</span></span><span class="line"><span class="cl">VmallocChunk:     32767.7     GB
+</span></span><span class="line"><span class="cl">HugePages_Total:  <span class="m">0</span>
+</span></span><span class="line"><span class="cl">HugePages_Free:   <span class="m">0</span>
+</span></span><span class="line"><span class="cl">HugePages_Rsvd:   <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Hugepagesize:     0.00195312  GB
+</span></span></code></pre></div><p> </p>
+<h4 id="메모리-전후-비교표">메모리 전후 비교표</h4>
+<p>버퍼 메모리는 작업전부터 크기가 작아 효과가 그리 체감되지는 않지만 94% 줄였고, 캐시 메모리는 87% 줄였다.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">구분</th>
+<th style="text-align:center">버퍼 메모리</th>
+<th style="text-align:center">캐시 메모리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Before</td>
+<td style="text-align:center">0.7 [GB]</td>
+<td style="text-align:center">55 [GB]</td>
+</tr>
+<tr>
+<td style="text-align:center">After</td>
+<td style="text-align:center">0.04 [GB]</td>
+<td style="text-align:center">7 [GB]</td>
+</tr>
+</tbody>
+</table>
+<p> </p>
+<h3 id="5-캐시-메모리-스케줄링-등록">5. 캐시 메모리 스케줄링 등록</h3>
+<p>시스템 엔지니어가 매번 수동으로 캐시 메모리를 정리하는 건 번거롭고 불가능하니, 서버가 알아서 자동 정리할 수 있도록 crontab에 캐시 메모리 정리 스케줄을 등록해준다.<br>
+반드시 root 계정에서 crontab을 등록해야한다.</p>
+<blockquote>
+<p>서버에 부하가 많은 시점에 <code>drop_cache</code> 값에 3을 부여하는 행위는 서버 멈춤 현상을 유발할 수 있다. 따라서 캐시 메모리 정리 스케줄링 등록 시 실행시간은 부하(Load)가 적은 새벽 시간대로 설정해야만 한다.</p>
+</blockquote>
+<h4 id="cron-커닝페이퍼cheatsheet">Cron 커닝페이퍼(Cheatsheet)</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># * * * * * command to be executed</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># - - - - -</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># | | | | |</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># | | | | +----&gt; Day of Week  (0 - 6) (0 = Sunday ... 6 = Saturday)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># | | | +------&gt; Month        (1 - 12)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># | | +--------&gt; Day of Month (1 - 31)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># | +----------&gt; Hour         (0 - 23)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># +------------&gt; Minute       (0 - 59)</span>
+</span></span></code></pre></div><p>crontab을 작성하는 일이 그리 빈번히 발생하는 편이 아니기 때문에 가끔 헷갈릴 때가 있다.<br>
+crontab 윗줄에 주석처리된 커닝페이퍼를 달아놓으면 작업시 눈 앞에 바로 참고자료가 있기 때문에 편리한 서버 관리가 가능하다.</p>
+<p> </p>
+<h4 id="스케줄링-등록">스케줄링 등록</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ crontab -e
+</span></span><span class="line"><span class="cl"><span class="m">0</span> <span class="m">3</span> * * * sync <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="m">3</span> &gt; /proc/sys/vm/drop_caches
+</span></span></code></pre></div><p><code>-e</code> : crontab을 편집한다.</p>
+<p>매일 새벽 3시마다 캐시 메모리를 정리하는 명령어를 실행한다.</p>
+<p> </p>
+<h4 id="스케줄링-확인">스케줄링 확인</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ crontab -l
+</span></span><span class="line"><span class="cl"><span class="m">0</span> <span class="m">3</span> * * * sync <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="m">3</span> &gt; /proc/sys/vm/drop_caches
+</span></span></code></pre></div><p><code>-l</code> : crontab의 설정 상태를 확인한다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://kangwoo.github.io/devops/linux/linux-buffer-cache/">https://kangwoo.github.io/devops/linux/linux-buffer-cache/</a><br>
+<a href="https://linux-mm.org/Drop_Caches">https://linux-mm.org/Drop_Caches</a></p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

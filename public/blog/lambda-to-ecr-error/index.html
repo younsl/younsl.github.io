@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/lambda-to-ecr-error/" />
+    <title>Check the ECR permission</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Check the ECR permission</h1>
+        <div>
+                <time>Updated September 1, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="증상">증상</h2>
+<p>Lambda function을 생성할 때 ECR 권한 에러 메세지가 출력되며 생성이 불가능한 증상.</p>
+<p><img src="./1.png" alt="Lambda function의 에러 화면" title="Lambda function 생성 시 에러 메세지 화면"></p>
+<p><strong>에러 메세지</strong><br>
+람다가 ECR Image에 접근할 권한이 없으니, 먼저 ECR<sup>Elastic Container Registry</sup>의 권한을 확인해보라고 알려주고 있다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Lambda does not have permission to access the ECR image. Check the ECR permissions.
+</span></span></code></pre></div><p> </p>
+<h2 id="원인">원인</h2>
+<p>에러 메세지에 이미 정답이 있었다. 이래서 로그의 중요성을 절대 간과해서도 의심해서도 안된다.</p>
+<p>ECR<sup>Elastic Container Registry</sup>에 Lambda function 접근을 허용해주는 Permission이 등록되어 있지 않았다.</p>
+<p><img src="./2.png" alt="문제 발생한 아키텍처" title="ECR과 Lambda 권한 문제가 발생한 아키텍처"></p>
+<p>Lambda function이 ECR에 접근해 컨테이너 이미지를 받아올 때, 권한이 거부되어 실패하는 것이다.</p>
+<p> </p>
+<h2 id="해결방법">해결방법</h2>
+<p>Lambda function이 접근할 수 있도록 ECR Repository에서 권한<sup>Permissions</sup>을 수정한다.</p>
+<p> </p>
+<h2 id="상세-조치방법">상세 조치방법</h2>
+<h3 id="람다-전용-iam-role-생성">람다 전용 IAM Role 생성</h3>
+<p>Lambda function에 부여할 IAM Role을 생성한다.</p>
+<p>이 IAM Role에는 Lambda function이 ECR에 인증을 받고, Repository에 접근해서 컨테이너 이미지를 받아오고 이미지 목록을 확인할 수 있는 권한이 부여되어 있다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;Version&#34;</span><span class="p">:</span> <span class="s2">&#34;2012-10-17&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;Statement&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Sid&#34;</span><span class="p">:</span> <span class="s2">&#34;LambdaToECR1&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Effect&#34;</span><span class="p">:</span> <span class="s2">&#34;Allow&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Action&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:SetRepositoryPolicy&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:BatchGetImage&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:CompleteLayerUpload&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:Get*&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:Describe*&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:UploadLayerPart&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:ListImages&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:InitiateLayerUpload&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:BatchCheckLayerAvailability&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:PutImage&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">],</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Resource&#34;</span><span class="p">:</span> <span class="s2">&#34;arn:aws:ecr:ap-northeast-2:ACCOUNT_ID:repository/REPOSITORY_NAME&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Sid&#34;</span><span class="p">:</span> <span class="s2">&#34;LambdaToECR2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Effect&#34;</span><span class="p">:</span> <span class="s2">&#34;Allow&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Action&#34;</span><span class="p">:</span> <span class="s2">&#34;ecr:GetAuthorizationToken&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Resource&#34;</span><span class="p">:</span> <span class="s2">&#34;*&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>Resource 값의 리전 <code>ap-northeast-2</code>, <code>ACCOUNT_ID</code>, <code>REPOSITORY_NAME</code> 값은 자신의 환경에 맞게 바꾸자.</p>
+<p> </p>
+<h3 id="ecr-권한-설정">ECR 권한 설정</h3>
+<p>AWS Management Console에 로그인 한 다음, ECR<sup>Elastic Container Registry</sup> 서비스로 들어간다.</p>
+<p><img src="./3.gif" alt="콘솔에서 ECR 페이지로 이동하는 화면"></p>
+<p> </p>
+<p>그후 Lambda function를 연결할 ECR 레포지터리를 선택한다.</p>
+<p><img src="./4.png" alt="ECR 레포지터리 기본 화면" title="ECR Repository의 권한설정 화면"></p>
+<p>Amaozn ECR의 컨테이너 이미지와 동일한 계정에 있는 Lambda Function의 경우 Amazon ECR 레포지토리에 권한을 추가해줘야 한다. 다음 예는 ECR 레포지터리의 최소 권한 정책을 보여준다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;Version&#34;</span><span class="p">:</span> <span class="s2">&#34;2008-10-17&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;Statement&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;Sid&#34;</span><span class="p">:</span> <span class="s2">&#34;LambdaECRImageRetrievalPolicy&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;Effect&#34;</span><span class="p">:</span> <span class="s2">&#34;Allow&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;Principal&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;Service&#34;</span><span class="p">:</span> <span class="s2">&#34;lambda.amazonaws.com&#34;</span>
+</span></span><span class="line"><span class="cl">      <span class="p">},</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;Action&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;ecr:BatchGetImage&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;ecr:DeleteRepositoryPolicy&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;ecr:GetDownloadUrlForLayer&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;ecr:GetRepositoryPolicy&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;ecr:SetRepositoryPolicy&#34;</span>
+</span></span><span class="line"><span class="cl">      <span class="p">],</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;Condition&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;StringLike&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="nt">&#34;aws:sourceArn&#34;</span><span class="p">:</span> <span class="s2">&#34;arn:aws:lambda:ap-northeast-2:ACCOUNT_ID:function:*&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>위 정책 값을 ECR의 Permissions에 넣어주면, Lambda function이 해당 ECR 레포지터리에 접근할 수 있게 된다.</p>
+<p> </p>
+<p>그러면 ECR 레포지터리의 Permissions 메뉴에는 이렇게 변환되어 보인다.</p>
+<p><img src="./5.png" alt="ECR 레포지터리의 Permissions 화면"></p>
+<p> </p>
+<p>ECR에 권한을 부여한 다음, Lambda function에 롤을 부여해서 다시 생성해보면 문제없이 생성되는 걸 확인할 수 있다.</p>
+<p><img src="./6.png" alt="테스트 결과 화면" title="Lambda function이 생성된 화면"></p>
+<p> </p>
+<p>이것으로 Lambda function과 ECR 사이에서 발생한 권한 문제는 해결되었다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><strong>AWS 공식문서</strong><br>
+<a href="https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-images.html#gettingstarted-images-permissions">Deploying Lambda functions as container images</a></p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

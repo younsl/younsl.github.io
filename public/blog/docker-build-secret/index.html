@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/docker-build-secret/" />
+    <title>docker build secret 사용</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>docker build secret 사용</h1>
+        <div>
+                <time>Updated May 31, 2024</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#배경지식">배경지식</a>
+      <ul>
+        <li><a href="#dockerfile-arg-vs-env">Dockerfile ARG vs ENV</a></li>
+        <li><a href="#docker-secret-적용-사례">Docker Secret 적용 사례</a></li>
+        <li><a href="#docker-secret-특성">Docker Secret 특성</a></li>
+      </ul>
+    </li>
+    <li><a href="#설정방법">설정방법</a>
+      <ul>
+        <li><a href="#dockerfile">Dockerfile</a></li>
+        <li><a href="#docker-build">docker build</a></li>
+      </ul>
+    </li>
+    <li><a href="#참고자료">참고자료</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>Docker build에서 secret 사용하기 가이드.</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="dockerfile-arg-vs-env">Dockerfile ARG vs ENV</h3>
+<p><img src="./1.png" alt="An overview of ARG and ENV availability." title="ARG 및 ENV 사용가능 범위에 대한 개요"></p>
+<p>도커파일에서 <code>ARG</code>는 빌드할 때만 사용되며, <code>ENV</code>는 컨테이너 빌드와 컨테이너 실행 모두에 사용됩니다.</p>
+<p><code>docker build</code> 할 때 <code>--build-arg</code> 대신 <code>--secret</code> 옵션을 사용할 경우, <code>docker history</code>에 환경변수가 노출되지 않기 때문에 더 안전한 컨테이너 이미지를 만들 수 있습니다.</p>
+<p><code>docker history</code> 확인 예시는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ docker <span class="nb">history</span> 6591676b438c --no-trunc <span class="p">|</span> grep NEXT
+</span></span><span class="line"><span class="cl">IMAGE                                                                     CREATED        CREATED BY
+</span></span><span class="line"><span class="cl">&lt;missing&gt;                                                                 <span class="m">12</span> hours ago   RUN <span class="p">|</span><span class="m">3</span> <span class="nv">NEXT_PUBLIC_AWS_KMS_REGION</span><span class="o">=</span>ap-northeast-2 <span class="nv">NEXT_PUBLIC_AWS_KMS_DEV_KEY_ID</span><span class="o">=</span>arn:aws:kms:ap-northeast-2:111122223333:key/059x1xx5-0x94-44x2-97x4-4x49x5xx2x23 <span class="nv">NEXT_PUBLIC_AWS_KMS_AES_KEY_ID</span><span class="o">=</span>arn:aws:kms:ap-northeast-2:111122223333:key/9x4943xx-9431-45b7-b415-4x175xxxxx8x /bin/sh -c <span class="nv">secret_1</span><span class="o">=</span><span class="s2">&#34;</span><span class="k">$(</span>cat /run/secrets/NEXT_PUBLIC_AWS_KMS_ACCESS_KEY_ID<span class="k">)</span><span class="s2">&#34;</span>     <span class="nv">secret_2</span><span class="o">=</span><span class="s2">&#34;</span><span class="k">$(</span>cat /run/secrets/NEXT_PUBLIC_AWS_KMS_SECRET_ACCESS_KEY<span class="k">)</span><span class="s2">&#34;</span>     <span class="nv">NEXT_PUBLIC_AWS_KMS_ACCESS_KEY_ID</span><span class="o">=</span><span class="si">${</span><span class="nv">secret_1</span><span class="si">}</span>     <span class="nv">NEXT_PUBLIC_AWS_KMS_SECRET_ACCESS_KEY</span><span class="o">=</span><span class="si">${</span><span class="nv">secret_2</span><span class="si">}</span>     <span class="nv">NEXT_PUBLIC_AWS_KMS_REGION</span><span class="o">=</span><span class="nv">$NEXT_PUBLIC_AWS_KMS_REGION</span>     <span class="nv">NEXT_PUBLIC_AWS_KMS_DEV_KEY_ID</span><span class="o">=</span><span class="nv">$NEXT_PUBLIC_AWS_KMS_DEV_KEY_ID</span>     <span class="nv">NEXT_PUBLIC_AWS_KMS_AES_KEY_ID</span><span class="o">=</span><span class="nv">$NEXT_PUBLIC_AWS_KMS_AES_KEY_ID</span>     yarn burger-pay:build <span class="c1"># buildkit</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="docker-secret-적용-사례">Docker Secret 적용 사례</h3>
+<p>Docker Secret을 사용하면 아래와 같은 민감한 데이터를 안전하게 관리할 수 있습니다.</p>
+<ul>
+<li>사용자 패스워드</li>
+<li>TLS 인증서</li>
+<li>API 키 또는 IAM User에서 발급한 Access Key</li>
+<li>SSH 키</li>
+<li>JDBC Connection과 같은 데이터베이스 접속 정보</li>
+<li>일반 문자열 및 바이너리 (최대 500kb 크기)</li>
+</ul>
+<p> </p>
+<h3 id="docker-secret-특성">Docker Secret 특성</h3>
+<ul>
+<li>Docker Secret은 컨테이너의 메모리에 저장되어 있는 정보이기 때문에 컨테이너 내에서 지정된 경로에만 마운트가 가능합니다.</li>
+<li>컨테이너에 마운트 된 시크릿 데이터는 컨테이너 내부에서 <code>/run/secrets/&lt;시크릿_파일_이름&gt;</code> 경로를 통해 접근할 수 있습니다.</li>
+<li>도커에서 시크릿은 오직 <strong>파일 형태</strong>로만 컨테이너에 마운트할 수 있습니다.</li>
+</ul>
+<p> </p>
+<h2 id="설정방법">설정방법</h2>
+<h3 id="dockerfile">Dockerfile</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-docker" data-lang="docker"><span class="line"><span class="cl"><span class="k">RUN</span> --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>secret,id<span class="o">=</span>NEXT_PUBLIC_AWS_KMS_ACCESS_KEY_ID <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>secret,id<span class="o">=</span>NEXT_PUBLIC_AWS_KMS_SECRET_ACCESS_KEY <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    <span class="nv">secret_1</span><span class="o">=</span><span class="s2">&#34;</span><span class="k">$(</span>cat /run/secrets/NEXT_PUBLIC_AWS_KMS_ACCESS_KEY_ID<span class="k">)</span><span class="s2">&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    <span class="nv">secret_2</span><span class="o">=</span><span class="s2">&#34;</span><span class="k">$(</span>cat /run/secrets/NEXT_PUBLIC_AWS_KMS_SECRET_ACCESS_KEY<span class="k">)</span><span class="s2">&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    <span class="nv">NEXT_PUBLIC_AWS_KMS_ACCESS_KEY_ID</span><span class="o">=</span><span class="si">${</span><span class="nv">secret_1</span><span class="si">}</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    <span class="nv">NEXT_PUBLIC_AWS_KMS_SECRET_ACCESS_KEY</span><span class="o">=</span><span class="si">${</span><span class="nv">secret_2</span><span class="si">}</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    <span class="nv">NEXT_PUBLIC_AWS_KMS_REGION</span><span class="o">=</span><span class="nv">$NEXT_PUBLIC_AWS_KMS_REGION</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    <span class="nv">NEXT_PUBLIC_AWS_KMS_DEV_KEY_ID</span><span class="o">=</span><span class="nv">$NEXT_PUBLIC_AWS_KMS_DEV_KEY_ID</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    <span class="nv">NEXT_PUBLIC_AWS_KMS_AES_KEY_ID</span><span class="o">=</span><span class="nv">$NEXT_PUBLIC_AWS_KMS_AES_KEY_ID</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    yarn burger-pay:build<span class="err">
+</span></span></span></code></pre></div><ul>
+<li>컨테이너 내부 경로 <code>/run/secrets/&lt;SECRET_ID&gt;</code> 시크릿 파일을 생성</li>
+<li>시크릿 파일을 환경변수 형태로 읽어들임</li>
+<li>이제 <code>docker build</code> 하는 타이밍에 환경변수를 주입하면 됩니다.</li>
+</ul>
+<p> </p>
+<h3 id="docker-build">docker build</h3>
+<p><code>docker</code> 명령어로 빌드 시 secret 주입하기 위해 먼저 buildkit을 활성화해야 합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">DOCKER_BUILDKIT</span><span class="o">=</span><span class="m">1</span>
+</span></span></code></pre></div><p><a href="https://docs.docker.com/build/buildkit/">BuildKit</a>은 레거시 빌더를 대체하는 개선된 백엔드입니다. 빌드의 성능과 Dockerfile의 재사용성을 개선하기 위한 향상된 새 기능이 함께 제공됩니다.</p>
+<p> </p>
+<p><code>BuildKit</code>을 활성화한 상태로 도커 이미지를 빌드합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">docker build <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --secret <span class="nv">id</span><span class="o">=</span>NEXT_PUBLIC_AWS_KMS_ACCESS_KEY_ID,env<span class="o">=</span>NEXT_PUBLIC_AWS_KMS_ACCESS_KEY_ID <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --secret <span class="nv">id</span><span class="o">=</span>NEXT_PUBLIC_AWS_KMS_SECRET_ACCESS_KEY,env<span class="o">=</span>NEXT_PUBLIC_AWS_KMS_SECRET_ACCESS_KEY <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --build-arg <span class="nv">NEXT_PUBLIC_AWS_KMS_REGION</span><span class="o">=</span><span class="nv">$NEXT_PUBLIC_AWS_KMS_REGION</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --build-arg <span class="nv">NEXT_PUBLIC_AWS_KMS_DEV_KEY_ID</span><span class="o">=</span><span class="nv">$NEXT_PUBLIC_AWS_KMS_DEV_KEY_ID</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --build-arg <span class="nv">NEXT_PUBLIC_AWS_KMS_AES_KEY_ID</span><span class="o">=</span><span class="nv">$NEXT_PUBLIC_AWS_KMS_AES_KEY_ID</span> .
+</span></span></code></pre></div><p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://vsupalov.com/better-docker-build-secrets/">A Better Way to Handle Build-Time Secrets in Docker</a><br>
+Docker 빌드할 때 secret을 처리하는 더 나은 방법. 이 글이 문제 해결에 많은 도움이 되었습니다.</p>
+<p><a href="https://vsupalov.com/docker-env-vars/">Understanding Docker Build Args, Environment Variables and Docker Compose Variables</a><br>
+<a href="https://stackoverflow.com/questions/73285152/can-you-pass-multiple-docker-buildkit-secrets-at-once">Can you pass multiple Docker BuildKit secrets at once?</a><br>
+<a href="https://pythonspeed.com/articles/docker-build-secrets/">Don’t leak your Docker image’s build secrets</a><br>
+<a href="https://gist.github.com/noelbundick/44c12b3c856e26a0521174150f75968c">How to use Docker build secrets</a></p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/lshw-on-linux/" />
+    <title>lshw 패키지로 리눅스 하드웨어 정보 확인</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>lshw 패키지로 리눅스 하드웨어 정보 확인</h1>
+        <div>
+                <time>Updated August 30, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#환경">환경</a></li>
+    <li><a href="#전제조건">전제조건</a></li>
+    <li><a href="#준비사항">준비사항</a>
+      <ul>
+        <li><a href="#lshw-패키지-설치">lshw 패키지 설치</a></li>
+      </ul>
+    </li>
+    <li><a href="#lshw-사용법">lshw 사용법</a>
+      <ul>
+        <li><a href="#1-상세정보-출력">1. 상세정보 출력</a></li>
+        <li><a href="#2-요약정보-출력">2. 요약정보 출력</a></li>
+        <li><a href="#3-특정-파트-확인">3. 특정 파트 확인</a></li>
+        <li><a href="#4-html-파일로-보기">4. HTML 파일로 보기</a></li>
+      </ul>
+    </li>
+    <li><a href="#결론">결론</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>리눅스 서버에 <abbr title="list hardware">lshw</abbr> 패키지를 설치해 서버 모델, CPU, Memory 등의 하드웨어 정보를 원격으로 수집할 수 있습니다.</p>
+<p>시스템 관리 유틸리티 패키지를 적절한 상황에 활용하면 효율적인 시스템 관리가 가능합니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<ul>
+<li><strong>OS</strong> : Red Hat Enterprise Linux Server release 6.x</li>
+<li><strong>Architecture</strong> : x86_64</li>
+<li><strong>패키지 관리자</strong> : <abbr title="RPM Package Manager">RPM</abbr></li>
+<li><strong>설치 패키지</strong> : lshw B.02.17</li>
+</ul>
+<p><strong>Alert</strong><br>
+이 시나리오를 기준으로 제가 서버에 설치한 lshw 패키지 설치파일 이름은 <code>lshw-2.17-1.el6.rf.x86_64.rpm</code>입니다.</p>
+<p> </p>
+<h2 id="전제조건">전제조건</h2>
+<ul>
+<li>하드웨어 정보를 조회할 서버에 설치할 <code>lshw</code> 패키지 설치파일</li>
+<li>준비한 <code>lshw</code> 패키지 설치파일은 <abbr title="Secure File Transfer Protocol">SFTP</abbr>, <abbr title="File Transfer Protocol">FTP</abbr> 등을 사용해서 적절한 경로에 미리 업로드해야 합니다.</li>
+</ul>
+<p> </p>
+<h2 id="준비사항">준비사항</h2>
+<p>먼저 <code>lshw</code> 패키지를 설치하는 방법을 알아보겠습니다.<br>
+시스템에 이미 <code>lshw</code> 패키지가 설치되어 있을 경우, 준비사항 과정은 건너뛰어도 됩니다.</p>
+<p> </p>
+<h3 id="lshw-패키지-설치">lshw 패키지 설치</h3>
+<h4 id="1-아키텍처-확인">1. 아키텍처 확인</h4>
+<p>현재 시스템의 CPU 아키텍처의 정보를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ arch
+</span></span><span class="line"><span class="cl">x86_64
+</span></span></code></pre></div><p>해당 서버의 아키텍쳐는 Intel CPU 기반 64bit 아키텍쳐인 <code>x86_64</code>입니다.</p>
+<p> </p>
+<h4 id="2-패키지-설치">2. 패키지 설치</h4>
+<p>정보를 수집할 대상 서버의 아키텍쳐와 운영체제 버전에 맞는 lshw 패키지 설치파일을 업로드 해놓습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls -lh
+</span></span><span class="line"><span class="cl">합계 1.7M
+</span></span><span class="line"><span class="cl">-rw-rw-r-- <span class="m">1</span> dev dev 1.7M 2021-11-12 08:35 lshw-2.17-1.el6.rf.x86_64.rpm
+</span></span></code></pre></div><p><code>lshw</code>의 패키지 설치파일은 반드시 검증된 패키지 저장소에서 다운로드 받습니다.</p>
+<p> </p>
+<p>서버에 업로드한 <code>lshw</code> 패키지를 <abbr title="RPM Package Manager">RPM</abbr>을 이용해 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ rpm -ivh lshw-2.17-1.el6.rf.x86_64.rpm 
+</span></span></code></pre></div><p> </p>
+<p>명령어 실행 결과는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">경고: lshw-2.17-1.el6.rf.x86_64.rpm: Header V3 DSA/SHA1 Signature, key ID 6b8d79e6: NOKEY
+</span></span><span class="line"><span class="cl">준비 중...                  <span class="c1">########################################### [100%]</span>
+</span></span><span class="line"><span class="cl">   1:lshw                   <span class="c1">########################################### [100%]</span>
+</span></span></code></pre></div><p>정상적으로 <code>lshw</code> 설치가 완료되었습니다.</p>
+<p> </p>
+<h4 id="3-설치결과-확인">3. 설치결과 확인</h4>
+<p><abbr title="RPM Package Manager">RPM</abbr>에서 <code>lshw</code> 패키지 정보를 조회한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ rpm -qa lshw
+</span></span><span class="line"><span class="cl">lshw-2.17-1.el6.rf.x86_64
+</span></span></code></pre></div><p>현재 서버에 설치된 <code>lshw</code> 패키지 버전은 <code>2.17.1</code> 입니다.</p>
+<p> </p>
+<p><code>lshw</code> 명령어가 잘 실행되는지 테스트하기 위해 버전을 출력합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ lshw -version
+</span></span><span class="line"><span class="cl">B.02.17
+</span></span><span class="line"><span class="cl">the latest version is B.02.18
+</span></span></code></pre></div><p> </p>
+<h2 id="lshw-사용법">lshw 사용법</h2>
+<h3 id="1-상세정보-출력">1. 상세정보 출력</h3>
+<p>아무 옵션 없이 <code>lshw</code> 명령어를 실행하면 모든 하드웨어의 상세 정보를 출력합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ lshw
+</span></span><span class="line"><span class="cl">dev-server1                 
+</span></span><span class="line"><span class="cl">    description: Expansion Chassis
+</span></span><span class="line"><span class="cl">    product: UCSC-C220-M3S
+</span></span><span class="line"><span class="cl">    vendor: Cisco Systems Inc
+</span></span><span class="line"><span class="cl">    version: A
+</span></span><span class="line"><span class="cl">    serial: XXX1704X1X0
+</span></span><span class="line"><span class="cl">    width: <span class="m">64</span> bits
+</span></span><span class="line"><span class="cl">    capabilities: smbios-2.7 dmi-2.7 vsyscall64 vsyscall32
+</span></span><span class="line"><span class="cl">    configuration: <span class="nv">boot</span><span class="o">=</span>normal <span class="nv">chassis</span><span class="o">=</span>expansion <span class="nv">frontpanel_password</span><span class="o">=</span>enabled <span class="nv">keyboard_password</span><span class="o">=</span>disabled power-on_password<span class="o">=</span>di
+</span></span><span class="line"><span class="cl">sabled <span class="nv">uuid</span><span class="o">=</span>31CB0CAD-EB83-4327-8599-83C27AD698A8
+</span></span><span class="line"><span class="cl">  *-core
+</span></span><span class="line"><span class="cl">       description: Motherboard
+</span></span><span class="line"><span class="cl">       product: UCSC-C220-M3S
+</span></span><span class="line"><span class="cl">       vendor: Cisco Systems Inc
+</span></span><span class="line"><span class="cl">       physical id: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">       version: 74-10442-01
+</span></span><span class="line"><span class="cl">       serial: XXX1703XXX7
+</span></span><span class="line"><span class="cl">     *-firmware
+</span></span><span class="line"><span class="cl">          description: BIOS
+</span></span></code></pre></div><p> </p>
+<h3 id="2-요약정보-출력">2. 요약정보 출력</h3>
+<p><code>-short</code> 옵션을 붙이면 전체 하드웨어의 요약정보를 출력합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ lshw -short
+</span></span><span class="line"><span class="cl">H/W path                Device    Class      <span class="nv">Description</span>
+</span></span><span class="line"><span class="cl"><span class="o">========================================================</span>
+</span></span><span class="line"><span class="cl">                                  system     UCSC-C220-M3S
+</span></span><span class="line"><span class="cl">/0                                bus        UCSC-C220-M3S
+</span></span><span class="line"><span class="cl">/0/0                              memory     64KiB BIOS
+</span></span><span class="line"><span class="cl">/0/1                              memory     
+</span></span><span class="line"><span class="cl">/0/1/0                            memory     8GiB DIMM DDR3 <span class="m">1600</span> MHz <span class="o">(</span>0.6 ns<span class="o">)</span>
+</span></span><span class="line"><span class="cl">/0/2                              memory     
+</span></span><span class="line"><span class="cl">/0/2/0                            memory     DIMM Synchronous <span class="o">[</span>empty<span class="o">]</span>
+</span></span><span class="line"><span class="cl">/0/3                              memory     
+</span></span><span class="line"><span class="cl"><span class="o">[</span>...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">/0/13.1                           generic    Sandy Bridge Ring to PCI Express Performance Monitor
+</span></span><span class="line"><span class="cl">/0/13.4                           generic    Sandy Bridge QuickPath Interconnect Agent Ring Registers
+</span></span><span class="line"><span class="cl">/0/13.5                           generic    Sandy Bridge Ring to QuickPath Interconnect Link <span class="m">0</span> Performance Monitor
+</span></span><span class="line"><span class="cl">/0/13.6                           generic    Sandy Bridge Ring to QuickPath Interconnect Link <span class="m">1</span> Performance Monitor
+</span></span></code></pre></div><p> </p>
+<h3 id="3-특정-파트-확인">3. 특정 파트 확인</h3>
+<p>특정 파트의 하드웨어 정보만 조회하는 방법은 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ lshw -c &lt;CLASS NAME&gt;
+</span></span></code></pre></div><p><code>lshw</code> 클래스는 하드웨어의 특정 카테고리<sup>Part</sup>를 의미합니다.
+<code>-c</code> 또는 <code>-class</code> 옵션을 붙이면 특정 하드웨어 파트<sup>Class</sup>의 정보만 출력합니다.</p>
+<p><strong>사용 가능한 Class 목록</strong><br>
+<code>system</code>, <code>cpu</code>, <code>memory</code>, <code>disk</code>, <code>volume</code>, <code>storage</code> 등이 있습니다.<br>
+선택 가능한 전체 class 리스트는 <code>lshw -short</code> 명령어 결과에서 확인할 수 있습니다.</p>
+<p> </p>
+<h4 id="system-클래스">system 클래스</h4>
+<p>시스템 클래스를 조회합니다.<br>
+시스템 클래스는 서버 하드웨어에 대한 전반적인 정보를 가지고 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ lshw -c system
+</span></span></code></pre></div><p> </p>
+<p>명령어 실행결과는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ lshw -c system
+</span></span><span class="line"><span class="cl">dev-server1                 
+</span></span><span class="line"><span class="cl">    description: Expansion Chassis
+</span></span><span class="line"><span class="cl">    product: UCSC-C220-M3S
+</span></span><span class="line"><span class="cl">    vendor: Cisco Systems Inc
+</span></span><span class="line"><span class="cl">    version: A
+</span></span><span class="line"><span class="cl">    serial: XXX0000X0X0
+</span></span><span class="line"><span class="cl">    width: <span class="m">64</span> bits
+</span></span><span class="line"><span class="cl">    capabilities: smbios-2.7 dmi-2.7 vsyscall64 vsyscall32
+</span></span><span class="line"><span class="cl">    configuration: <span class="nv">boot</span><span class="o">=</span>normal <span class="nv">chassis</span><span class="o">=</span>expansion <span class="nv">frontpanel_password</span><span class="o">=</span>enabled <span class="nv">keyboard_password</span><span class="o">=</span>disabled power-on_password<span class="o">=</span>disabled <span class="nv">uuid</span><span class="o">=</span>31CB0CAD-EB83-4327-8599-83C27AD698A8
+</span></span></code></pre></div><p>서버 모델명<sup><code>product</code></sup>, 하드웨어 제조사<sup><code>vendor</code></sup>, 고유번호<sup><code>serial</code></sup> 등을 확인할 수 있습니다.</p>
+<p> </p>
+<h4 id="cpu-클래스">cpu 클래스</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ lshw -c cpu
+</span></span><span class="line"><span class="cl">  *-cpu:0                 
+</span></span><span class="line"><span class="cl">       description: CPU
+</span></span><span class="line"><span class="cl">       product: Xeon
+</span></span><span class="line"><span class="cl">       vendor: Intel Corp.
+</span></span><span class="line"><span class="cl">       physical id: <span class="m">32</span>
+</span></span><span class="line"><span class="cl">       bus info: cpu@0
+</span></span><span class="line"><span class="cl">       version: Intel<span class="o">(</span>R<span class="o">)</span> Xeon<span class="o">(</span>R<span class="o">)</span> CPU E5-2667 <span class="m">0</span> @ 2.90GHz
+</span></span><span class="line"><span class="cl">       slot: CPU1
+</span></span><span class="line"><span class="cl">       size: 1200MHz
+</span></span><span class="line"><span class="cl">       capacity: 4GHz
+</span></span><span class="line"><span class="cl">       width: <span class="m">64</span> bits
+</span></span><span class="line"><span class="cl">       clock: 100MHz
+</span></span><span class="line"><span class="cl">       capabilities: x86-64 fpu fpu_exception wp vme de pse tsc msr pae mce cx8 apic mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp constant_tsc arch_perfmon pebs bts rep_good xtopology nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 x2apic popcnt aes xsave avx lahf_lm ida arat epb xsaveopt pln pts tpr_shadow vnmi flexpriority ept vpid cpufreq
+</span></span><span class="line"><span class="cl">       configuration: <span class="nv">cores</span><span class="o">=</span><span class="m">6</span> <span class="nv">enabledcores</span><span class="o">=</span><span class="m">6</span> <span class="nv">threads</span><span class="o">=</span><span class="m">12</span>
+</span></span><span class="line"><span class="cl">  *-cpu:1 DISABLED
+</span></span><span class="line"><span class="cl">       description: CPU <span class="o">[</span>empty<span class="o">]</span>
+</span></span><span class="line"><span class="cl">       physical id: <span class="m">33</span>
+</span></span><span class="line"><span class="cl">       slot: CPU2
+</span></span></code></pre></div><p>CPU와 관련된 상세정보를 확인할 수 있습니다.</p>
+<p> </p>
+<h4 id="확인-가능한-cpu-정보">확인 가능한 CPU 정보</h4>
+<ul>
+<li>CPU 소켓 수 : <code>cpu:0</code>, <code>cpu:1</code></li>
+<li>CPU 아키텍쳐 : <code>x86-64</code></li>
+<li>CPU 모델명 : <code>version</code></li>
+<li>코어 수 : <code>cores=6</code></li>
+<li>스레드 수 : <code>threads=12</code></li>
+</ul>
+<p> </p>
+<h4 id="memory-클래스">memory 클래스</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ lshw -c memory
+</span></span><span class="line"><span class="cl">  *-firmware              
+</span></span><span class="line"><span class="cl">       description: BIOS
+</span></span><span class="line"><span class="cl">       vendor: Cisco Systems, Inc.
+</span></span><span class="line"><span class="cl">       physical id: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">       version: C220M3.1.4.7b.0.100520120256
+</span></span><span class="line"><span class="cl">       date: 10/05/2012
+</span></span><span class="line"><span class="cl">       size: 64KiB
+</span></span><span class="line"><span class="cl">       capacity: 4032KiB
+</span></span><span class="line"><span class="cl">       capabilities: pci upgrade shadowing cdboot bootselect socketedrom edd int13floppy1200 int13floppy720 int13floppy2880 int5printscreen int9keyboard int14serial int17printer acpi usb biosbootspecification uefi
+</span></span><span class="line"><span class="cl">  *-memory:0 UNCLAIMED
+</span></span><span class="line"><span class="cl">       physical id: <span class="m">1</span>
+</span></span><span class="line"><span class="cl">     *-bank UNCLAIMED
+</span></span><span class="line"><span class="cl">          description: DIMM DDR3 <span class="m">1600</span> MHz <span class="o">(</span>0.6 ns<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          product: M393B1K70DH0-YK0
+</span></span><span class="line"><span class="cl">          vendor: Samsung
+</span></span><span class="line"><span class="cl">          physical id: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">          serial: 3592XX2X
+</span></span><span class="line"><span class="cl">          slot: DIMM_A1
+</span></span><span class="line"><span class="cl">          size: 8GiB
+</span></span><span class="line"><span class="cl">          width: <span class="m">64</span> bits
+</span></span><span class="line"><span class="cl">          clock: 1600MHz <span class="o">(</span>0.6ns<span class="o">)</span>
+</span></span><span class="line"><span class="cl">  *-memory:1 UNCLAIMED
+</span></span><span class="line"><span class="cl">       physical id: <span class="m">2</span>
+</span></span><span class="line"><span class="cl">     *-bank UNCLAIMED
+</span></span><span class="line"><span class="cl">          description: DIMM Synchronous <span class="o">[</span>empty<span class="o">]</span>
+</span></span><span class="line"><span class="cl">          product: NO DIMM
+</span></span><span class="line"><span class="cl">          vendor: NO DIMM
+</span></span><span class="line"><span class="cl">          physical id: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">          serial: NO DIMM
+</span></span><span class="line"><span class="cl">          slot: DIMM_A2
+</span></span></code></pre></div><p>Memory Bank의 전체 개수, 사용중인 개수, 메모리 용량, 동작 클럭, 메모리 모델명, 메모리 고유번호<sup><code>serial</code></sup>까지 확인할 수 있습니다.</p>
+<p> </p>
+<h3 id="4-html-파일로-보기">4. HTML 파일로 보기</h3>
+<p><abbr title="Command Line Interface">CLI</abbr> 환경에서 보는게 불편한 엔지니어라면 하드웨어 정보를 <abbr title="Hyper Text Markup Language">HTML</abbr> 파일로 저장해 웹브라우저에서 보는 방법도 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ lshw -html &gt; /tmp/lshw.html
+</span></span></code></pre></div><p> </p>
+<p>CLI가 더 편한 엔지니어라면 저장된 html 파일을 <abbr title="Secure File Transfer Protocol">SFTP</abbr> 등을 이용해 웹 브라우저가 실행되는 환경으로 옮겨서 실행해야하는 게 번거롭기 때문에 굳이 이 방법을 쓸 필요가 있나 의구심이 듭니다.</p>
+<p> </p>
+<h2 id="결론">결론</h2>
+<p>이 글에서 소개하는 <code>lshw</code> 패키지는 하드웨어 정보를 확인하는 다양한 방법 중 한 가지일 뿐입니다.<br>
+<code>lshw</code> 외에도 다양한 기능을 가진 하드웨어 조회 패키지들이 많습니다.</p>
+<p>시스템 관리에는 정답이 없기 때문에 엔지니어 각자가 잘 알고 익숙한 방법으로 하드웨어 정보를 수집하면 될 것 같습니다.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

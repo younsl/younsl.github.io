@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/k8s/kubernetes-the-hard-way/" />
+    <title>Kubernetes the hard way</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Kubernetes the hard way</h1>
+        <div>
+                <time>Updated August 18, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>온프레미스 환경에서 <code>kubeadm</code>을 사용해서 쿠버네티스 클러스터를 처음부터 구성하는 방법을 소개합니다.</p>
+<p><code>kubeadm</code>은 쿠버네티스에서 제공하는 기본적인 클러스터 구성 도구이며, kubernetes 클러스터를 가장 빨리 구축하기 위한 다양한 기능을 제공합니다.<br>
+<code>kubeadm</code> 외에 다른 클러스터 구성 도구로 <code>kubespray</code>, <code>kops</code> 등이 있습니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<h3 id="클러스터-구성">클러스터 구성</h3>
+<p>v1.23 버전의 쿠버네티스 클러스터를 구성합니다.<br>
+클러스터의 전체 노드는 총 2대이며 컨트롤 플레인 노드 1대, 워커 노드 1대 구성입니다.</p>
+<p><img src="./1.png" alt="Cluster architecutre"></p>
+<p> </p>
+<h3 id="운영체제">운영체제</h3>
+<p>모든 노드의 운영체제는 동일하게 <code>Ubuntu 18.04.6 LTS</code>을 사용합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat /etc/os-release
+</span></span><span class="line"><span class="cl"><span class="nv">NAME</span><span class="o">=</span><span class="s2">&#34;Ubuntu&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&#34;18.04.6 LTS (Bionic Beaver)&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">ID</span><span class="o">=</span>ubuntu
+</span></span><span class="line"><span class="cl"><span class="nv">ID_LIKE</span><span class="o">=</span>debian
+</span></span><span class="line"><span class="cl"><span class="nv">PRETTY_NAME</span><span class="o">=</span><span class="s2">&#34;Ubuntu 18.04.6 LTS&#34;</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="도커">도커</h3>
+<p>모든 노드에 도커 <code>19.03.0</code>가 미리 설치되어 있는 상태입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ docker version
+</span></span><span class="line"><span class="cl">Client: Docker Engine - Community
+</span></span><span class="line"><span class="cl"> Version:           19.03.0
+</span></span><span class="line"><span class="cl"> API version:       1.40
+</span></span><span class="line"><span class="cl"> Go version:        go1.12.5
+</span></span><span class="line"><span class="cl"> Git commit:        aeac949
+</span></span><span class="line"><span class="cl"> Built:             Wed Jul <span class="m">17</span> 18:15:07 <span class="m">2019</span>
+</span></span><span class="line"><span class="cl"> OS/Arch:           linux/amd64
+</span></span><span class="line"><span class="cl"> Experimental:      <span class="nb">false</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Server: Docker Engine - Community
+</span></span><span class="line"><span class="cl"> Engine:
+</span></span><span class="line"><span class="cl">  Version:          19.03.0
+</span></span><span class="line"><span class="cl">  API version:      1.40 <span class="o">(</span>minimum version 1.12<span class="o">)</span>
+</span></span><span class="line"><span class="cl">  Go version:       go1.12.5
+</span></span><span class="line"><span class="cl">  Git commit:       aeac949
+</span></span><span class="line"><span class="cl">  Built:            Wed Jul <span class="m">17</span> 18:13:43 <span class="m">2019</span>
+</span></span><span class="line"><span class="cl">  OS/Arch:          linux/amd64
+</span></span><span class="line"><span class="cl">  Experimental:     <span class="nb">false</span>
+</span></span><span class="line"><span class="cl"> containerd:
+</span></span><span class="line"><span class="cl">  Version:          1.4.4
+</span></span><span class="line"><span class="cl">  GitCommit:        05f951a3781f4f2c1911b05e61c160e9c30eaa8e
+</span></span><span class="line"><span class="cl"> runc:
+</span></span><span class="line"><span class="cl">  Version:          1.0.0-rc93
+</span></span><span class="line"><span class="cl">  GitCommit:        12644e614e25b05da6fd08a38ffa0cfe1903fdec
+</span></span><span class="line"><span class="cl"> docker-init:
+</span></span><span class="line"><span class="cl">  Version:          0.18.0
+</span></span><span class="line"><span class="cl">  GitCommit:        fec3683
+</span></span></code></pre></div><p>만약 도커가 설치되어 있지 않다면 모든 노드에 미리 도커 설치가 필요합니다.</p>
+<p>쿠버네티스 v1.23에서 지원하는 CRI 리스트와 설치방법은 <a href="https://v1-23.docs.kubernetes.io/docs/setup/production-environment/container-runtimes/">쿠버네티스 공식문서</a>에서 확인할 수 있습니다.</p>
+<p> </p>
+<h2 id="전제조건">전제조건</h2>
+<ul>
+<li>가상머신(VM) 또는 온프레미스 데이터센터 기반 물리 서버 환경</li>
+<li>OS와 Docker Engine이 설치 완료된 2대 이상의 machine</li>
+</ul>
+<p>이 글에서 CRI<sup>Container Runtime Interface</sup>로 사용하는 Docker Engine 설치 과정은 생략합니다.<br>
+모든 노드에 Docker Engine이 미리 설치 완료된 상태여야 합니다.</p>
+<p> </p>
+<h2 id="클러스터-생성하기">클러스터 생성하기</h2>
+<h3 id="1-노드-셋업">1. 노드 셋업</h3>
+<h4 id="netfilter-설정">netfilter 설정</h4>
+<p>모든 컨트롤 플레인과 워커 노드의 커널에서 netfilter 기능을 활성화 합니다.<br>
+Linux 운영체제의 방화벽인 iptables가 브릿지된 트래픽을 볼 수 있도록 해주는 설정입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat <span class="s">&lt;&lt; EOF | sudo tee /etc/modules-load.d/k8s.conf
+</span></span></span><span class="line"><span class="cl"><span class="s">br_netfilter
+</span></span></span><span class="line"><span class="cl"><span class="s">EOF</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat <span class="s">&lt;&lt; EOF | sudo tee /etc/sysctl.d/k8s.conf
+</span></span></span><span class="line"><span class="cl"><span class="s">net.bridge.bridge-nf-call-ip6tables = 1
+</span></span></span><span class="line"><span class="cl"><span class="s">net.bridge.bridge-nf-call-iptables = 1
+</span></span></span><span class="line"><span class="cl"><span class="s">EOF</span>
+</span></span></code></pre></div><p> </p>
+<p><code>sysctl --system</code>은 <code>.conf</code>로 끝나는 모든 시스템 설정 파일을 읽고 설정을 적용합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo sysctl --system
+</span></span></code></pre></div><p>위 명령어를 실행하면 netfilter 설정 과정에서 새로 생성했던 <code>k8s.conf</code> 설정을 읽고 커널에 적용합니다.</p>
+<p> </p>
+<p>실행 결과는 다음과 같이 나옵니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">* Applying /etc/sysctl.d/10-console-messages.conf ...
+</span></span><span class="line"><span class="cl">kernel.printk <span class="o">=</span> <span class="m">4</span> <span class="m">4</span> <span class="m">1</span> <span class="m">7</span>
+</span></span><span class="line"><span class="cl">* Applying /etc/sysctl.d/10-ipv6-privacy.conf ...
+</span></span><span class="line"><span class="cl">net.ipv6.conf.all.use_tempaddr <span class="o">=</span> <span class="m">2</span>
+</span></span><span class="line"><span class="cl">net.ipv6.conf.default.use_tempaddr <span class="o">=</span> <span class="m">2</span>
+</span></span><span class="line"><span class="cl">* Applying /etc/sysctl.d/10-kernel-hardening.conf ...
+</span></span><span class="line"><span class="cl">kernel.kptr_restrict <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">* Applying /etc/sysctl.d/10-link-restrictions.conf ...
+</span></span><span class="line"><span class="cl">fs.protected_hardlinks <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">fs.protected_symlinks <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">* Applying /etc/sysctl.d/10-magic-sysrq.conf ...
+</span></span><span class="line"><span class="cl">kernel.sysrq <span class="o">=</span> <span class="m">176</span>
+</span></span><span class="line"><span class="cl">* Applying /etc/sysctl.d/10-network-security.conf ...
+</span></span><span class="line"><span class="cl">net.ipv4.conf.default.rp_filter <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">net.ipv4.conf.all.rp_filter <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">net.ipv4.tcp_syncookies <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">* Applying /etc/sysctl.d/10-ptrace.conf ...
+</span></span><span class="line"><span class="cl">kernel.yama.ptrace_scope <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">* Applying /etc/sysctl.d/10-zeropage.conf ...
+</span></span><span class="line"><span class="cl">vm.mmap_min_addr <span class="o">=</span> <span class="m">65536</span>
+</span></span><span class="line"><span class="cl">* Applying /usr/lib/sysctl.d/50-default.conf ...
+</span></span><span class="line"><span class="cl">net.ipv4.conf.all.promote_secondaries <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">net.core.default_qdisc <span class="o">=</span> fq_codel
+</span></span><span class="line"><span class="cl">* Applying /etc/sysctl.d/99-sysctl.conf ...
+</span></span><span class="line"><span class="cl">* Applying /etc/sysctl.d/k8s.conf ...
+</span></span><span class="line"><span class="cl">net.bridge.bridge-nf-call-ip6tables <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">net.bridge.bridge-nf-call-iptables <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">* Applying /etc/sysctl.conf ...
+</span></span></code></pre></div><p> </p>
+<p>마지막 라인 부근에서 <code>k8s.conf</code> 설정파일을 적용한 걸 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">* Applying /etc/sysctl.d/k8s.conf ...
+</span></span><span class="line"><span class="cl">net.bridge.bridge-nf-call-ip6tables <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">net.bridge.bridge-nf-call-iptables <span class="o">=</span> <span class="m">1</span>
+</span></span></code></pre></div><p> </p>
+<h4 id="쿠버네티스-패키지-설치">쿠버네티스 패키지 설치</h4>
+<p>모든 머신에 다음 패키지들을 설치해야 합니다. 각 패키지의 역할은 다음과 같습니다.</p>
+<ul>
+<li><strong>kubeadm</strong>: 클러스터를 초기 생성하고 부트스트랩하는 CLI 도구입니다.</li>
+<li><strong>kubelet</strong>: 클러스터의 모든 머신에서 실행되는 파드와 컨테이너 생성과 같은 작업을 수행하는 컴포넌트입니다.</li>
+<li><strong>kubectl</strong>: 클러스터와 통신하기 위한 CLI 도구입니다.</li>
+</ul>
+<p><strong>Alert</strong><br>
+쿠버네티스 클러스터 구성을 도와주는 도구인 <code>kubeadm</code>은 기본적으로 <code>kubelet</code>을 배포하지 않기 때문에 <code>kubelet</code> 설치가 추가로 필요합니다.</p>
+<p> </p>
+<p><strong>중요</strong><br>
+클러스터를 구성할 모든 컨트롤 플레인과 워커노드에서 <code>kubelet</code>, <code>kubeadm</code>, <code>kubectl</code>을 설치해줍니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># [1/4]</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Update the apt package index and</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># install packages needed to use the Kubernetes apt repository.</span>
+</span></span><span class="line"><span class="cl">$ sudo apt-get update
+</span></span><span class="line"><span class="cl">$ sudo apt-get install -y apt-transport-https ca-certificates curl
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># [2/4]</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Download the Google Cloud public signing key.</span>
+</span></span><span class="line"><span class="cl">$ sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># [3/4]</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Add the Kubernetes apt repository.</span>
+</span></span><span class="line"><span class="cl">$ <span class="nb">echo</span> <span class="s2">&#34;deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main&#34;</span> <span class="p">|</span> sudo tee /etc/apt/sources.list.d/kubernetes.list
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># [4/4]</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Update apt package index, install kubelet, kubeadm and kubectl, and pin their version.</span>
+</span></span><span class="line"><span class="cl">$ sudo apt-get update
+</span></span><span class="line"><span class="cl">$ sudo apt-get install -y <span class="nv">kubelet</span><span class="o">=</span>1.23.0-00 <span class="nv">kubeadm</span><span class="o">=</span>1.23.0-00 <span class="nv">kubectl</span><span class="o">=</span>1.23.0-00
+</span></span><span class="line"><span class="cl">$ sudo apt-mark hold kubelet kubeadm kubectl
+</span></span></code></pre></div><p> </p>
+<p>모든 설치 과정이 끝난 후 컨트롤 플레인과 워커 노드에서 kubelet 버전을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubelet --version
+</span></span><span class="line"><span class="cl">Kubernetes v1.23.0
+</span></span></code></pre></div><p>kubelet의 경우 <code>1.23.0-00</code> 버전으로 설치했습니다.</p>
+<p> </p>
+<h3 id="2-클러스터-생성-kubeadm-init">2. 클러스터 생성 (kubeadm init)</h3>
+<p>컨트롤 플레인 노드에서 <code>kubeadm</code>을 사용해 클러스터 초기화를 실행합니다.</p>
+<p> </p>
+<p>먼저 컨트롤 플레인 노드의 메인 IP를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ifconfig eth0
+</span></span><span class="line"><span class="cl">eth0: <span class="nv">flags</span><span class="o">=</span>4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu <span class="m">1450</span>
+</span></span><span class="line"><span class="cl">        inet 10.24.126.9  netmask 255.255.255.0  broadcast 10.24.126.255
+</span></span><span class="line"><span class="cl">        ether 02:42:0a:18:7e:09  txqueuelen <span class="m">0</span>  <span class="o">(</span>Ethernet<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        RX packets <span class="m">3367</span>  bytes <span class="m">435041</span> <span class="o">(</span>435.0 KB<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        RX errors <span class="m">0</span>  dropped <span class="m">0</span>  overruns <span class="m">0</span>  frame <span class="m">0</span>
+</span></span><span class="line"><span class="cl">        TX packets <span class="m">2964</span>  bytes <span class="m">905989</span> <span class="o">(</span>905.9 KB<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        TX errors <span class="m">0</span>  dropped <span class="m">0</span> overruns <span class="m">0</span>  carrier <span class="m">0</span>  collisions <span class="m">0</span>
+</span></span></code></pre></div><p>컨트롤 플레인의 eth0의 IP 주소는 <code>10.24.126.9</code>입니다.<br>
+확인된 IP 주소를 <code>--apiserver-advertise-address</code> 옵션에 넣습니다.</p>
+<p> </p>
+<p><code>kubeadm init</code> 명령어의 자세한 옵션 설명은 <a href="https://v1-23.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#initializing-your-control-plane-node">Kubernetes 공식문서 v1.23</a>을 참고합니다.</p>
+<p>여기서 <code>--apiserver-advertise-address</code>는 그대로 적용하면 안되고, 자신의 환경에 맞게 컨트롤 플레인의 IP 주소로 변경해서 실행해야 합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubeadm init <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --apiserver-cert-extra-sans<span class="o">=</span>controlplane <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --apiserver-advertise-address 10.24.126.9 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --pod-network-cidr<span class="o">=</span>10.244.0.0/16
+</span></span></code></pre></div><p>컨트롤 플레인의 초기화 단계<sup>initializing</sup>는 5분 이상 걸리므로 진행중인 로그를 모니터링하면서 기다립니다.</p>
+<p> </p>
+<p>컨트롤 플레인의 초기화가 완료된 후 메세지입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">Your Kubernetes control-plane has initialized successfully!
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">To start using your cluster, you need to run the following as a regular user:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  mkdir -p <span class="nv">$HOME</span>/.kube
+</span></span><span class="line"><span class="cl">  sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
+</span></span><span class="line"><span class="cl">  sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Alternatively, <span class="k">if</span> you are the root user, you can run:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="nb">export</span> <span class="nv">KUBECONFIG</span><span class="o">=</span>/etc/kubernetes/admin.conf
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">You should now deploy a pod network to the cluster.
+</span></span><span class="line"><span class="cl">Run <span class="s2">&#34;kubectl apply -f [podnetwork].yaml&#34;</span> with one of the options listed at:
+</span></span><span class="line"><span class="cl">  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Then you can join any number of worker nodes by running the following on each as root:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">kubeadm join 10.24.126.9:6443 --token xfory9.hvojv7qdubrd3nue <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>        --discovery-token-ca-cert-hash sha256:96b45b1ddadab47d35c3a3a6f3d66fa6f262b96aca0545a2d3e7b82f1882c8f4 
+</span></span></code></pre></div><p>위 결과값에서 중요한 정보 2개가 제공됩니다.</p>
+<ul>
+<li><strong>컨트롤 플레인에서 쿠버네티스 컨텍스트 등록하는 명령어</strong> : <code>kubectl</code>을 사용하기 위해 필요합니다.</li>
+<li><code>kubeadm join</code> <strong>명령어</strong> : 워커노드를 클러스터에 등록하기 위해 필요합니다. 토큰 값이 포함된 <code>kubeadm join ...</code> 명령어는 미리 복사해놓습니다.</li>
+</ul>
+<p> </p>
+<h3 id="3-kubeconfig-등록">3. kubeconfig 등록</h3>
+<p>이후 <code>kubectl</code> 명령어를 사용하기 위해 kube config를 등록합니다.<br>
+등록 방법은 터미널에 안내 출력되므로 그대로 복사해서 컨트롤 플레인에서 실행합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">  mkdir -p <span class="nv">$HOME</span>/.kube
+</span></span><span class="line"><span class="cl">  sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
+</span></span><span class="line"><span class="cl">  sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config
+</span></span></code></pre></div><p>kubeconfig 등록이 완료되면 이제부터 <code>kubectl</code> 명령어를 사용할 수 있습니다.</p>
+<p> </p>
+<p>노드 리스트를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get node
+</span></span><span class="line"><span class="cl">NAME           STATUS     ROLES                  AGE   VERSION
+</span></span><span class="line"><span class="cl">controlplane   NotReady   control-plane,master   10m   v1.23.0
+</span></span></code></pre></div><p>노드 리스트가 조회됩니다.</p>
+<ul>
+<li>현재 CNI가 완전히 구성된 상태가 아니기 때문에 <code>STATUS</code> 값이 NotReady인 것을 확인할 수 있습니다.</li>
+<li>컨트롤 플레인의 쿠버네티스 버전이 <code>v1.23.0</code>입니다.</li>
+<li>워커 노드를 클러스터에 추가해주는 작업이 추가로 필요합니다.</li>
+</ul>
+<p> </p>
+<h3 id="4-워커노드-join">4. 워커노드 join</h3>
+<p>이제 워커 노드를 클러스터에 추가해주는 작업이 필요합니다.<br>
+워커 노드를 클러스터에 추가하려면 <code>kubeadm init</code>에 의해 자동 생성된 토큰을 이용해 등록해야 합니다.</p>
+<p>컨트롤 플레인에서 토큰 목록을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># On control plane node.</span>
+</span></span><span class="line"><span class="cl">$ kubeadm token list
+</span></span><span class="line"><span class="cl">TOKEN                     TTL         EXPIRES                USAGES                   DESCRIPTION                                                EXTRA GROUPS
+</span></span><span class="line"><span class="cl">w9k6i4.9waxt6bdzne5kz32   23h         2022-08-19T09:56:41Z   authentication,signing   The default bootstrap token generated by <span class="s1">&#39;kubeadm init&#39;</span>.   system:bootstrappers:kubeadm:default-node-token
+</span></span><span class="line"><span class="cl">xfory9.hvojv7qdubrd3nue   23h         2022-08-19T09:58:31Z   authentication,signing   The default bootstrap token generated by <span class="s1">&#39;kubeadm init&#39;</span>.   system:bootstrappers:kubeadm:default-node-token
+</span></span></code></pre></div><p>이전 과정에서 컨트롤 플레인을 초기화하면서 자동 생성된 bootstrap 토큰은 <code>xfory9.hvojv7qdubrd3nue</code> 입니다.<br>
+토큰은 기본적으로 24시간의 유효기간을 갖습니다. 따라서 모든 워커 노드를 24시간 안에 모두 등록해야 합니다. (물론 <code>kubeadm init</code>을 통해 생성된 디폴트 토큰이 TTL 만료되었을 경우, 새 토큰을 생성해서 등록하면 됩니다.)</p>
+<p> </p>
+<p>워커 노드에 접속합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># On worker node.</span>
+</span></span><span class="line"><span class="cl">$ hostname
+</span></span><span class="line"><span class="cl">node01
+</span></span></code></pre></div><p> </p>
+<p>이전 과정에서 복사해놓은 클러스터 등록 명령어 <code>kubeadm join</code>를 그대로 실행합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># On worker node.</span>
+</span></span><span class="line"><span class="cl">$ kubeadm join 10.24.126.9:6443 --token xfory9.hvojv7qdubrd3nue <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>          --discovery-token-ca-cert-hash sha256:96b45b1ddadab47d35c3a3a6f3d66fa6f262b96aca0545a2d3e7b82f1882c8f4
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">[</span>preflight<span class="o">]</span> Running pre-flight checks
+</span></span><span class="line"><span class="cl"><span class="o">[</span>preflight<span class="o">]</span> Reading configuration from the cluster...
+</span></span><span class="line"><span class="cl"><span class="o">[</span>preflight<span class="o">]</span> FYI: You can look at this config file with <span class="s1">&#39;kubectl -n kube-system get cm kubeadm-config -o yaml&#39;</span>
+</span></span><span class="line"><span class="cl">W0818 10:12:17.061381   <span class="m">12710</span> utils.go:69<span class="o">]</span> The recommended value <span class="k">for</span> <span class="s2">&#34;resolvConf&#34;</span> in <span class="s2">&#34;KubeletConfiguration&#34;</span> is: /run/systemd/resolve/resolv.conf<span class="p">;</span> the provided value is: /run/systemd/resolve/resolv.conf
+</span></span><span class="line"><span class="cl"><span class="o">[</span>kubelet-start<span class="o">]</span> Writing kubelet configuration to file <span class="s2">&#34;/var/lib/kubelet/config.yaml&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="o">[</span>kubelet-start<span class="o">]</span> Writing kubelet environment file with flags to file <span class="s2">&#34;/var/lib/kubelet/kubeadm-flags.env&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="o">[</span>kubelet-start<span class="o">]</span> Starting the kubelet
+</span></span><span class="line"><span class="cl"><span class="o">[</span>kubelet-start<span class="o">]</span> Waiting <span class="k">for</span> the kubelet to perform the TLS Bootstrap...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">This node has joined the cluster:
+</span></span><span class="line"><span class="cl">* Certificate signing request was sent to apiserver and a response was received.
+</span></span><span class="line"><span class="cl">* The Kubelet was informed of the new secure connection details.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Run <span class="s1">&#39;kubectl get nodes&#39;</span> on the control-plane to see this node join the cluster.
+</span></span></code></pre></div><p> </p>
+<p>정상적으로 등록되었을 경우 마지막 메세지는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">This node has joined the cluster:
+</span></span><span class="line"><span class="cl">* Certificate signing request was sent to apiserver and a response was received.
+</span></span><span class="line"><span class="cl">* The Kubelet was informed of the new secure connection details.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Run <span class="s1">&#39;kubectl get nodes&#39;</span> on the control-plane to see this node join the cluster.
+</span></span></code></pre></div><p>컨트롤 플레인으로 돌아가서 <code>kubectl get nodes</code> 명령어를 실행해서 결과를 확인하라고 안내해주고 있습니다.</p>
+<p> </p>
+<p><code>exit</code> 명령어로 컨트롤 플레인으로 다시 돌아옵니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># On worker node.</span>
+</span></span><span class="line"><span class="cl">$ <span class="nb">exit</span>
+</span></span></code></pre></div><p> </p>
+<p>컨트롤 플레인에서 노드 리스트를 다시 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get node
+</span></span><span class="line"><span class="cl">NAME           STATUS     ROLES                  AGE     VERSION
+</span></span><span class="line"><span class="cl">controlplane   NotReady   control-plane,master   20m     v1.23.0
+</span></span><span class="line"><span class="cl">node01         NotReady   &lt;none&gt;                 4m53s   v1.23.0
+</span></span></code></pre></div><p><code>node01</code>이 새로 추가된 걸 확인할 수 있습니다.<br>
+아직 CNI를 설치하지 않아서 모든 노드가 <code>NotReady</code> 상태입니다.</p>
+<p> </p>
+<p>노드의 상태가 <code>NotReady</code>인 원인을 상세 분석해보겠습니다.<br>
+컨트롤 플레인 노드의 상세 정보를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl describe node controlplane
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">Conditions:
+</span></span><span class="line"><span class="cl">  Type             Status  LastHeartbeatTime                 LastTransitionTime                Reason                       Message
+</span></span><span class="line"><span class="cl">  ----             ------  -----------------                 ------------------                ------                       -------
+</span></span><span class="line"><span class="cl">  MemoryPressure   False   Thu, <span class="m">18</span> Aug <span class="m">2022</span> 10:15:04 +0000   Thu, <span class="m">18</span> Aug <span class="m">2022</span> 09:56:39 +0000   KubeletHasSufficientMemory   kubelet has sufficient memory available
+</span></span><span class="line"><span class="cl">  DiskPressure     False   Thu, <span class="m">18</span> Aug <span class="m">2022</span> 10:15:04 +0000   Thu, <span class="m">18</span> Aug <span class="m">2022</span> 09:56:39 +0000   KubeletHasNoDiskPressure     kubelet has no disk pressure
+</span></span><span class="line"><span class="cl">  PIDPressure      False   Thu, <span class="m">18</span> Aug <span class="m">2022</span> 10:15:04 +0000   Thu, <span class="m">18</span> Aug <span class="m">2022</span> 09:56:39 +0000   KubeletHasSufficientPID      kubelet has sufficient PID available
+</span></span><span class="line"><span class="cl">  Ready            False   Thu, <span class="m">18</span> Aug <span class="m">2022</span> 10:15:04 +0000   Thu, <span class="m">18</span> Aug <span class="m">2022</span> 09:56:39 +0000   KubeletNotReady              container runtime network not ready: <span class="nv">NetworkReady</span><span class="o">=</span><span class="nb">false</span> reason:NetworkPluginNotReady message:docker: network plugin is not ready: cni config uninitialized
+</span></span></code></pre></div><p>정상적인 노드의 경우 <code>Ready</code> 값이 <code>True</code>입니다.<br>
+그러나 현재 노드는 <code>Ready</code> 값이 <code>False</code>입니다. 원인은 <code>container runtime network not ready</code>라고 알려주고 있습니다.<br>
+한마디로 모든 노드에 CNI 설치가 필요하다는 의미로 해석할 수 있습니다.</p>
+<p> </p>
+<h3 id="5-cni-설치">5. CNI 설치</h3>
+<p><a href="https://v1-23.docs.kubernetes.io/docs/concepts/cluster-administration/addons/">쿠버네티스 공식문서 v1.23</a>에서 현재 쿠버네티스 버전 기준으로 사용할 수 있는 CNI 전체 리스트를 확인합니다.</p>
+<p><img src="./2.png" alt="Docs: Kubernetes Addons"></p>
+<p> </p>
+<p>모든 노드에서 사용할 수 있는 CNI 목록을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls /opt/cni/bin/
+</span></span><span class="line"><span class="cl">bandwidth  dhcp      flannel      host-local  loopback  portmap  sbr     tuning
+</span></span><span class="line"><span class="cl">bridge     firewall  host-device  ipvlan      macvlan   ptp      static  vlan
+</span></span></code></pre></div><p><code>flannel</code>이 존재합니다.</p>
+<p> </p>
+<p>이 시나리오에서는 CNI로 flannel을 설치해보겠습니다.<br>
+CNI는 Daemonset을 사용해서 클러스터의 전체 노드에 Pod를 배포하는 원리입니다.</p>
+<p><img src="./3.png" alt="Daemonset Architecture"></p>
+<p> </p>
+<p>컨트롤 플레인에서 데몬셋을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get daemonset -A
+</span></span><span class="line"><span class="cl">NAMESPACE     NAME         DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+</span></span><span class="line"><span class="cl">kube-system   kube-proxy   <span class="m">2</span>         <span class="m">2</span>         <span class="m">2</span>       <span class="m">2</span>            <span class="m">2</span>           kubernetes.io/os<span class="o">=</span>linux   32m
+</span></span></code></pre></div><p><code>kube-proxy</code> 외에는 데몬셋이 없습니다.</p>
+<p> </p>
+<p>CNI인 flannel을 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+</span></span></code></pre></div><p>설치 명령어는 <a href="https://github.com/flannel-io/flannel">flannel 공식문서</a>를 참고했습니다.</p>
+<p> </p>
+<p>결과값은 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">namespace/kube-flannel created
+</span></span><span class="line"><span class="cl">clusterrole.rbac.authorization.k8s.io/flannel created
+</span></span><span class="line"><span class="cl">clusterrolebinding.rbac.authorization.k8s.io/flannel created
+</span></span><span class="line"><span class="cl">serviceaccount/flannel created
+</span></span><span class="line"><span class="cl">configmap/kube-flannel-cfg created
+</span></span><span class="line"><span class="cl">daemonset.apps/kube-flannel-ds created
+</span></span></code></pre></div><p><code>kube-flannel</code> 네임스페이스가 새로 생성되었습니다.<br>
+해당 네임스페이스에 <code>kube-flannel-ds</code> 데몬셋이 배포되었습니다.</p>
+<p> </p>
+<p>컨트롤 플레인에서 전체 데몬셋 리스트를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get daemonset -A
+</span></span><span class="line"><span class="cl">NAMESPACE      NAME              DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+</span></span><span class="line"><span class="cl">kube-flannel   kube-flannel-ds   <span class="m">2</span>         <span class="m">2</span>         <span class="m">1</span>       <span class="m">2</span>            <span class="m">1</span>           &lt;none&gt;                   11s
+</span></span><span class="line"><span class="cl">kube-system    kube-proxy        <span class="m">2</span>         <span class="m">2</span>         <span class="m">2</span>       <span class="m">2</span>            <span class="m">2</span>           kubernetes.io/os<span class="o">=</span>linux   33m
+</span></span></code></pre></div><p><code>kube-flannel-ds</code>가 <code>kube-flannel</code> 네임스페이스에 새롭게 추가된 걸 확인할 수 있습니다.</p>
+<p>클러스터의 전체 노드 수량이 2개이기 때문에, 현재 데몬셋이 생성한 파드 수도 동일하게 2개로 맞춰진 것을 확인할 수 있습니다.<br>
+만약 클러스터를 구성하는 전체 노드가 4개로 늘어나면 flannel pod도 동일하게 4개로 자동 증가합니다.</p>
+<p> </p>
+<p>CNI 설치 이후 클러스터의 모든 노드가 <code>NotReady</code>에서 <code>Ready</code> 상태로 변경된 걸 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get node
+</span></span><span class="line"><span class="cl">NAME           STATUS   ROLES                  AGE   VERSION
+</span></span><span class="line"><span class="cl">controlplane   Ready    control-plane,master   37m   v1.23.0
+</span></span><span class="line"><span class="cl">node01         Ready    &lt;none&gt;                 21m   v1.23.0
+</span></span></code></pre></div><p> </p>
+<h3 id="6-테스트">6. 테스트</h3>
+<p>클러스터가 정상적으로 동작하는지 테스트를 위해 <code>nginx</code> 파드를 생성해보겠습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl run nginx-test --image nginx
+</span></span><span class="line"><span class="cl">pod/nginx-test created
+</span></span></code></pre></div><p> </p>
+<p>컨트롤 플레인에서 파드 리스트를 조회합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get pod -o wide
+</span></span><span class="line"><span class="cl">NAME         READY   STATUS    RESTARTS   AGE   IP           NODE     NOMINATED NODE   READINESS GATES
+</span></span><span class="line"><span class="cl">nginx-test   1/1     Running   <span class="m">0</span>          77s   10.244.1.2   node01   &lt;none&gt;           &lt;none&gt;
+</span></span></code></pre></div><p>파드 <code>IP</code>로 <code>10.244.1.2</code>가 부여되었으며, 정상적으로 생성된 후 <code>Running</code> 상태입니다.</p>
+<p> </p>
+<p>이것으로 온프레미스 환경 기반의 쿠버네티스 클러스터 구성이 완료되었습니다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><strong>쿠버네티스 클러스터 생성할 때 참고한 자료</strong><br>
+쿠버네티스 클러스터 설정과 구성에 필요한 모든 정보는 공식문서에서 쉽게 찾을 수 있습니다.<br>
+쿠버네티스는 공식문서가 정말 잘 정리되어 있어서 다른 자료 찾아볼 필요도 없이 공식문서만 보고도 작업을 완료할 수 있는 수준입니다.</p>
+<p><a href="https://v1-23.docs.kubernetes.io/docs/setup/production-environment/container-runtimes/">v1.23 기준 컨테이너 런타임 리스트와 설치방법</a><br>
+<a href="https://v1-23.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/">v1.23 기준 kubeadm 설치</a><br>
+<a href="https://v1-23.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/">v1.23 기준 클러스터 생성하기</a></p>
+<p> </p>
+<p><strong>CNI</strong><br>
+Container Network Interface로 flannel을 사용했으며, 설치 방법을 참고했습니다.</p>
+<p><a href="https://v1-23.docs.kubernetes.io/docs/concepts/cluster-administration/addons/">v1.23 기준 CNI 설치하기</a><br>
+<a href="https://github.com/flannel-io/flannel#deploying-flannel-manually">Deploying flannel manually</a></p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

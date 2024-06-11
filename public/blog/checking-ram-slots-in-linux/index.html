@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/checking-ram-slots-in-linux/" />
+    <title>리눅스 메인보드 메모리 슬롯 확인</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>리눅스 메인보드 메모리 슬롯 확인</h1>
+        <div>
+                <time>Updated September 3, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a>
+      <ul>
+        <li><a href="#확인-가능한-핵심-정보">확인 가능한 핵심 정보</a></li>
+      </ul>
+    </li>
+    <li><a href="#환경">환경</a></li>
+    <li><a href="#전제조건">전제조건</a></li>
+    <li><a href="#작업절차">작업절차</a>
+      <ul>
+        <li><a href="#1-dmidecode-패키지-확인">1. dmidecode 패키지 확인</a></li>
+        <li><a href="#2-서버-메모리-확인">2. 서버 메모리 확인</a></li>
+        <li><a href="#3-메인보드-메모리-슬롯-확인-간단히">3. 메인보드 메모리 슬롯 확인 (간단히)</a></li>
+        <li><a href="#4-메인보드-메모리-슬롯-확인-자세히">4. 메인보드 메모리 슬롯 확인 (자세히)</a></li>
+        <li><a href="#5-메인보드가-최대-지원하는-메모리-용량-확인">5. 메인보드가 최대 지원하는 메모리 용량 확인</a></li>
+      </ul>
+    </li>
+    <li><a href="#결론">결론</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>리눅스 서버에서 명령어<sup>Command</sup>를 이용해 메인보드의 메모리 슬롯 정보를 확인할 수 있다.</p>
+<p> </p>
+<h3 id="확인-가능한-핵심-정보">확인 가능한 핵심 정보</h3>
+<ul>
+<li>전체 메모리 슬롯 개수</li>
+<li>사용중인 메모리 슬롯 개수</li>
+<li>증설 가능한 최대 메모리 용량</li>
+<li>메모리 제원정보 (Part Number, 규격, 사이즈, 제조사 등)</li>
+</ul>
+<p> </p>
+<h2 id="환경">환경</h2>
+<ul>
+<li><strong>OS</strong> : CentOS Linux release 7.6.1810 (Core)</li>
+<li><strong>Shell</strong> : bash</li>
+<li><strong>Package</strong> : dmidecode 3.1</li>
+</ul>
+<p> </p>
+<h2 id="전제조건">전제조건</h2>
+<p>dmidecode 패키지가 이미 설치되어 있는 리눅스 시스템</p>
+<p> </p>
+<h2 id="작업절차">작업절차</h2>
+<h3 id="1-dmidecode-패키지-확인">1. dmidecode 패키지 확인</h3>
+<p>패키지 관리자인 <abbr title="RPM Package Manager">RPM</abbr>을 사용해서 dmidecode 패키지가 설치되어 있는지 확인한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ rpm -qa <span class="p">|</span> grep dmidecode
+</span></span><span class="line"><span class="cl">dmidecode-3.1-2.el7.x86_64
+</span></span></code></pre></div><p>현재 서버에는 dmidecode 패키지 <code>3.1-2</code> 버전이 설치된 상태이다.</p>
+<p> </p>
+<h3 id="2-서버-메모리-확인">2. 서버 메모리 확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ free -m
+</span></span><span class="line"><span class="cl">              total        used        free      shared  buff/cache   available
+</span></span><span class="line"><span class="cl">Mem:          <span class="m">31670</span>        <span class="m">2020</span>         <span class="m">237</span>         <span class="m">310</span>       <span class="m">29412</span>       <span class="m">28841</span>
+</span></span><span class="line"><span class="cl">Swap:         <span class="m">32767</span>           <span class="m">2</span>       <span class="m">32765</span>
+</span></span></code></pre></div><p><code>-m</code>은 메모리 용량을 MB<sup>Megabytes</sup> 단위로 출력한다.<br>
+서버의 전체 메모리 용량은 32GB이다.</p>
+<p> </p>
+<h3 id="3-메인보드-메모리-슬롯-확인-간단히">3. 메인보드 메모리 슬롯 확인 (간단히)</h3>
+<p>메인보드의 메모리 슬롯 정보를 간단하게 확인한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ dmidecode -t <span class="m">17</span> <span class="p">|</span> egrep <span class="s1">&#39;Memory|Size&#39;</span>
+</span></span></code></pre></div><p> </p>
+<p>명령어 실행 결과는 다음과 같다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: <span class="m">16384</span> MB
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: <span class="m">16384</span> MB
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span></code></pre></div><p>전체 24개 메모리 슬롯중 2개 메모리 슬롯을 사용중이다. 16GB 용량의 메모리 2개가 장착된 상태이다.<br>
+<code>No Module Installed</code> 는 빈 메모리 슬롯을 의미한다.</p>
+<p> </p>
+<h4 id="tip-dmidecode--t-뒤의-숫자-의미">Tip. dmidecode -t 뒤의 숫자 의미</h4>
+<p><code>-t</code> 옵션 뒤의 숫자는 Type Number 를 의미한다.<br>
+Type Number 값만 다르게 주면 메모리 뿐만 아니라 다양한 정보를 얻을 수 있다.<br>
+dmidecode의 Type Number 목록은  <code>man dmidecode</code> 명령어로 확인할 수 있다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ man dmidecode
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">DMI TYPES
+</span></span><span class="line"><span class="cl">       The SMBIOS specification defines the following DMI types:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">       Type   Information
+</span></span><span class="line"><span class="cl">       ────────────────────────────────────────────
+</span></span><span class="line"><span class="cl">          <span class="m">0</span>   BIOS
+</span></span><span class="line"><span class="cl">          <span class="m">1</span>   System
+</span></span><span class="line"><span class="cl">          <span class="m">2</span>   Baseboard
+</span></span><span class="line"><span class="cl">          <span class="m">3</span>   Chassis
+</span></span><span class="line"><span class="cl">          <span class="m">4</span>   Processor
+</span></span><span class="line"><span class="cl">          <span class="m">5</span>   Memory Controller
+</span></span><span class="line"><span class="cl">          <span class="m">6</span>   Memory Module
+</span></span><span class="line"><span class="cl">          <span class="m">7</span>   Cache
+</span></span><span class="line"><span class="cl">          <span class="m">8</span>   Port Connector
+</span></span><span class="line"><span class="cl">          <span class="m">9</span>   System Slots
+</span></span><span class="line"><span class="cl">         <span class="m">10</span>   On Board Devices
+</span></span><span class="line"><span class="cl">         <span class="m">11</span>   OEM Strings
+</span></span><span class="line"><span class="cl">         <span class="m">12</span>   System Configuration Options
+</span></span><span class="line"><span class="cl">         <span class="m">13</span>   BIOS Language
+</span></span><span class="line"><span class="cl">         <span class="m">14</span>   Group Associations
+</span></span><span class="line"><span class="cl">         <span class="m">15</span>   System Event Log
+</span></span><span class="line"><span class="cl">         <span class="m">16</span>   Physical Memory Array
+</span></span><span class="line"><span class="cl">         <span class="m">17</span>   Memory Device
+</span></span><span class="line"><span class="cl">         <span class="m">18</span>   32-bit Memory Error
+</span></span><span class="line"><span class="cl">         <span class="m">19</span>   Memory Array Mapped Address
+</span></span><span class="line"><span class="cl">         <span class="m">20</span>   Memory Device Mapped Address
+</span></span><span class="line"><span class="cl">         <span class="m">21</span>   Built-in Pointing Device
+</span></span><span class="line"><span class="cl">         <span class="m">22</span>   Portable Battery
+</span></span><span class="line"><span class="cl">         <span class="m">23</span>   System Reset
+</span></span><span class="line"><span class="cl">         <span class="m">24</span>   Hardware Security
+</span></span><span class="line"><span class="cl">         <span class="m">25</span>   System Power Controls
+</span></span><span class="line"><span class="cl">         <span class="m">26</span>   Voltage Probe
+</span></span><span class="line"><span class="cl">         <span class="m">27</span>   Cooling Device
+</span></span><span class="line"><span class="cl">         <span class="m">28</span>   Temperature Probe
+</span></span><span class="line"><span class="cl">         <span class="m">29</span>   Electrical Current Probe
+</span></span><span class="line"><span class="cl">         <span class="m">30</span>   Out-of-band Remote Access
+</span></span><span class="line"><span class="cl">         <span class="m">31</span>   Boot Integrity Services
+</span></span><span class="line"><span class="cl">         <span class="m">32</span>   System Boot
+</span></span><span class="line"><span class="cl">         <span class="m">33</span>   64-bit Memory Error
+</span></span><span class="line"><span class="cl">         <span class="m">34</span>   Management Device
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">         <span class="m">35</span>   Management Device Component
+</span></span><span class="line"><span class="cl">         <span class="m">36</span>   Management Device Threshold Data
+</span></span><span class="line"><span class="cl">         <span class="m">37</span>   Memory Channel
+</span></span><span class="line"><span class="cl">         <span class="m">38</span>   IPMI Device
+</span></span><span class="line"><span class="cl">         <span class="m">39</span>   Power Supply
+</span></span><span class="line"><span class="cl">         <span class="m">40</span>   Additional Information
+</span></span><span class="line"><span class="cl">         <span class="m">41</span>   Onboard Devices Extended Information
+</span></span><span class="line"><span class="cl">         <span class="m">42</span>   Management Controller Host Interface
+</span></span></code></pre></div><p> </p>
+<h4 id="메모리-슬롯-정보-확인시-자주-사용하는-type-number">메모리 슬롯 정보 확인시 자주 사용하는 Type Number</h4>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Information</th>
+<th>Command to run</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>16</td>
+<td>Physical Memory Array</td>
+<td><code>dmidecode -t 16</code></td>
+</tr>
+<tr>
+<td>17</td>
+<td>Memory Device</td>
+<td><code>dmidecode -t 17</code></td>
+</tr>
+</tbody>
+</table>
+<p> </p>
+<h3 id="4-메인보드-메모리-슬롯-확인-자세히">4. 메인보드 메모리 슬롯 확인 (자세히)</h3>
+<p>메인보드의 메모리 슬롯 정보를 자세하게 확인한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ dmidecode -t <span class="m">17</span>
+</span></span></code></pre></div><p> </p>
+<p>명령어 실행 결과는 다음과 같다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># dmidecode 3.1</span>
+</span></span><span class="line"><span class="cl">Getting SMBIOS data from sysfs.
+</span></span><span class="line"><span class="cl">SMBIOS 3.2.1 present.
+</span></span><span class="line"><span class="cl"><span class="c1"># SMBIOS implementations newer than version 3.1.1 are not</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># fully supported by this version of dmidecode.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Handle 0x001B, DMI <span class="nb">type</span> 17, <span class="m">84</span> bytes
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Array Handle: 0x000F
+</span></span><span class="line"><span class="cl">        Error Information Handle: Not Provided
+</span></span><span class="line"><span class="cl">        Total Width: <span class="m">72</span> bits
+</span></span><span class="line"><span class="cl">        Data Width: <span class="m">64</span> bits
+</span></span><span class="line"><span class="cl">        Size: No Module Installed
+</span></span><span class="line"><span class="cl">        Form Factor: DIMM
+</span></span><span class="line"><span class="cl">        Set: None
+</span></span><span class="line"><span class="cl">        Locator: PROC <span class="m">1</span> DIMM <span class="m">1</span>
+</span></span><span class="line"><span class="cl">        Bank Locator: Not Specified
+</span></span><span class="line"><span class="cl">        Type: Other
+</span></span><span class="line"><span class="cl">        Type Detail: Synchronous
+</span></span><span class="line"><span class="cl">        Speed: Unknown
+</span></span><span class="line"><span class="cl">        Manufacturer: UNKNOWN
+</span></span><span class="line"><span class="cl">        Serial Number: Not Specified
+</span></span><span class="line"><span class="cl">        Asset Tag: Not Specified
+</span></span><span class="line"><span class="cl">        Part Number: NOT AVAILABLE
+</span></span><span class="line"><span class="cl">        Rank: Unknown
+</span></span><span class="line"><span class="cl">        Configured Clock Speed: Unknown
+</span></span><span class="line"><span class="cl">        Minimum Voltage: Unknown
+</span></span><span class="line"><span class="cl">        Maximum Voltage: Unknown
+</span></span><span class="line"><span class="cl">        Configured Voltage: Unknown
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Handle 0x0022, DMI <span class="nb">type</span> 17, <span class="m">84</span> bytes
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Array Handle: 0x000F
+</span></span><span class="line"><span class="cl">        Error Information Handle: Not Provided
+</span></span><span class="line"><span class="cl">        Total Width: <span class="m">72</span> bits
+</span></span><span class="line"><span class="cl">        Data Width: <span class="m">64</span> bits
+</span></span><span class="line"><span class="cl">        Size: <span class="m">16384</span> MB
+</span></span><span class="line"><span class="cl">        Form Factor: DIMM
+</span></span><span class="line"><span class="cl">        Set: <span class="m">7</span>
+</span></span><span class="line"><span class="cl">        Locator: PROC <span class="m">1</span> DIMM <span class="m">8</span>
+</span></span><span class="line"><span class="cl">        Bank Locator: Not Specified
+</span></span><span class="line"><span class="cl">        Type: DDR4
+</span></span><span class="line"><span class="cl">        Type Detail: Synchronous Registered <span class="o">(</span>Buffered<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        Speed: <span class="m">2933</span> MT/s
+</span></span><span class="line"><span class="cl">        Manufacturer: HPE
+</span></span><span class="line"><span class="cl">        Serial Number: Not Specified
+</span></span><span class="line"><span class="cl">        Asset Tag: Not Specified
+</span></span><span class="line"><span class="cl">        Part Number: P03050-091
+</span></span><span class="line"><span class="cl">        Rank: <span class="m">2</span>
+</span></span><span class="line"><span class="cl">        Configured Clock Speed: <span class="m">2400</span> MT/s
+</span></span><span class="line"><span class="cl">        Minimum Voltage: 1.2 V
+</span></span><span class="line"><span class="cl">        Maximum Voltage: 1.2 V
+</span></span><span class="line"><span class="cl">        Configured Voltage: 1.2 V
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Handle 0x0024, DMI <span class="nb">type</span> 17, <span class="m">84</span> bytes
+</span></span><span class="line"><span class="cl">Memory Device
+</span></span><span class="line"><span class="cl">        Array Handle: 0x000F
+</span></span><span class="line"><span class="cl">        Error Information Handle: Not Provided
+</span></span><span class="line"><span class="cl">        Total Width: <span class="m">72</span> bits
+</span></span><span class="line"><span class="cl">        Data Width: <span class="m">64</span> bits
+</span></span><span class="line"><span class="cl">        Size: <span class="m">16384</span> MB
+</span></span><span class="line"><span class="cl">        Form Factor: DIMM
+</span></span><span class="line"><span class="cl">        Set: <span class="m">9</span>
+</span></span><span class="line"><span class="cl">        Locator: PROC <span class="m">1</span> DIMM <span class="m">10</span>
+</span></span><span class="line"><span class="cl">        Bank Locator: Not Specified
+</span></span><span class="line"><span class="cl">        Type: DDR4
+</span></span><span class="line"><span class="cl">        Type Detail: Synchronous Registered <span class="o">(</span>Buffered<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        Speed: <span class="m">2933</span> MT/s
+</span></span><span class="line"><span class="cl">        Manufacturer: HPE
+</span></span><span class="line"><span class="cl">        Serial Number: Not Specified
+</span></span><span class="line"><span class="cl">        Asset Tag: Not Specified
+</span></span><span class="line"><span class="cl">        Part Number: P03051-091
+</span></span><span class="line"><span class="cl">        Rank: <span class="m">1</span>
+</span></span><span class="line"><span class="cl">        Configured Clock Speed: <span class="m">2400</span> MT/s
+</span></span><span class="line"><span class="cl">        Minimum Voltage: 1.2 V
+</span></span><span class="line"><span class="cl">        Maximum Voltage: 1.2 V
+</span></span><span class="line"><span class="cl">        Configured Voltage: 1.2 V
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p>메모리의 Part Number, 용량(Size), 폼팩터, 규격, 설정된 Clock 등의 유용한 정보를 얻을 수 있다.</p>
+<p> </p>
+<h3 id="5-메인보드가-최대-지원하는-메모리-용량-확인">5. 메인보드가 최대 지원하는 메모리 용량 확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ dmidecode -t <span class="m">16</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># dmidecode 3.1</span>
+</span></span><span class="line"><span class="cl">Getting SMBIOS data from sysfs.
+</span></span><span class="line"><span class="cl">SMBIOS 3.2.1 present.
+</span></span><span class="line"><span class="cl"><span class="c1"># SMBIOS implementations newer than version 3.1.1 are not</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># fully supported by this version of dmidecode.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Handle 0x000F, DMI <span class="nb">type</span> 16, <span class="m">23</span> bytes
+</span></span><span class="line"><span class="cl">Physical Memory Array
+</span></span><span class="line"><span class="cl">        Location: System Board Or Motherboard
+</span></span><span class="line"><span class="cl">        Use: System Memory
+</span></span><span class="line"><span class="cl">        Error Correction Type: Multi-bit ECC
+</span></span><span class="line"><span class="cl">        Maximum Capacity: <span class="m">3</span> TB
+</span></span><span class="line"><span class="cl">        Error Information Handle: Not Provided
+</span></span><span class="line"><span class="cl">        Number Of Devices: <span class="m">12</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Handle 0x0010, DMI <span class="nb">type</span> 16, <span class="m">23</span> bytes
+</span></span><span class="line"><span class="cl">Physical Memory Array
+</span></span><span class="line"><span class="cl">        Location: System Board Or Motherboard
+</span></span><span class="line"><span class="cl">        Use: System Memory
+</span></span><span class="line"><span class="cl">        Error Correction Type: Multi-bit ECC
+</span></span><span class="line"><span class="cl">        Maximum Capacity: <span class="m">3</span> TB
+</span></span><span class="line"><span class="cl">        Error Information Handle: Not Provided
+</span></span><span class="line"><span class="cl">        Number Of Devices: <span class="m">12</span>
+</span></span></code></pre></div><p>해당 서버는 총 2개의 Memory Array로 구성되어 있다.</p>
+<p>각 Memory Array 당 지원하는 최대 메모리 용량(<code>Maximum Capacity</code>)은 3TB이다.<br>
+각 Memory Array 당 전체 메모리 슬롯(<code>Number of Devices</code>)은 12개이다.</p>
+<p>Memory Array가 총 2개이므로, 서버 전체에 꽂을 수 있는 최대 메모리 용량은 6TB, 메모리 슬롯은 총 24개이다.</p>
+<p> </p>
+<p>이상으로 메모리 구성정보 확인 절차를 마친다.</p>
+<p> </p>
+<h2 id="결론">결론</h2>
+<p>서버 관리자에게 가장 중요한 업무는 서버의 네트워크 구성과 서비스 흐름 정보, 제원<sup>Spec</sup>을 제대로 파악하는 일이다.</p>
+<p><code>dmidecode</code>는 다양한 하드웨어 정보를 수집할 수 있는 유용한 명령어이다.<br>
+실무에서 잘 활용만 한다면 보다 더 많은 하드웨어 정보를 수집할 수 있다는 사실을 명심하도록 하자.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

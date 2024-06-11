@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/terraform-demo/" />
+    <title>테라폼으로 EC2 Instance 생성하기 데모</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>테라폼으로 EC2 Instance 생성하기 데모</h1>
+        <div>
+                <time>Updated July 17, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>테라폼을 통해 인프라 자동화, 코드로서 인프라<sup>IaC, Infrastructure as Code</sup>를 맛보기로 체험해보겠습니다.<br>
+테라폼 파일을 적용해서 1대의 EC2 Instance를 자동 생성하고 삭제해보겠습니다.</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<p><strong>테라폼<sup>Terraform</sup></strong><br>
+하시코프<sup>Hashicorp</sup>에서 오픈소스로 개발중인 클라우드 인프라스트럭처 자동화를 지향하는 코드로서의 인프라스트럭처<sup>Infrastructure as Code, IaC</sup> 도구입니다.</p>
+<p>IaC는 코드로 인프라스트럭처를 관리한다는 개념으로 테라폼에서는 하시코프 설정 언어<sup>HCL, Hashicorp Configuration Language</sup>을 사용해 클라우드 리소스를 선언합니다.</p>
+<p> </p>
+<h2 id="전제조건">전제조건</h2>
+<p>macOS용 패키지 관리자인 Homebrew가 미리 설치되어 있어야 합니다.<br>
+<a href="https://brew.sh/ko">Homebrew 설치방법</a></p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<ul>
+<li><strong>Hardware</strong> : MacBook Pro 13&quot;, M1, 2020</li>
+<li><strong>OS</strong> : macOS Monterey 12.2.1</li>
+<li><strong>Shell</strong> : zsh</li>
+<li><strong>Terraform</strong> : v1.1.6</li>
+<li><strong>Homebrew</strong> : 3.3.16</li>
+</ul>
+<p> </p>
+<h2 id="방법">방법</h2>
+<h3 id="1-테라폼-설치">1. 테라폼 설치</h3>
+<p>macOS 패키지 관리자인 brew를 이용해 terraform을 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ brew install <span class="nv">terraform</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Auto-updated Homebrew!
+</span></span><span class="line"><span class="cl">Updated <span class="m">1</span> tap <span class="o">(</span>homebrew/core<span class="o">)</span>.
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Updated Formulae
+</span></span><span class="line"><span class="cl">Updated <span class="m">2</span> formulae.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading https://ghcr.io/v2/homebrew/core/terraform/manifests/1.1.6
+</span></span><span class="line"><span class="cl">Already downloaded: /Users/ive/Library/Caches/Homebrew/downloads/27878bff7eadcac8864a00be6ce343a4540476ed6fc8d7dfc576944971ebdf51--terraform-1.1.6.bottle_manifest.json
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading https://ghcr.io/v2/homebrew/core/terraform/blobs/sha256:f6
+</span></span><span class="line"><span class="cl">Already downloaded: /Users/ive/Library/Caches/Homebrew/downloads/097e36e15ba08ef7554c666a971b9989a99e6a9ac84bcaf96b51ad43bed62804--terraform--1.1.6.arm64_monterey.bottle.tar.gz
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Pouring terraform--1.1.6.arm64_monterey.bottle.tar.gz
+</span></span><span class="line"><span class="cl">🍺  /opt/homebrew/Cellar/terraform/1.1.6: <span class="m">6</span> files, 69.5MB
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Running <span class="sb">`</span>brew cleanup terraform<span class="sb">`</span>...
+</span></span><span class="line"><span class="cl">Disable this behaviour by setting HOMEBREW_NO_INSTALL_CLEANUP.
+</span></span><span class="line"><span class="cl">Hide these hints with HOMEBREW_NO_ENV_HINTS <span class="o">(</span>see <span class="sb">`</span>man brew<span class="sb">`</span><span class="o">)</span>.
+</span></span></code></pre></div><p><code>terraform</code> 명령어 동작상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform version
+</span></span><span class="line"><span class="cl">Terraform v1.1.6
+</span></span><span class="line"><span class="cl">on darwin_arm64
+</span></span></code></pre></div><p>arm64용 Terraform v1.1.6이 설치되었습니다.</p>
+<p> </p>
+<h3 id="2-iam-user-생성">2. IAM User 생성</h3>
+<p>AWS Management Console에 로그인합니다.</p>
+<p>IAM으로 들어가서 테라폼 전용 IAM User를 생성합니다.<br>
+User에 Policy로 AdministratorAccess를 부여합니다.</p>
+<p><img src="./1.png" alt="Access Key 화면"></p>
+<p>Terraform을 이용해서 인스턴스를 생성하려면 Access Key와 Secrey Key가 필요하므로, 2개의 키 값을 반드시 메모해둡니다.</p>
+<p> </p>
+<h3 id="3-테라폼-파일-작성">3. 테라폼 파일 작성</h3>
+<p>terraform 코드를 2개 작성합니다.<br>
+테라폼 파일의 확장자는 <code>.tf</code> 입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">terraform-study
+</span></span><span class="line"><span class="cl">├── instance.tf
+</span></span><span class="line"><span class="cl">└── version.tf
+</span></span></code></pre></div><ul>
+<li><strong>instance.tf</strong> : 서울 리전<sup>ap-northeast-2</sup>에 1개의 EC2 Instance를 생성하는 파일. <code>instance.tf</code>에는 Provider의 리전 정보, Access Key, Secret Key가 선언됩니다.</li>
+<li><strong>version.tf</strong> : 테라폼 버전의 제한을 거는 파일입니다.</li>
+</ul>
+<p> </p>
+<h4 id="instancetf">instance.tf</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="err">$</span> <span class="err">cat</span> <span class="err">instance.tf</span>
+</span></span><span class="line"><span class="cl"><span class="err">provider</span> <span class="s2">&#34;aws&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="err">access_key</span> <span class="err">=</span> <span class="nt">&#34;ACCESS_KEY_HERE&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="err">secret_key</span> <span class="err">=</span> <span class="s2">&#34;SECRET_KEY_HERE&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="err">region</span>     <span class="err">=</span> <span class="s2">&#34;ap-northeast-2&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">resource</span> <span class="s2">&#34;aws_instance&#34;</span> <span class="s2">&#34;example&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="err">ami</span>           <span class="err">=</span> <span class="nt">&#34;ami-0dd97ebb907cf9366&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="err">instance_type</span> <span class="err">=</span> <span class="s2">&#34;t2.micro&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>IAM 유저를 새로 만들면서 발급된 <code>access_key</code>, <code>secret_key</code> 값을 넣어줍니다.</p>
+<p><strong>주의사항</strong><br>
+<code>access_key</code>와 <code>secret_key</code> 값은 AWS 계정, 패스워드와 동일한 역할을 하기 때문에 절대 깃허브 레포지터리에 올려서도 안되고, 다른 사람들에게 공유해서도 안됩니다.</p>
+<p>만약 다른 사람이 해당 키 값들을 획득하면 AWS의 모든 권한을 탈취해서 전체 리전에 모든 리소스를 배포하는 사고가 발생해서 몇만 달러라는 거액을 청구받을 수 있습니다.
+구글링을 해보면 알겠지만 이런 사고가 생각보다 많이 발생합니다.<br>
+<code>access_key</code>와 <code>secret_key</code> 키 값은 본인만 갖고 있어야 한다는 점을 꼭 명심하세요!</p>
+<p>위 코드에서 <code>ami</code>는 AMI<sup>Amazon Machine Image</sup>의 ID를 의미하는 변수입니다.</p>
+<p><img src="./2.jpg" alt="Amazon EC2 AMI Locator 홈페이지 화면"></p>
+<p>Ubuntu OS가 설치된 AMI<sup>Amazon Machine Image</sup> ID는 <a href="https://cloud-images.ubuntu.com/locator/ec2/">Amazon EC2 AMI Locator</a> 사이트에서 검색이 가능합니다.</p>
+<p> </p>
+<h4 id="versiontf">version.tf</h4>
+<p><code>version.tf</code> 파일은 테라폼 버전 0.12 이상에서만 해당 테라폼 코드가 실행되도록 제한하는 파일입니다.<br>
+테라폼 버전과 프로바이더 버전에 따라서 테라폼 코드 실행결과가 다를 수가 있어서 일관된 결과를 얻기 위해 버전 제한을 걸었습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="err">$</span> <span class="err">cat</span> <span class="err">versions.tf</span>
+</span></span><span class="line"><span class="cl"><span class="err">terraform</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="err">required_version</span> <span class="err">=</span> <span class="nt">&#34;&gt;= 0.12&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="4-테라폼-초기화">4. 테라폼 초기화</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform init
+</span></span></code></pre></div><p><code>terraform init</code> 명령어를 실행하면 클라우드 제공자 플러그인<sup>Provier plugin</sup>을 탐색한 후 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform init
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Initializing the backend...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Initializing provider plugins...
+</span></span><span class="line"><span class="cl">- Finding latest version of hashicorp/aws...
+</span></span><span class="line"><span class="cl">- Installing hashicorp/aws v4.2.0...
+</span></span><span class="line"><span class="cl">- Installed hashicorp/aws v4.2.0 <span class="o">(</span>signed by HashiCorp<span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Terraform has created a lock file .terraform.lock.hcl to record the provider
+</span></span><span class="line"><span class="cl">selections it made above. Include this file in your version control repository
+</span></span><span class="line"><span class="cl">so that Terraform can guarantee to make the same selections by default when
+</span></span><span class="line"><span class="cl">you run <span class="s2">&#34;terraform init&#34;</span> in the future.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Terraform has been successfully initialized!
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">You may now begin working with Terraform. Try running <span class="s2">&#34;terraform plan&#34;</span> to see
+</span></span><span class="line"><span class="cl">any changes that are required <span class="k">for</span> your infrastructure. All Terraform commands
+</span></span><span class="line"><span class="cl">should now work.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">If you ever <span class="nb">set</span> or change modules or backend configuration <span class="k">for</span> Terraform,
+</span></span><span class="line"><span class="cl">rerun this <span class="nb">command</span> to reinitialize your working directory. If you forget, other
+</span></span></code></pre></div><p>terraform 초기화가 시작되면서 자동으로 최신 버전의 AWS 플러그인 v4.2.0이 설치되었습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">- Installing hashicorp/aws v4.2.0...
+</span></span><span class="line"><span class="cl">- Installed hashicorp/aws v4.2.0 <span class="o">(</span>signed by HashiCorp<span class="o">)</span>
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p> </p>
+<h3 id="5-테라폼-적용">5. 테라폼 적용</h3>
+<p>미리 생성될 리소스 정보를 확인합니다.<br>
+작성한 코드에 문제가 있으면 <code>terraform plan</code>이 에러가 발생하고 실행되지 않습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform plan
+</span></span></code></pre></div><p> </p>
+<p>변경될 내용을 미리 확인한 후에는 실제 적용합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform apply
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform apply
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Terraform used the selected providers to generate the following execution
+</span></span><span class="line"><span class="cl">plan. Resource actions are indicated with the following symbols:
+</span></span><span class="line"><span class="cl">  + create
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Terraform will perform the following actions:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># aws_instance.example will be created</span>
+</span></span><span class="line"><span class="cl">  + resource <span class="s2">&#34;aws_instance&#34;</span> <span class="s2">&#34;example&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">ami</span>                                  <span class="o">=</span> <span class="s2">&#34;ami-0dd97ebb907cf9366&#34;</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">arn</span>                                  <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">associate_public_ip_address</span>          <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">availability_zone</span>                    <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">cpu_core_count</span>                       <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">cpu_threads_per_core</span>                 <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">disable_api_termination</span>              <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">ebs_optimized</span>                        <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">get_password_data</span>                    <span class="o">=</span> <span class="nb">false</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">host_id</span>                              <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">id</span>                                   <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">instance_initiated_shutdown_behavior</span> <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">instance_state</span>                       <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">instance_type</span>                        <span class="o">=</span> <span class="s2">&#34;t2.micro&#34;</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">ipv6_address_count</span>                   <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">ipv6_addresses</span>                       <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">key_name</span>                             <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">monitoring</span>                           <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">outpost_arn</span>                          <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">password_data</span>                        <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">placement_group</span>                      <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">placement_partition_number</span>           <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">primary_network_interface_id</span>         <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">private_dns</span>                          <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">private_ip</span>                           <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">public_dns</span>                           <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">public_ip</span>                            <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">secondary_private_ips</span>                <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">security_groups</span>                      <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">source_dest_check</span>                    <span class="o">=</span> <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">subnet_id</span>                            <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">tags_all</span>                             <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">tenancy</span>                              <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">user_data</span>                            <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">user_data_base64</span>                     <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      + <span class="nv">vpc_security_group_ids</span>               <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      + capacity_reservation_specification <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">capacity_reservation_preference</span> <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">          + capacity_reservation_target <span class="o">{</span>
+</span></span><span class="line"><span class="cl">              + <span class="nv">capacity_reservation_id</span> <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      + ebs_block_device <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">delete_on_termination</span> <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">device_name</span>           <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">encrypted</span>             <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">iops</span>                  <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">kms_key_id</span>            <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">snapshot_id</span>           <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">tags</span>                  <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">throughput</span>            <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">volume_id</span>             <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">volume_size</span>           <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">volume_type</span>           <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      + enclave_options <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">enabled</span> <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      + ephemeral_block_device <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">device_name</span>  <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">no_device</span>    <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">virtual_name</span> <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      + metadata_options <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">http_endpoint</span>               <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">http_put_response_hop_limit</span> <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">http_tokens</span>                 <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">instance_metadata_tags</span>      <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      + network_interface <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">delete_on_termination</span> <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">device_index</span>          <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">network_interface_id</span>  <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      + root_block_device <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">delete_on_termination</span> <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">device_name</span>           <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">encrypted</span>             <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">iops</span>                  <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">kms_key_id</span>            <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">tags</span>                  <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">throughput</span>            <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">volume_id</span>             <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">volume_size</span>           <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">          + <span class="nv">volume_type</span>           <span class="o">=</span> <span class="o">(</span>known after apply<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Plan: <span class="m">1</span> to add, <span class="m">0</span> to change, <span class="m">0</span> to destroy.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Do you want to perform these actions?
+</span></span><span class="line"><span class="cl">  Terraform will perform the actions described above.
+</span></span><span class="line"><span class="cl">  Only <span class="s1">&#39;yes&#39;</span> will be accepted to approve.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  Enter a value:
+</span></span></code></pre></div><p>엄청난 양의 생성계획(Plan) 정보가 출력됩니다.<br>
+여기서 <code>(known after apply)</code>는 말그대로 실제 적용 후에 확인 가능한 값임을 의미합니다.<br>
+그래서 실무에서는 plan에서 이상이 발견되지 않아도 apply 후에는 문제가 발생하는 일이 간혹 있습니다.</p>
+<p> </p>
+<p>실행 여부를 묻는 질문에 <code>yes</code> 를 입력하고 [Enter]를 칩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">  Enter a value: yes
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">aws_instance.example: Creating...
+</span></span><span class="line"><span class="cl">aws_instance.example: Still creating... <span class="o">[</span>10s elapsed<span class="o">]</span>
+</span></span><span class="line"><span class="cl">aws_instance.example: Still creating... <span class="o">[</span>20s elapsed<span class="o">]</span>
+</span></span><span class="line"><span class="cl">aws_instance.example: Creation <span class="nb">complete</span> after 21s <span class="o">[</span><span class="nv">id</span><span class="o">=</span>i-082bf1d8b3de239c8<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Apply complete! Resources: <span class="m">1</span> added, <span class="m">0</span> changed, <span class="m">0</span> destroyed.
+</span></span></code></pre></div><p>마지막 라인에 1개의 리소스가 정상 생성되었다(<code>1 added</code>)고 결과가 나옵니다.</p>
+<p> </p>
+<p>AWS Management Console에서도 EC2 Instance 1대가 새로 생성되었는지 확인해보겠습니다.</p>
+<p><img src="./3.jpg" alt="EC2가 생성된 화면"></p>
+<p>서울 리전에 EC2 Instance 1대가 생성된 후 정상 동작중(<code>Running</code>)입니다.</p>
+<p> </p>
+<h3 id="6-삭제">6. 삭제</h3>
+<p>EC2 Instance를 계속 켜놓으면 비용이 발생합니다.<br>
+이제 Terraform으로 생성한 EC2 Instance를 다시 삭제해보겠습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform destroy
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform destroy
+</span></span><span class="line"><span class="cl">aws_instance.example: Refreshing state... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>i-082bf1d8b3de239c8<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Terraform used the selected providers to generate the following execution
+</span></span><span class="line"><span class="cl">plan. Resource actions are indicated with the following symbols:
+</span></span><span class="line"><span class="cl">  - destroy
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Terraform will perform the following actions:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># aws_instance.example will be destroyed</span>
+</span></span><span class="line"><span class="cl">  - resource <span class="s2">&#34;aws_instance&#34;</span> <span class="s2">&#34;example&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      - <span class="nv">ami</span>                                  <span class="o">=</span> <span class="s2">&#34;ami-0dd97ebb907cf9366&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">arn</span>                                  <span class="o">=</span> <span class="s2">&#34;arn:aws:ec2:ap-northeast-2:111111111111:instance/i-082bf1d8b3de239c8&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">associate_public_ip_address</span>          <span class="o">=</span> <span class="nb">true</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">availability_zone</span>                    <span class="o">=</span> <span class="s2">&#34;ap-northeast-2a&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">cpu_core_count</span>                       <span class="o">=</span> <span class="m">1</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">cpu_threads_per_core</span>                 <span class="o">=</span> <span class="m">1</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">disable_api_termination</span>              <span class="o">=</span> <span class="nb">false</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">ebs_optimized</span>                        <span class="o">=</span> <span class="nb">false</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">get_password_data</span>                    <span class="o">=</span> <span class="nb">false</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">hibernation</span>                          <span class="o">=</span> <span class="nb">false</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">id</span>                                   <span class="o">=</span> <span class="s2">&#34;i-082bf1d8b3de239c8&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">instance_initiated_shutdown_behavior</span> <span class="o">=</span> <span class="s2">&#34;stop&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">instance_state</span>                       <span class="o">=</span> <span class="s2">&#34;running&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">instance_type</span>                        <span class="o">=</span> <span class="s2">&#34;t2.micro&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">ipv6_address_count</span>                   <span class="o">=</span> <span class="m">0</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">ipv6_addresses</span>                       <span class="o">=</span> <span class="o">[]</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">monitoring</span>                           <span class="o">=</span> <span class="nb">false</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">primary_network_interface_id</span>         <span class="o">=</span> <span class="s2">&#34;eni-0ca186f601dfde6d4&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">private_dns</span>                          <span class="o">=</span> <span class="s2">&#34;ip-172-31-0-60.ap-northeast-2.compute.internal&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">private_ip</span>                           <span class="o">=</span> <span class="s2">&#34;172.31.0.60&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">public_dns</span>                           <span class="o">=</span> <span class="s2">&#34;ec2-3-35-219-159.ap-northeast-2.compute.amazonaws.com&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">public_ip</span>                            <span class="o">=</span> <span class="s2">&#34;3.35.219.159&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">secondary_private_ips</span>                <span class="o">=</span> <span class="o">[]</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">security_groups</span>                      <span class="o">=</span> <span class="o">[</span>
+</span></span><span class="line"><span class="cl">          - <span class="s2">&#34;default&#34;</span>,
+</span></span><span class="line"><span class="cl">        <span class="o">]</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">source_dest_check</span>                    <span class="o">=</span> <span class="nb">true</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">subnet_id</span>                            <span class="o">=</span> <span class="s2">&#34;subnet-8d7ec4e6&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">tags</span>                                 <span class="o">=</span> <span class="o">{}</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">tags_all</span>                             <span class="o">=</span> <span class="o">{}</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">tenancy</span>                              <span class="o">=</span> <span class="s2">&#34;default&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">      - <span class="nv">vpc_security_group_ids</span>               <span class="o">=</span> <span class="o">[</span>
+</span></span><span class="line"><span class="cl">          - <span class="s2">&#34;sg-58799024&#34;</span>,
+</span></span><span class="line"><span class="cl">        <span class="o">]</span> -&gt; null
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      - capacity_reservation_specification <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          - <span class="nv">capacity_reservation_preference</span> <span class="o">=</span> <span class="s2">&#34;open&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      - credit_specification <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          - <span class="nv">cpu_credits</span> <span class="o">=</span> <span class="s2">&#34;standard&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      - enclave_options <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          - <span class="nv">enabled</span> <span class="o">=</span> <span class="nb">false</span> -&gt; null
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      - metadata_options <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          - <span class="nv">http_endpoint</span>               <span class="o">=</span> <span class="s2">&#34;enabled&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">          - <span class="nv">http_put_response_hop_limit</span> <span class="o">=</span> <span class="m">1</span> -&gt; null
+</span></span><span class="line"><span class="cl">          - <span class="nv">http_tokens</span>                 <span class="o">=</span> <span class="s2">&#34;optional&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">          - <span class="nv">instance_metadata_tags</span>      <span class="o">=</span> <span class="s2">&#34;disabled&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      - root_block_device <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          - <span class="nv">delete_on_termination</span> <span class="o">=</span> <span class="nb">true</span> -&gt; null
+</span></span><span class="line"><span class="cl">          - <span class="nv">device_name</span>           <span class="o">=</span> <span class="s2">&#34;/dev/sda1&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">          - <span class="nv">encrypted</span>             <span class="o">=</span> <span class="nb">false</span> -&gt; null
+</span></span><span class="line"><span class="cl">          - <span class="nv">iops</span>                  <span class="o">=</span> <span class="m">100</span> -&gt; null
+</span></span><span class="line"><span class="cl">          - <span class="nv">tags</span>                  <span class="o">=</span> <span class="o">{}</span> -&gt; null
+</span></span><span class="line"><span class="cl">          - <span class="nv">throughput</span>            <span class="o">=</span> <span class="m">0</span> -&gt; null
+</span></span><span class="line"><span class="cl">          - <span class="nv">volume_id</span>             <span class="o">=</span> <span class="s2">&#34;vol-01302622a80fb4b39&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">          - <span class="nv">volume_size</span>           <span class="o">=</span> <span class="m">8</span> -&gt; null
+</span></span><span class="line"><span class="cl">          - <span class="nv">volume_type</span>           <span class="o">=</span> <span class="s2">&#34;gp2&#34;</span> -&gt; null
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Plan: <span class="m">0</span> to add, <span class="m">0</span> to change, <span class="m">1</span> to destroy.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Do you really want to destroy all resources?
+</span></span><span class="line"><span class="cl">  Terraform will destroy all your managed infrastructure, as shown above.
+</span></span><span class="line"><span class="cl">  There is no undo. Only <span class="s1">&#39;yes&#39;</span> will be accepted to confirm.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  Enter a value:
+</span></span></code></pre></div><p>삭제를 실행하면 대량의 상태 정보가 바뀔 것을 미리 알려주면서, 정말로 실행할 것인지 묻습니다.<br>
+<code>yes</code> 입력 후 [Enter] 키를 입력합니다.</p>
+<p> </p>
+<p>EC2 Instance 1대를 제거하는 데 약 40초 걸렸습니다.<br>
+EC2 Instance를 만들면서 추가적으로 생성된 다른 리소스들이 많기 때문입니다. (EBS, Security Group, ENI 등)</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">  Enter a value: yes
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">aws_instance.example: Destroying... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>i-082bf1d8b3de239c8<span class="o">]</span>
+</span></span><span class="line"><span class="cl">aws_instance.example: Still destroying... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>i-082bf1d8b3de239c8, 10s elapsed<span class="o">]</span>
+</span></span><span class="line"><span class="cl">aws_instance.example: Still destroying... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>i-082bf1d8b3de239c8, 20s elapsed<span class="o">]</span>
+</span></span><span class="line"><span class="cl">aws_instance.example: Still destroying... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>i-082bf1d8b3de239c8, 30s elapsed<span class="o">]</span>
+</span></span><span class="line"><span class="cl">aws_instance.example: Destruction <span class="nb">complete</span> after 40s
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Destroy complete! Resources: <span class="m">1</span> destroyed.
+</span></span></code></pre></div><p>마지막 줄에 1개의 리소스가 정상 삭제되었다고 나옵니다. (<code>1 destroyed.</code>)</p>
+<p> </p>
+<p><img src="./4.png" alt="Terminated된 EC2 화면"></p>
+<p>AWS Management Console에서 확인해봐도 EC2 Instance가 삭제(<code>Terminated</code>)된 것을 볼 수 있습니다.</p>
+<p> </p>
+<h2 id="결론">결론</h2>
+<p>코드로 인프라를 관리하면 일관성 있는 상태를 유지하고, 이력 관리도 편하며, 인프라 배포/관리를 자동화할 수 있습니다.<br>
+편하게 일하고 싶은 Cloud Engineer라면 인프라 구축 자동화 툴인 Terraform을 꼭 배워놓도록 합시다.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

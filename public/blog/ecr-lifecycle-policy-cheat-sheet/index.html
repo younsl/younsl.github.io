@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/ecr-lifecycle-policy-cheat-sheet/" />
+    <title>ECR Lifecycle Policy 설정 가이드</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>ECR Lifecycle Policy 설정 가이드</h1>
+        <div>
+                <time>Updated July 26, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>ECR Lifecycle Policy 설정이 필요한 이유와 설정시 참고할만한 정책 예시를 설명합니다.</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="ecr-lifecycle-policy">ECR Lifecycle Policy</h3>
+<p>ECR 기능 중 하나인 수명 주기 정책<sup>Lifecycle Policy</sup>을 사용하여 오래되거나 사용하지 않는 이미지를 자동으로 제거함으로써 컨테이너 이미지 리포지토리를 깔끔하게 정리할 수 있습니다.</p>
+<p><a href="https://docs.aws.amazon.com/ko_kr/AmazonECR/latest/userguide/lifecycle_policy_examples.html">수명 주기 정책의 사용 예시</a>는 다음과 같습니다.</p>
+<ul>
+<li>90일이 지난 태그가 없는 이미지 삭제</li>
+<li>90일이 지난 개발 태그가 붙은 이미지 삭제</li>
+<li>180일이 지난 스테이징 태그가 붙은 이미지 삭제</li>
+<li>1년이 지난 프로덕션 태그가 붙은 이미지 삭제</li>
+<li><code>latest</code> 태그가 붙은 이미지를 1개만 유지</li>
+<li>태그가 달린 이미지를 최근 120개만 유지</li>
+</ul>
+<p> </p>
+<h2 id="ecr-수명-주기-정책-예시">ECR 수명 주기 정책 예시</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;rules&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;rulePriority&#34;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;Keep last 1 images tagged latest&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;selection&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">              <span class="nt">&#34;tagStatus&#34;</span><span class="p">:</span> <span class="s2">&#34;tagged&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">              <span class="nt">&#34;tagPrefixList&#34;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;latest&#34;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">              <span class="nt">&#34;countType&#34;</span><span class="p">:</span> <span class="s2">&#34;imageCountMoreThan&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">              <span class="nt">&#34;countNumber&#34;</span><span class="p">:</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;action&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;expire&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;rulePriority&#34;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;Keep last 5 images tagged main&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;selection&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">              <span class="nt">&#34;tagStatus&#34;</span><span class="p">:</span> <span class="s2">&#34;tagged&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">              <span class="nt">&#34;tagPrefixList&#34;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;main&#34;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">              <span class="nt">&#34;countType&#34;</span><span class="p">:</span> <span class="s2">&#34;imageCountMoreThan&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">              <span class="nt">&#34;countNumber&#34;</span><span class="p">:</span> <span class="mi">5</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;action&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;expire&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;rulePriority&#34;</span><span class="p">:</span> <span class="mi">980</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;Keep only one untagged image, expire all others&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;selection&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;tagStatus&#34;</span><span class="p">:</span> <span class="s2">&#34;untagged&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;countType&#34;</span><span class="p">:</span> <span class="s2">&#34;imageCountMoreThan&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;countNumber&#34;</span><span class="p">:</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;action&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;expire&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;rulePriority&#34;</span><span class="p">:</span> <span class="mi">990</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;Keep only tagged images for 90 days&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;selection&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;tagStatus&#34;</span><span class="p">:</span> <span class="s2">&#34;any&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;countType&#34;</span><span class="p">:</span> <span class="s2">&#34;sinceImagePushed&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;countUnit&#34;</span><span class="p">:</span> <span class="s2">&#34;days&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;countNumber&#34;</span><span class="p">:</span> <span class="mi">90</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;action&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;expire&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;rulePriority&#34;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;Keep only 120 tagged images, expire all others&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;selection&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;tagStatus&#34;</span><span class="p">:</span> <span class="s2">&#34;tagged&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;countType&#34;</span><span class="p">:</span> <span class="s2">&#34;imageCountMoreThan&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;countNumber&#34;</span><span class="p">:</span> <span class="mi">120</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;action&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;expire&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>각 Lifecycle Policy를 설명드리면 다음과 같습니다.</p>
+<ol>
+<li>우선순위 <code>10</code>인 규칙: <code>latest</code> 태그가 달린 이미지 중 가장 최근에 푸시된 1개의 이미지만 유지하고, 나머지는 자동 삭제됩니다.</li>
+<li>우선순위 <code>20</code>인 규칙: <code>main</code> 태그가 달린 이미지 중 최근 5개의 이미지만 유지하고, 나머지는 자동 삭제됩니다.</li>
+<li>우선순위 <code>980</code>인 규칙: 태그가 없는 이미지 중 가장 최근에 푸시된 1개의 이미지만 유지하고, 나머지는 자동 삭제됩니다.</li>
+<li>우선순위 <code>990</code>인 규칙: 모든 태그가 달린 이미지, 안달린 이미지들 중에 최근 90일 이내에 푸시된 이미지들만 유지하고, 이후의 이미지들은 자동 삭제됩니다.</li>
+<li>우선순위 <code>1000</code>인 규칙: 태그가 달린 이미지를 최근 120개만 유지하고, 120개를 초과하는 이미지들은 자동으로 삭제됩니다.</li>
+</ol>
+<blockquote>
+<p><a href="https://docs.aws.amazon.com/ko_kr/AmazonECR/latest/userguide/LifecyclePolicies.html#lp_rule_priority"><strong>규칙 우선순위</strong></a><br>
+규칙 우선순위 값인 <code>rulePriority</code>가 낮을수록 중요도가 높은 것으로 해석되므로 해당 룰이 가장 먼저 적용됩니다.</p>
+</blockquote>
+<p> </p>
+<h2 id="결론">결론</h2>
+<p>ECR Lifecycle Policy를 설정하면 이미지 관리 및 저장소 용량 관리를 효과적으로 수행할 수 있습니다.<br>
+자동화된 이미지 라이프사이클 관리를 통해 개발 및 운영팀에 시간을 절약하고, 컨테이너 이미지의 안정성과 일관성을 유지하는 데 도움을 줍니다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://aws.amazon.com/ko/blogs/korea/clean-up-your-container-images-with-amazon-ecr-lifecycle-policies/">Amazon ECR 수명 주기 정책을 통한 컨테이너 이미지 자동 삭제 기능 출시</a></p>
+<p><a href="https://docs.aws.amazon.com/ko_kr/AmazonECR/latest/userguide/lifecycle_policy_examples.html">수명 주기 정책의 예제</a><br>
+AWS 공식문서</p>
+<p><a href="https://gist.github.com/xiaket/b16623765e11a657cbe52b61f1aeda8d">Gist Example</a></p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

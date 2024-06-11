@@ -776,4 +776,132 @@ GET /_cat/aliases?v
 
 자세한 사항은 [인덱스 상태 관리](https://docs.aws.amazon.com/ko_kr/opensearch-service/latest/developerguide/ism.html#ism-example)를 참고합니다.
 
+&nbsp;
+
+### 백업
+
+elasticdump를 사용하여 백업할 수 있습니다.
+
+&nbsp;
+
+수행 절차는 다음과 같습니다. 이 작업에서 가장 중요한 사항은 `elasticdump` 명령어를 실행하는 주체인 EC2 혹은 파드에서 ElasticSearch 까지 네트워크 연결 가능성이 보장되는 지 여부입니다.
+
+1. ElasticSearch의 엔드포인트에 접근 가능한 파드에 접속합니다.
+2. 파드에 NodeJS 패키지 관리자인 `npm` 설치
+3. `npm`을 사용하여 elasticdump 설치
+4. `elasticdump` 명령어 실행
+
+&nbsp;
+
+제 경우 파드에서 `elasticdump`를 수행했습니다.
+
+파드에 접근 후 Node.js 패키지 관리자인 `npm`을 설치합니다. `npm`은 `elasticdump` 설치에 필요합니다.
+
+```bash
+$ grep "PRETTY_NAME" /etc/*-release
+PRETTY_NAME="Alpine Linux v3.11"
+
+$ sudo apk update
+$ sudo apk add npm nghttp2-dev
+```
+
+&nbsp;
+
+파드 로컬 환경에 `elasticdump` 명령어를 설치합니다.
+
+```bash
+$ sudo npm install elasticdump -g
+$ npm list elasticdump
+/usr/bin
+`-- elasticdump@6.110.0
+
+$ which elasticdump
+/usr/bin/elasticdump
+```
+
+&nbsp;
+
+ElasticSearch API를 사용하여 백업할 인덱스를 조회합니다.
+
+```bash
+export ES_ENDPOINT="https://<ES_ENDPOINT>.ap-northeast-2.es.amazonaws.com"
+curl --silent --location --request GET "${ES_ENDPOINT}/_cat/indices?v"
+
+health status index      uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+green  open   market     gXXvxwxmXTxPXaX2XgX5kw   3   1     205246           31        4gb            2gb
+```
+
+&nbsp;
+
+인덱스를 백업합니다.
+
+```bash
+elasticdump \
+  --input=${ES_ENDPOINT}/market \
+  --output=/tmp/index-market-backup.json
+```
+
+```bash
+Mon, 10 Jun 2024 08:34:28 GMT | starting dump
+Mon, 10 Jun 2024 08:34:30 GMT | got 100 objects from source elasticsearch (offset: 0)
+Mon, 10 Jun 2024 08:34:30 GMT | sent 100 objects to destination file, wrote 100
+...
+Mon, 10 Jun 2024 08:46:16 GMT | got 100 objects from source elasticsearch (offset: 70600)
+Mon, 10 Jun 2024 08:46:16 GMT | sent 100 objects to destination file, wrote 100
+```
+
+2GB 용량의 인덱스를 `.json` 포맷으로 백업하면 파일시스템에 차지하는 용량은 약 300MB 줄어듭니다.
+
+```bash
+$ ls -lh /tmp/
+-rw-r--r--    1 coinone  coinone   303.4M Jun 10 09:42 index-market-backup.json
+```
+
+&nbsp;
+
+특정 파드의 파일을 백업하기 위해 `kubectl cp` 명령어를 사용할 수 있습니다. `kubectl cp` 명령어는 클러스터 내의 파드와 로컬 파일 시스템 간에 파일을 복사하는 데 사용됩니다.
+
+다음은 인덱스 백업 파일인 `/tmp/index-market-backup.json`을 특정 파드에서 로컬 파일 시스템으로 백업하는 방법입니다:
+
+## Case
+
+제 경우, Elasticdump를 사용하여 생성한 300MB 크기의 `.json` 인덱스 백업 파일을 로컬로 복사할때 발생했습니다.
+
+## Solution
+
+`kubectl cp` 명령어에 `--retries 10` 옵션을 추가해서 성공했습니다.
+
+## Detail log
+
+```bash
+kubectl cp <namespace>/<pod-name>:/tmp/index-market-backup.json ./index-market-backup.json --retries 10
+```
+
+인덱스 백업본 파일 복사 과정에서 `Dropping out copy after 0 retries` 에러와 함께 파일 복사가 실패할 수 있습니다.
+
+`kubectl cp` 실행시 `--retries 10` 옵션을 추가해서 재시도하도록 설정합니다.
+
+마지막에 실패한 결과:
+
+```bash
+tar: removing leading '/' from member names
+Dropping out copy after 0 retries
+error: unexpected EOF
+...
+```
+
+&nbsp;
+
+성공한 결과:
+
+```bash
+$ kubectl cp <namespace>/<pod-name>:/tmp/index-market-backup.json ./index-market-backup.json --retries 10
+tar: removing leading '/' from member names
+Resuming copy at 315394048 bytes, retry 1/10
+tar: removing leading '/' from member names
+
+$ ls -lh index-market-backup.json
+-rw-r--r--@ 1 john.doe  staff   303M  6 11 09:25 index-market-backup.json
+```
+
 </details>

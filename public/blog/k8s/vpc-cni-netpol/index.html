@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/k8s/vpc-cni-netpol/" />
+    <title>VPC CNI netpol</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>VPC CNI netpol</h1>
+        <div>
+                <time>Updated September 8, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#배경지식">배경지식</a>
+      <ul>
+        <li><a href="#vpc-cni">VPC CNI</a></li>
+        <li><a href="#network-policy">network policy</a></li>
+      </ul>
+    </li>
+    <li><a href="#준비사항">준비사항</a>
+      <ul>
+        <li><a href="#eks-cluster-버전">EKS Cluster 버전</a></li>
+        <li><a href="#vpc-cni-버전">VPC CNI 버전</a></li>
+        <li><a href="#linux-kernel">Linux kernel</a></li>
+      </ul>
+    </li>
+    <li><a href="#설정하기">설정하기</a>
+      <ul>
+        <li><a href="#기존-구성-확인">기존 구성 확인</a></li>
+        <li><a href="#버전-업그레이드">버전 업그레이드</a></li>
+        <li><a href="#업그레이드-결과-확인">업그레이드 결과 확인</a></li>
+        <li><a href="#netpol-활성화">netpol 활성화</a></li>
+        <li><a href="#동작-테스트">동작 테스트</a></li>
+      </ul>
+    </li>
+    <li><a href="#참고자료">참고자료</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>VPC CNI에서 쿠버네티스 netpol을 사용할 수 있도록 설정하는 가이드입니다.</p>
+<p>EKS 클러스터 관리자를 대상으로 작성된 페이지입니다.</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="vpc-cni">VPC CNI</h3>
+<p>기존에 EKS에서 Kubernetes NetworkPolicy<sup>netpol</sup>을 사용하려면 반드시 Calico CNI + Tigera Operator를 별도로 설치해서 운영해야 했습니다.</p>
+<p>하지만 2023년 8월 29일에 출시된 VPC CNI v1.14.0 버전 이상부터는 Calico 등의 별도 CNI 설치 없이도 network policy를 지원합니다.</p>
+<p><img src="./1.png" alt="Calico에서 VPC CNI로 전환"></p>
+<p>netpol 사용을 위해 설치했던 Calico를 VPC CNI로 대체하면 크게 2가지 기대효과가 있습니다.</p>
+<ul>
+<li><strong>비용 절감</strong> : netpol 제공자를 VPC CNI로 대체한 후 Calico와 Tigera Operator 리소스를 삭제해도 되므로, 클러스터 전체적인 리소스 여유공간을 확보할 수 있습니다.</li>
+<li><strong>운영 오버헤드 절약</strong> : 클러스터 관리자가 운영해야 할 에드온인 Calico와 Tigera Operator가 사라진다는 걸 의미하므로 운영상의 오버헤드도 절약됩니다.</li>
+</ul>
+<p>더 자세한 정보는 <a href="https://aws.amazon.com/ko/about-aws/whats-new/2023/08/amazon-vpc-cni-kubernetes-networkpolicy-enforcement/">Amazon VPC CNI, 이제 Kubernetes NetworkPolicy 시행 지원</a> 뉴스를 참고합니다.</p>
+<p> </p>
+<h3 id="network-policy">network policy</h3>
+<p>기본적으로 Kubernetes에서는 모든 파드가 같은 클러스터 내의 다른 포드와 제한 없이 통신할 수 있습니다.</p>
+<p>클러스터 내부의 네트워크 보안을 위해 Kubernetes에서 제공하는 <a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/">NetworkPolicy</a><sup>netpol</sup>를 사용하면 클러스터 관리자는 포드가 어떤 대상과 통신할 수 있는지 정의할 수 있습니다.<br>
+NetworkPolicy를 통해 애플리케이션에 대한 액세스와 애플리케이션으로부터의 액세스를 안전하게 보호할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl api-resources --api-group<span class="o">=</span>networking.k8s.io
+</span></span><span class="line"><span class="cl">NAME              SHORTNAMES   APIVERSION             NAMESPACED   KIND
+</span></span><span class="line"><span class="cl">ingressclasses                 networking.k8s.io/v1   <span class="nb">false</span>        IngressClass
+</span></span><span class="line"><span class="cl">ingresses         ing          networking.k8s.io/v1   <span class="nb">true</span>         Ingress
+</span></span><span class="line"><span class="cl">networkpolicies   netpol       networking.k8s.io/v1   <span class="nb">true</span>         NetworkPolicy
+</span></span></code></pre></div><p>그러나 이를 위해서는 클러스터 관리자가 NetworkPolicy를 구현하기 위해 Calico CNI 등의 추가 소프트웨어를 설치 및 구성해야 하므로 서드 파티 플러그인을 설치하고 유지 관리하는 데 운영 오버헤드와 비용이 발생하게 됩니다.</p>
+<p> </p>
+<p>클러스터 관리자는 <code>kubectl explain &lt;RESOURCE_NAME&gt;</code> 명령어를 사용해서 특정 리소스에 대한 상세한 정보를 얻을 수 있습니다.</p>
+<p>아래는 Network Policy 리소스에 대한 상세 설명입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl explain netpol
+</span></span><span class="line"><span class="cl">GROUP:      networking.k8s.io
+</span></span><span class="line"><span class="cl">KIND:       NetworkPolicy
+</span></span><span class="line"><span class="cl">VERSION:    v1
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">DESCRIPTION:
+</span></span><span class="line"><span class="cl">    NetworkPolicy describes what network traffic is allowed <span class="k">for</span> a <span class="nb">set</span> of Pods
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">FIELDS:
+</span></span><span class="line"><span class="cl">  apiVersion    &lt;string&gt;
+</span></span><span class="line"><span class="cl">    APIVersion defines the versioned schema of this representation of an object.
+</span></span><span class="line"><span class="cl">    Servers should convert recognized schemas to the latest internal value, and
+</span></span><span class="line"><span class="cl">    may reject unrecognized values. More info:
+</span></span><span class="line"><span class="cl">    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  kind  &lt;string&gt;
+</span></span><span class="line"><span class="cl">    Kind is a string value representing the REST resource this object
+</span></span><span class="line"><span class="cl">    represents. Servers may infer this from the endpoint the client submits
+</span></span><span class="line"><span class="cl">    requests to. Cannot be updated. In CamelCase. More info:
+</span></span><span class="line"><span class="cl">    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  metadata  &lt;ObjectMeta&gt;
+</span></span><span class="line"><span class="cl">    Standard object<span class="err">&#39;</span>s metadata. More info:
+</span></span><span class="line"><span class="cl">    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  spec  &lt;NetworkPolicySpec&gt;
+</span></span><span class="line"><span class="cl">    spec represents the specification of the desired behavior <span class="k">for</span> this
+</span></span><span class="line"><span class="cl">    NetworkPolicy.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  status    &lt;NetworkPolicyStatus&gt;
+</span></span><span class="line"><span class="cl">    status represents the current state of the NetworkPolicy. More info:
+</span></span><span class="line"><span class="cl">    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+</span></span></code></pre></div><p> </p>
+<h2 id="준비사항">준비사항</h2>
+<p>VPC CNI만으로 netpol을 사용하도록 설정하기 전에 크게 3가지 준비사항이 필요합니다.</p>
+<p> </p>
+<h3 id="eks-cluster-버전">EKS Cluster 버전</h3>
+<p>netpol을 사용하려고 하는 EKS 클러스터는 Kubernetes 버전 <code>1.25</code> 이상이어야 합니다.</p>
+<p>특정 EKS 클러스터의 쿠버네티스 버전을 확인하려면 아래 AWS CLI 명령어를 사용합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">aws eks describe-cluster <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --name &lt;YOUR_CLUSTER_NAME&gt; <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --query cluster.version <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --output text <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --region ap-northeast-2 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="p">|</span> cat
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">1.27
+</span></span></code></pre></div><p>이 시나리오의 경우 클러스터는 EKS v1.27 버전입니다.</p>
+<p> </p>
+<h3 id="vpc-cni-버전">VPC CNI 버전</h3>
+<p>클러스터의 Kubernetes용 Amazon VPC CNI 플러그인이 <code>v1.14.0</code> 이상이어야 합니다.</p>
+<p>다음 명령을 사용하면 현재 사용 중인 VPC CNI의 버전을 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl describe daemonset aws-node --namespace kube-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="p">|</span> grep amazon-k8s-cni: <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="p">|</span> cut -d : -f <span class="m">3</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">v1.13.4-eksbuild.1
+</span></span></code></pre></div><p>현재 EKS 클러스터에 설치된 VPC CNI 플러그인은 <code>v1.13.4</code>입니다.</p>
+<p>netpol을 사용하려면 VPC CNI의 버전 업그레이드가 필요합니다.</p>
+<p> </p>
+<h3 id="linux-kernel">Linux kernel</h3>
+<p>모든 노드가 Linux 커널 버전 5.10 이상이어야 합니다. <code>uname -r</code>로 커널 버전을 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ uname -r
+</span></span><span class="line"><span class="cl">5.10.186-179.751.amzn2.x86_64
+</span></span></code></pre></div><p>참고로 Amazon EKS에 최적화된 Amazon Linux 및 Bottlerocket AMI의 최신 버전을 사용하는 경우 필요한 커널 버전이 이미 설치되어 있습니다.</p>
+<p> </p>
+<p>자세한 사항은 AWS 공식문서 <a href="https://docs.aws.amazon.com/eks/latest/userguide/cni-network-policy.html#cni-network-policy-prereqs">Kubernetes network policies</a>를 참고합니다.</p>
+<p> </p>
+<h2 id="설정하기">설정하기</h2>
+<h3 id="기존-구성-확인">기존 구성 확인</h3>
+<p>제 경우 테라폼으로 EKS 클러스터를 생성하고 운영하는 환경이었습니다.</p>
+<p>디렉토리 안의 테라폼 코드 구조는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">tree
+</span></span><span class="line"><span class="cl">.
+</span></span><span class="line"><span class="cl">├── backend.tf
+</span></span><span class="line"><span class="cl">├── main.tf
+</span></span><span class="line"><span class="cl">├── outputs.tf
+</span></span><span class="line"><span class="cl">├── variables.tf
+</span></span><span class="line"><span class="cl">└── versions.tf
+</span></span></code></pre></div><p>위 테라폼 코드들이 하나의 EKS 클러스터를 생성하고 있으며 AWS 공식 EKS 테라폼 모듈을 사용하고 있습니다.</p>
+<p> </p>
+<p>기존 EKS 클러스터의 테라폼 코드 <code>main.tf</code>의 일부는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># main.tf</span>
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#===============================================================================</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># EKS Module</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#===============================================================================</span>
+</span></span><span class="line"><span class="cl">module <span class="s2">&#34;eks_cluster&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">source</span> <span class="o">=</span> <span class="s2">&#34;git::https://github.example.com/dogecompany/terraform-modules.git//aws/eks&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="nv">cluster_name</span>                   <span class="o">=</span> local.name
+</span></span><span class="line"><span class="cl">  <span class="nv">cluster_version</span>                <span class="o">=</span> local.cluster_version
+</span></span><span class="line"><span class="cl">  <span class="nv">cluster_endpoint_public_access</span> <span class="o">=</span> <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="nv">cluster_addons</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">coredns</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nv">addon_version</span> <span class="o">=</span> <span class="s2">&#34;v1.10.1-eksbuild.2&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    kube-proxy <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nv">most_recent</span> <span class="o">=</span> <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    vpc-cni <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nv">most_recent</span> <span class="o">=</span> <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    aws-ebs-csi-driver <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nv">most_recent</span>              <span class="o">=</span> <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">      <span class="nv">service_account_role_arn</span> <span class="o">=</span> <span class="s2">&#34;arn:aws:iam::111122223333:role/</span><span class="si">${</span><span class="nv">module</span><span class="p">.eks_cluster.cluster_name</span><span class="si">}</span><span class="s2">-ebs-csi-driver-irsa-role&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  ...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div><p> </p>
+<p>클러스터 테라폼 코드에서 <code>cluster_addons</code> 값을 보면, 아래 4개 에드온도 테라폼으로 같이 관리합니다.</p>
+<p><img src="./2.png" alt="EKS 콘솔에서 확인한 4개의 에드온"></p>
+<p> </p>
+<p>클러스터에 현재 설치된 VPC CNI의 버전은 다음 명령어로 확인 가능합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl describe daemonset aws-node --namespace kube-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="p">|</span> grep amazon-k8s-cni: <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="p">|</span> cut -d : -f <span class="m">3</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">v1.13.4-eksbuild.1
+</span></span></code></pre></div><p>VPC CNI <code>v1.13.4</code>가 설치되어 있습니다.</p>
+<p> </p>
+<p>netpol을 지원하기 전 버전의 VPC CNI 데몬셋과 파드 구성은 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get daemonset,pod <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n kube-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -l app.kubernetes.io/instance<span class="o">=</span>aws-vpc-cni
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME                      DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+</span></span><span class="line"><span class="cl">daemonset.apps/aws-node   <span class="m">3</span>         <span class="m">3</span>         <span class="m">3</span>       <span class="m">3</span>            <span class="m">3</span>           &lt;none&gt;          29d
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">NAME                 READY   STATUS    RESTARTS   AGE
+</span></span><span class="line"><span class="cl">pod/aws-node-b2btt   1/1     Running   <span class="m">0</span>          29d
+</span></span><span class="line"><span class="cl">pod/aws-node-h8p9t   1/1     Running   <span class="m">0</span>          29d
+</span></span><span class="line"><span class="cl">pod/aws-node-zzvb8   1/1     Running   <span class="m">0</span>          10d
+</span></span></code></pre></div><p><code>aws-node</code> 파드는 <code>aws-node</code> 컨테이너 하나로만 구성됩니다.</p>
+<p> </p>
+<h3 id="버전-업그레이드">버전 업그레이드</h3>
+<p>VPC CNI 버전을 올리기 위해 <code>terraform apply</code>를 실행합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">terraform apply
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">module.eks_cluster.module.self_managed_node_group<span class="o">[</span><span class="s2">&#34;on_demand_basic&#34;</span><span class="o">]</span>.aws_iam_role.this<span class="o">[</span>0<span class="o">]</span>: Modifying... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>eks-cluster-iam-role<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.eks_cluster.module.self_managed_node_group<span class="o">[</span><span class="s2">&#34;on_demand_basic&#34;</span><span class="o">]</span>.aws_iam_role.this<span class="o">[</span>0<span class="o">]</span>: Modifications <span class="nb">complete</span> after 2s <span class="o">[</span><span class="nv">id</span><span class="o">=</span>eks-cluster-iam-role<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.eks_cluster.module.self_managed_node_group<span class="o">[</span><span class="s2">&#34;on_demand_basic&#34;</span><span class="o">]</span>.aws_iam_instance_profile.this<span class="o">[</span>0<span class="o">]</span>: Modifying... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>eks-cluster-iam-role<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.eks_cluster.module.self_managed_node_group<span class="o">[</span><span class="s2">&#34;on_demand_basic&#34;</span><span class="o">]</span>.aws_iam_instance_profile.this<span class="o">[</span>0<span class="o">]</span>: Modifications <span class="nb">complete</span> after 0s <span class="o">[</span><span class="nv">id</span><span class="o">=</span>eks-cluster-iam-role<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.eks_cluster.module.self_managed_node_group<span class="o">[</span><span class="s2">&#34;on_demand_basic&#34;</span><span class="o">]</span>.aws_launch_template.this<span class="o">[</span>0<span class="o">]</span>: Modifying... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>lt-0df700f752b37ae55<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.eks_cluster.module.self_managed_node_group<span class="o">[</span><span class="s2">&#34;on_demand_basic&#34;</span><span class="o">]</span>.aws_launch_template.this<span class="o">[</span>0<span class="o">]</span>: Modifications <span class="nb">complete</span> after 1s <span class="o">[</span><span class="nv">id</span><span class="o">=</span>lt-0df700f752b37ae55<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.eks_cluster.module.self_managed_node_group<span class="o">[</span><span class="s2">&#34;on_demand_basic&#34;</span><span class="o">]</span>.aws_autoscaling_group.this<span class="o">[</span>0<span class="o">]</span>: Modifying... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>eks-cluster<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.eks_cluster.module.self_managed_node_group<span class="o">[</span><span class="s2">&#34;on_demand_basic&#34;</span><span class="o">]</span>.aws_autoscaling_group.this<span class="o">[</span>0<span class="o">]</span>: Modifications <span class="nb">complete</span> after 1s <span class="o">[</span><span class="nv">id</span><span class="o">=</span>eks-cluster<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.eks_cluster.aws_eks_addon.this<span class="o">[</span><span class="s2">&#34;aws-ebs-csi-driver&#34;</span><span class="o">]</span>: Modifying... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>eks-cluster:aws-ebs-csi-driver<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.eks_cluster.aws_eks_addon.this<span class="o">[</span><span class="s2">&#34;vpc-cni&#34;</span><span class="o">]</span>: Modifying... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>eks-cluster:vpc-cni<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.eks_cluster.aws_eks_addon.this<span class="o">[</span><span class="s2">&#34;kube-proxy&#34;</span><span class="o">]</span>: Modifying... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>eks-cluster:kube-proxy<span class="o">]</span>
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p> </p>
+<p>아래와 같이 테라폼의 에드온 코드에 <code>most_recent = true</code>가 선언되어 있으므로 클러스터는 그대로 유지되고 VPC CNI와 kube-proxy 등의 에드온들만 최신 버전으로 업그레이드 됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># main.tf</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">cluster_addons</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    ...
+</span></span><span class="line"><span class="cl">    kube-proxy <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="c1"># `terraform` 실행 할 때마다 항상 최신 버전으로 업그레이드</span>
+</span></span><span class="line"><span class="cl">      <span class="nv">most_recent</span> <span class="o">=</span> <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    vpc-cni <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="c1"># `terraform` 실행 할 때마다 항상 최신 버전으로 업그레이드</span>
+</span></span><span class="line"><span class="cl">      <span class="nv">most_recent</span> <span class="o">=</span> <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    ...
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="업그레이드-결과-확인">업그레이드 결과 확인</h3>
+<p>VPC CNI 데몬셋의 버전을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl describe daemonset aws-node <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --namespace kube-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="p">|</span> grep amazon-k8s-cni: <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="p">|</span> cut -d : -f <span class="m">3</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">v1.14.0-eksbuild.3
+</span></span></code></pre></div><p>VPC CNI 에드온의 버전이 <code>v1.14.0</code>으로 업그레이드 되었습니다. 이제 EKS 클러스터는 Calico 설치 없이, VPC CNI만으로도 network policy를 사용할 수 있습니다.</p>
+<p> </p>
+<p>AWS Management Console을 열고 <a href="https://console.aws.amazon.com/eks/home#/clusters">EKS 콘솔</a>에 접속합니다.</p>
+<p><img src="./3.png" alt="AWS 콘솔에서 확인한 VPC CNI 버전"></p>
+<p>클러스터에 설치된 VPC 에드온 버전을 확인합니다.</p>
+<p>VPC CNI가 <code>v1.13.4-eksbuild.1</code>에서 최신버전인 <code>v1.14.0-eksbuild.3</code>으로 업그레이드 되었습니다.</p>
+<p> </p>
+<p>VPC CNI 데몬셋과 파드의 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl get daemonset,pod <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -n kube-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -l app.kubernetes.io/instance<span class="o">=</span>aws-vpc-cni
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME                      DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+</span></span><span class="line"><span class="cl">daemonset.apps/aws-node   <span class="m">3</span>         <span class="m">3</span>         <span class="m">3</span>       <span class="m">3</span>            <span class="m">3</span>           &lt;none&gt;          29d
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">NAME                 READY   STATUS    RESTARTS   AGE
+</span></span><span class="line"><span class="cl">pod/aws-node-54wsx   2/2     Running   <span class="m">0</span>          3m8s
+</span></span><span class="line"><span class="cl">pod/aws-node-l9qmg   2/2     Running   <span class="m">0</span>          2m43s
+</span></span><span class="line"><span class="cl">pod/aws-node-zzdg5   2/2     Running   <span class="m">0</span>          89s
+</span></span></code></pre></div><p>network policy 기능이 활성화된 경우 <code>aws-node</code> 파드에 2개의 컨테이너가 있습니다.</p>
+<p>VPC CNI <code>v1.14.0</code> 이전 버전에서는 network policy가 비활성화된 경우 <code>aws-node</code> 파드에 <code>aws-node</code> 컨테이너 하나만 있습니다.</p>
+<p> </p>
+<p>VPC CNI 파드 하나를 지정해서 상세 정보를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl describe pod aws-node-l9qmg -n kube-system
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">Containers:
+</span></span><span class="line"><span class="cl">  aws-node:
+</span></span><span class="line"><span class="cl">    ...
+</span></span><span class="line"><span class="cl">  aws-eks-nodeagent:
+</span></span><span class="line"><span class="cl">    ...
+</span></span><span class="line"><span class="cl">    Image:         111122223333.dkr.ecr.ap-northeast-2.amazonaws.com/amazon/aws-network-policy-agent:v1.0.1-eksbuild.1
+</span></span><span class="line"><span class="cl">    Image ID:      111122223333.dkr.ecr.ap-northeast-2.amazonaws.com/amazon/aws-network-policy-agent@sha256:70344c0658e340a8ba1b4b8a3d528b2e7398febcfb5f9e1e47cd7c7ca8bb4e82
+</span></span><span class="line"><span class="cl">    Port:          &lt;none&gt;
+</span></span><span class="line"><span class="cl">    Host Port:     &lt;none&gt;
+</span></span><span class="line"><span class="cl">    Args:
+</span></span><span class="line"><span class="cl">      --enable-ipv6<span class="o">=</span><span class="nb">false</span>
+</span></span><span class="line"><span class="cl">      --enable-network-policy<span class="o">=</span><span class="nb">false</span>
+</span></span><span class="line"><span class="cl">      --enable-cloudwatch-logs<span class="o">=</span><span class="nb">false</span>
+</span></span><span class="line"><span class="cl">    State:          Running
+</span></span><span class="line"><span class="cl">      Started:      Fri, <span class="m">08</span> Sep <span class="m">2023</span> 02:12:33 +0900
+</span></span><span class="line"><span class="cl">    Ready:          True
+</span></span><span class="line"><span class="cl">    Restart Count:  <span class="m">0</span>
+</span></span><span class="line"><span class="cl">    Requests:
+</span></span><span class="line"><span class="cl">      cpu:  25m
+</span></span><span class="line"><span class="cl">    Environment:
+</span></span><span class="line"><span class="cl">      MY_NODE_NAME:   <span class="o">(</span>v1:spec.nodeName<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    Mounts:
+</span></span><span class="line"><span class="cl">      /host/opt/cni/bin from cni-bin-dir <span class="o">(</span>rw<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      /sys/fs/bpf from bpf-pin-path <span class="o">(</span>rw<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      /var/log/aws-routed-eni from log-dir <span class="o">(</span>rw<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      /var/run/aws-node from run-dir <span class="o">(</span>rw<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-pgcth <span class="o">(</span>ro<span class="o">)</span>
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p><code>aws-eks-nodeagent</code> 컨테이너의 Args를 자세히 보면 <code>--enable-network-policy=false</code>로 netpol 기능이 비활성화 되어 있음을 유추할 수 있습니다.</p>
+<p> </p>
+<p>VPC CNI v1.14.0부터 <code>aws-node</code> 파드는 1개가 아닌 2개 컨테이너로 구성됩니다.</p>
+<p><img src="./4.png" alt="aws-node 파드의 구성 변경"></p>
+<p>VPC CNI v1.14.0부터 새로 추가된 Network Policy Node Agent<sup><code>aws-eks-nodeagent</code></sup> 컨테이너는 netpol과 밀접한 연관이 있으며, eBPF 프로그램을 생성하여 노드에 Network Policy를 구현하는 역할을 합니다.</p>
+<p> </p>
+<p><code>aws-eks-nodeagent</code> 컨테이너는 각 노드에 BPF<sup>Berkeley Packet Filter</sup> 파일 시스템 <code>/sys/fs/bpf</code>을 마운트하고 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Volumes:
+</span></span><span class="line"><span class="cl">  bpf-pin-path:
+</span></span><span class="line"><span class="cl">    Type:          HostPath <span class="o">(</span>bare host directory volume<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    Path:          /sys/fs/bpf
+</span></span><span class="line"><span class="cl">    HostPathType:
+</span></span></code></pre></div><p> </p>
+<p>EKS v1.27 이하 버전이거나, EKS optimized Amazon Linux AMI version v20230703 이하인 경우는 번거롭게 추가 작업이 필요합니다.</p>
+<p>각 노드에 BPF<sup>Berkeley Packet Filter</sup> 파일 시스템을 마운트해주어야 합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo mount -t bpf bpffs /sys/fs/bpf
+</span></span></code></pre></div><p>그런 다음 새 노드에 영구반영을 위해, Amazon EC2 Auto Scaling 그룹에 대한 Launch Template의 Userdata에도 동일한 <code>mount</code> 명령어을 추가해야 합니다.</p>
+<p> </p>
+<h3 id="netpol-활성화">netpol 활성화</h3>
+<p>VPC CNI 에드온에서 network policy 기능을 활성화만 해주면 작업은 완료됩니다.</p>
+<blockquote>
+<p><strong>중요</strong><br>
+VPC CNI v1.14부터는 Kubernetes 버전 1.25 이상을 실행하는 새 클러스터에서 NetworkPolicy 지원을 사용할 수 있지만, 출시 시점에는 기본적으로 Network Policy 기능이 <strong>비활성화</strong>되어 있습니다.</p>
+</blockquote>
+<p> </p>
+<p>VPC CNI 에드온 파드가 사용하는 ConfigMap의 정보를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl get cm <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -n kube-system amazon-vpc-cni <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -o yaml
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">apiVersion: v1
+</span></span><span class="line"><span class="cl">data:
+</span></span><span class="line"><span class="cl">  enable-network-policy-controller: <span class="s2">&#34;false&#34;</span>
+</span></span><span class="line"><span class="cl">  enable-windows-ipam: <span class="s2">&#34;false&#34;</span>
+</span></span><span class="line"><span class="cl">kind: ConfigMap
+</span></span><span class="line"><span class="cl">metadata:
+</span></span><span class="line"><span class="cl">  ...
+</span></span></code></pre></div><p><code>enable-network-policy-controller</code> 값이 아직 <code>false</code>이며 이는 Network Policy 기능이 비활성화되었음을 의미합니다.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Value</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enable-network-policy-controller</code></td>
+<td><code>false</code></td>
+<td>netpol 비활성화</td>
+</tr>
+<tr>
+<td><code>enable-network-policy-controller</code></td>
+<td><code>true</code></td>
+<td>netpol 활성화</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>주의사항</strong><br>
+만약 VPC CNI를 EKS 콘솔에서 설치한 경우 무조건 Addon의 세부 설정을 통해 파라미터 값을 수정하세요. ConfigMap의 YAML 직접 수정은 클러스터 오류를 발생시킬 수 있습니다.</p>
+</blockquote>
+<p> </p>
+<p>저는 테라폼을 사용해서 EKS 클러스터를 관리하므로 EKS 클러스터의 <code>main.tf</code> 코드를 다음과 같이 변경합니다.</p>
+<p>VPC CNI 에드온에 network policy 활성화 세부 설정을 추가합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-diff" data-lang="diff"><span class="line"><span class="cl">  cluster_addons = {
+</span></span><span class="line"><span class="cl">    coredns = {
+</span></span><span class="line"><span class="cl">      addon_version = &#34;v1.10.1-eksbuild.2&#34;
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">    kube-proxy = {
+</span></span><span class="line"><span class="cl">      most_recent = true
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">    vpc-cni = {
+</span></span><span class="line"><span class="cl">      most_recent          = true
+</span></span><span class="line"><span class="cl"><span class="gi">+     configuration_values = jsonencode({
+</span></span></span><span class="line"><span class="cl"><span class="gi">+       enableNetworkPolicy = &#34;true&#34;
+</span></span></span><span class="line"><span class="cl"><span class="gi">+     })
+</span></span></span><span class="line"><span class="cl"><span class="gi"></span>    }
+</span></span></code></pre></div><p>EKS Add-on에 대한 테라폼 코드 작성 방법은 <a href="https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_addon.html#example-add-on-usage-with-custom-configuration_values">Terraform 공식문서</a>를 참고합니다.</p>
+<p> </p>
+<p>이후 테라폼 변경사항을 실제 AWS 인프라에 적용합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">terraform plan
+</span></span><span class="line"><span class="cl">terraform apply
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Do you want to perform these actions?
+</span></span><span class="line"><span class="cl">  Terraform will perform the actions described above.
+</span></span><span class="line"><span class="cl">  Only <span class="s1">&#39;yes&#39;</span> will be accepted to approve.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  Enter a value: yes
+</span></span></code></pre></div><p> </p>
+<p>인프라의 변경사항이 적용되며 터미널에 실시간 진행사항 로그가 출력됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nv">cluster_addons</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  ...
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;vpc-cni&#34;</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;addon_name&#34;</span> <span class="o">=</span> <span class="s2">&#34;vpc-cni&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;addon_version&#34;</span> <span class="o">=</span> <span class="s2">&#34;v1.14.0-eksbuild.3&#34;</span>
+</span></span><span class="line"><span class="cl">    ...
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;configuration_values&#34;</span> <span class="o">=</span> <span class="s2">&#34;{\&#34;enableNetworkPolicy\&#34;:\&#34;true\&#34;}&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;created_at&#34;</span> <span class="o">=</span> <span class="s2">&#34;2023-08-09T03:15:22Z&#34;</span>
+</span></span><span class="line"><span class="cl">    ...
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;tags&#34;</span> <span class="o">=</span> tomap<span class="o">({</span>
+</span></span><span class="line"><span class="cl">      ...
+</span></span><span class="line"><span class="cl">    <span class="o">})</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;tags_all&#34;</span> <span class="o">=</span> tomap<span class="o">({</span>
+</span></span><span class="line"><span class="cl">      ...
+</span></span><span class="line"><span class="cl">    <span class="o">})</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;timeouts&#34;</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="s2">&#34;create&#34;</span> <span class="o">=</span> tostring<span class="o">(</span>null<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="s2">&#34;delete&#34;</span> <span class="o">=</span> tostring<span class="o">(</span>null<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="s2">&#34;update&#34;</span> <span class="o">=</span> tostring<span class="o">(</span>null<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div><p><code>apply</code> 후에 실제 인프라에 적용되는 로그 중간 부분을 보면, VPC CNI에 <code>configuration_values</code>가 새로 추가된 걸 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-diff" data-lang="diff"><span class="line"><span class="cl">  cluster_addons = {
+</span></span><span class="line"><span class="cl">    ...
+</span></span><span class="line"><span class="cl">    &#34;vpc-cni&#34; = {
+</span></span><span class="line"><span class="cl">      &#34;addon_name&#34; = &#34;vpc-cni&#34;
+</span></span><span class="line"><span class="cl">      &#34;addon_version&#34; = &#34;v1.14.0-eksbuild.3&#34;
+</span></span><span class="line"><span class="cl">      ...
+</span></span><span class="line"><span class="cl"><span class="gd">-     &#34;configuration_values&#34; = &#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="gd"></span><span class="gi">+     &#34;configuration_values&#34; = &#34;{\&#34;enableNetworkPolicy\&#34;:\&#34;true\&#34;}&#34;
+</span></span></span><span class="line"><span class="cl"><span class="gi"></span>      &#34;created_at&#34; = &#34;2023-08-09T03:15:22Z&#34;
+</span></span><span class="line"><span class="cl">      ...
+</span></span><span class="line"><span class="cl">      &#34;tags&#34; = tomap({
+</span></span><span class="line"><span class="cl">        ...
+</span></span><span class="line"><span class="cl">      })
+</span></span><span class="line"><span class="cl">      &#34;tags_all&#34; = tomap({
+</span></span><span class="line"><span class="cl">        ...
+</span></span><span class="line"><span class="cl">      })
+</span></span><span class="line"><span class="cl">      &#34;timeouts&#34; = {
+</span></span><span class="line"><span class="cl">        &#34;create&#34; = tostring(null)
+</span></span><span class="line"><span class="cl">        &#34;delete&#34; = tostring(null)
+</span></span><span class="line"><span class="cl">        &#34;update&#34; = tostring(null)
+</span></span><span class="line"><span class="cl">      }
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">  }
+</span></span></code></pre></div><p> </p>
+<p>VPC CNI의 ConfigMap 설정 정보를 같이 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl get configmap amazon-vpc-cni <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -n kube-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -o yaml
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-diff" data-lang="diff"><span class="line"><span class="cl">  apiVersion: v1
+</span></span><span class="line"><span class="cl">  data:
+</span></span><span class="line"><span class="cl"><span class="gd">-   enable-network-policy-controller: &#34;false&#34;
+</span></span></span><span class="line"><span class="cl"><span class="gd"></span><span class="gi">+   enable-network-policy-controller: &#34;true&#34;
+</span></span></span><span class="line"><span class="cl"><span class="gi"></span>    enable-windows-ipam: &#34;false&#34;
+</span></span><span class="line"><span class="cl">  kind: ConfigMap
+</span></span><span class="line"><span class="cl">  metadata:
+</span></span><span class="line"><span class="cl">  ...
+</span></span></code></pre></div><p>실제 <code>amazon-vpc-cni</code> ConfigMap에도 Network Policy 활성화 옵션이 <code>true</code>로 바뀐 걸 확인할 수 있습니다.</p>
+<p><code>terraform apply</code> 이후 ConfigMap에 반영되는 데 까지는 약간의 시간이 소요됩니다. EKS 콘솔에서 VPC CNI 에드온의 상태가 <code>Updating</code>에서 <code>Active</code>로 바뀔 때까지 모니터링 합니다.</p>
+<p> </p>
+<p>테라폼 코드 반영 후, EKS 콘솔에서 확인한 Addon 결과는 다음과 같습니다.</p>
+<p><img src="./5.png" alt="EKS 콘솔에서 VPC CNI Addon 상태 확인"></p>
+<p>Advanced configuration에 <code>{ &quot;enableNetworkPolicy&quot;: &quot;true&quot; }</code>가 새로 추가되었습니다.</p>
+<p> </p>
+<p>에드온의 환경변수 설정 이후 VPC CNI 파드의 환경변수도 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl describe pod aws-node-ngzvn -n kube-system
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">Name</span><span class="p">:</span><span class="w">                 </span><span class="l">aws-node-ngzvn</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">Namespace</span><span class="p">:</span><span class="w">            </span><span class="l">kube-system</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="l">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">aws-eks-nodeagent</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">Container ID</span><span class="p">:</span><span class="w">  </span><span class="l">containerd://0b6a1e9413773fd7cfdc055000083db1eacb334e497e0e0f6cc48cc0352a604b</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">Image</span><span class="p">:</span><span class="w">         </span><span class="m">111122223333.</span><span class="l">dkr.ecr.ap-northeast-2.amazonaws.com/amazon/aws-network-policy-agent:v1.0.1-eksbuild.1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">Image ID</span><span class="p">:</span><span class="w">      </span><span class="m">111122223333.</span><span class="l">dkr.ecr.ap-northeast-2.amazonaws.com/amazon/aws-network-policy-agent@sha256:70344c0658e340a8ba1b4b8a3d528b2e7398febcfb5f9e1e47cd7c7ca8bb4e82</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">Port</span><span class="p">:</span><span class="w">          </span><span class="l">&lt;none&gt;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">Host Port</span><span class="p">:</span><span class="w">     </span><span class="l">&lt;none&gt;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">Args</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>--<span class="l">enable-ipv6=false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>--<span class="l">enable-network-policy=true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>--<span class="l">enable-cloudwatch-logs=false</span><span class="w">
+</span></span></span></code></pre></div><p><code>--enable-network-policy</code> 값도 <code>false</code>에서 <code>true</code>로 변경된 걸 확인할 수 있습니다.</p>
+<p> </p>
+<h3 id="동작-테스트">동작 테스트</h3>
+<p>이제 VPC CNI를 이용해 netpol을 사용할 수 있는 상태가 되었습니다.</p>
+<p> </p>
+<p>필요한 netpol 리소스는 직접 생성해서 적용하도록 합니다.</p>
+<p>임시로 테스트해볼 netpol 데모가 필요한 경우 AWS 공식문서의 <a href="https://docs.aws.amazon.com/eks/latest/userguide/cni-network-policy.html#network-policy-stars-demo">Stars demo of network policy</a> 섹션을 참고하세요.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://aws.amazon.com/ko/about-aws/whats-new/2023/08/amazon-vpc-cni-kubernetes-networkpolicy-enforcement/">Amazon VPC CNI, 이제 Kubernetes NetworkPolicy 시행 지원</a><br>
+AWS Korea 소식</p>
+<p><a href="https://docs.aws.amazon.com/eks/latest/userguide/cni-network-policy.html">Kubernetes network policies</a></p>
+<p><a href="https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_addon.html#example-add-on-usage-with-custom-configuration_values">Terraform: aws_eks_addon</a></p>
+<p><a href="https://github.com/aws/amazon-vpc-cni-k8s/tree/master?tab=readme-ov-file#network-policy-related-components">Network Policy Related Components</a><br>
+netpol 관련 컴포넌트 목록 (amazon-vpc-cni-k8s 공식문서)</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/installing-unified-cloud-watch-agent/" />
+    <title>CloudWatch Agent 설치 및 구성</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>CloudWatch Agent 설치 및 구성</h1>
+        <div>
+                <time>Updated June 5, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>EC2 Instance에 CloudWatch Agent를 설치하고 모니터링, 로그 수집, System Manager의 parameter store에 CloudAgent 설정파일을 저장하는 방법을 소개합니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<h3 id="시스템-구성도">시스템 구성도</h3>
+<p>EC2 인스턴스가 CloudWatch Logs로 로그를 보내는 시스템 구성은 다음과 같습니다.</p>
+<p><img src="./1.png" alt="CloudWatch Logs 시스템 구성도"></p>
+<p>동작방식은 EC2 인스턴스가 OS에 설치된 CloudWatch Agent와 Instance Profile의 권한을 사용해 CloudWatch Logs로 로그를 보냅니다.</p>
+<p> </p>
+<h3 id="ec2-instance">EC2 Instance</h3>
+<ul>
+<li><strong>Type</strong> : t2.micro (x86_64)</li>
+<li><strong>OS</strong> : Amazon Linux release 2 (Karoo)</li>
+<li><strong>Shell</strong> : bash</li>
+<li><strong>ID</strong> : ec2-user</li>
+</ul>
+<p> </p>
+<h2 id="준비사항">준비사항</h2>
+<ul>
+<li>EC2 Instance가 생성된 상태</li>
+</ul>
+<p> </p>
+<h2 id="설정방법">설정방법</h2>
+<h3 id="iam-설정">IAM 설정</h3>
+<p>생성한 EC2 Instance에 CloudWatch Agent를 사용하기 위한 IAM 권한을 부여합니다.</p>
+<p><img src="./2.jpg" alt="IAM 페이지"></p>
+<p> </p>
+<p>EC2 Instance에 붙힐 Role을 새로 만듭니다.</p>
+<ul>
+<li><strong>Role 이름</strong> : AWSCloudWatchRoleForEC2</li>
+</ul>
+<p><img src="./3.jpg" alt="IAM Role"></p>
+<p> </p>
+<p>모니터링할 대상(EC2 Instance)에 CloudWatch Agent 관련 권한 2개가 부여되어 있어야 모니터링이 가능합니다.</p>
+<p><img src="./4.png" alt="IAM Role의 Permission"></p>
+<p><strong>Role에 추가가 필요한 IAM Policy 2개</strong><br>
+Parameter store에 CloudWatch agent 설정상태를 저장하기 위해 IAM 권한이 필요합니다.</p>
+<ul>
+<li>CloudWatchAgentServerPolicy</li>
+<li>CloudWatchAgentAdminPolicy : <code>ssm:PutParameter</code> Action 때문에 필요합니다.</li>
+</ul>
+<p>이 모든 구성을 끝내고 가장 중요한 작업은 EC2 인스턴스에 우리가 구성한 IAM Role을 붙이는(권한을 부여하는) 것입니다.</p>
+<p> </p>
+<h3 id="테스트용-apachehttpd-설치">테스트용 Apache(httpd) 설치</h3>
+<p>CloudWatch Agent를 설치할 EC2 인스턴스에 SSH 또는 SSM Session Manager를 사용해 원격 로그인합니다.</p>
+<p>CloudWatch Log 수집을 테스트하기 위한 목적으로 EC2 인스턴스에 Apache<sup>httpd</sup>를 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Last login: Thu Jan <span class="m">13</span> 13:11:39 <span class="m">2022</span> from 117.111.22.231
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">       __<span class="p">|</span>  __<span class="p">|</span>_  <span class="o">)</span>
+</span></span><span class="line"><span class="cl">       _<span class="p">|</span>  <span class="o">(</span>     /   Amazon Linux <span class="m">2</span> AMI
+</span></span><span class="line"><span class="cl">      ___<span class="p">|</span><span class="se">\_</span>__<span class="p">|</span>___<span class="p">|</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">https://aws.amazon.com/amazon-linux-2/
+</span></span><span class="line"><span class="cl"><span class="o">[</span>ec2-user@ip-xxx-xx-xx-xxx ~<span class="o">]</span>$
+</span></span></code></pre></div><p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo su
+</span></span><span class="line"><span class="cl">$ id
+</span></span><span class="line"><span class="cl"><span class="nv">uid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span>
+</span></span></code></pre></div><p>ec2-user에서 root 계정으로 변경합니다.</p>
+<p>Apache 설치 작업 과정에서는 root 권한을 얻는게 중요합니다.</p>
+<p> </p>
+<p>패키지 관리자 <code>yum</code>을 사용해서 <code>httpd</code> 패키지를 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ yum install -y httpd
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">Installed:
+</span></span><span class="line"><span class="cl">  httpd.x86_64 0:2.4.51-1.amzn2
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Dependency Installed:
+</span></span><span class="line"><span class="cl">  apr.x86_64 0:1.7.0-9.amzn2
+</span></span><span class="line"><span class="cl">  apr-util.x86_64 0:1.6.1-5.amzn2.0.2
+</span></span><span class="line"><span class="cl">  apr-util-bdb.x86_64 0:1.6.1-5.amzn2.0.2
+</span></span><span class="line"><span class="cl">  generic-logos-httpd.noarch 0:18.0.0-4.amzn2
+</span></span><span class="line"><span class="cl">  httpd-filesystem.noarch 0:2.4.51-1.amzn2
+</span></span><span class="line"><span class="cl">  httpd-tools.x86_64 0:2.4.51-1.amzn2
+</span></span><span class="line"><span class="cl">  mailcap.noarch 0:2.1.41-2.amzn2
+</span></span><span class="line"><span class="cl">  mod_http2.x86_64 0:1.15.19-1.amzn2.0.1
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Complete!
+</span></span></code></pre></div><p>정상적으로 httpd 패키지를 설치했습니다.</p>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ yum list installed httpd
+</span></span><span class="line"><span class="cl">Loaded plugins: extras_suggestions, langpacks, priorities, update-motd
+</span></span><span class="line"><span class="cl">Installed Packages
+</span></span><span class="line"><span class="cl">httpd.x86_64                                                     2.4.51-1.amzn2                                                     @amzn2-core
+</span></span></code></pre></div><p>현재 인스턴스에 <code>httpd 2.4.51</code> 버전이 설치된 상태입니다.</p>
+<p> </p>
+<p>테스트하기 위한 기본 메인페이지를 생성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">echo</span> <span class="s2">&#34;Hello world from </span><span class="k">$(</span>hostname -f<span class="k">)</span><span class="s2">&#34;</span> &gt; /var/www/html/index.html
+</span></span></code></pre></div><p> </p>
+<p>httpd 데몬을 실행한 후 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ systemctl start httpd
+</span></span><span class="line"><span class="cl">$ systemctl status httpd
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">exit</span>
+</span></span><span class="line"><span class="cl">$ whoami
+</span></span><span class="line"><span class="cl">ec2-user
+</span></span></code></pre></div><p>httpd 메인 페이지 생성 및 데몬 실행이 끝난 후에는 <code>exit</code> 명령어로 ec2-user 계정으로 다시 돌아옵니다.</p>
+<p> </p>
+<h3 id="cloudwatch-agent-설치">CloudWatch Agent 설치</h3>
+<p>EC2 인스턴스에 CloudWatch Agent 설치하는 방법에는 크게 2가지가 있습니다.</p>
+<ul>
+<li>직접 다운로드 후 설치</li>
+<li>패키지 관리자 yum을 이용한 설치</li>
+</ul>
+<p>이 가이드에서는 2가지 방법 모두 알려드리겠습니다.</p>
+<p> </p>
+<h4 id="방법-1-직접-설치">방법 1: 직접 설치</h4>
+<p>AWS에서 제공하는 CloudWatch Agent의 설치파일용 S3 경로를 통해 직접 패키지 파일을 받아온 후 <code>rpm</code>으로 설치하는 방법입니다.</p>
+<p>되도록이면 이후 소개드릴 방법2가 더 간단하므로 방법2를 추천합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+</span></span><span class="line"><span class="cl">--2022-01-13 13:22:09--  https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+</span></span><span class="line"><span class="cl">Resolving s3.amazonaws.com <span class="o">(</span>s3.amazonaws.com<span class="o">)</span>... 52.216.104.13
+</span></span><span class="line"><span class="cl">Connecting to s3.amazonaws.com <span class="o">(</span>s3.amazonaws.com<span class="o">)</span><span class="p">|</span>52.216.104.13<span class="p">|</span>:443... connected.
+</span></span><span class="line"><span class="cl">HTTP request sent, awaiting response... <span class="m">200</span> OK
+</span></span><span class="line"><span class="cl">Length: <span class="m">46891760</span> <span class="o">(</span>45M<span class="o">)</span> <span class="o">[</span>application/octet-stream<span class="o">]</span>
+</span></span><span class="line"><span class="cl">Saving to: ‘amazon-cloudwatch-agent.rpm’
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">100%<span class="o">[======================================</span>&gt;<span class="o">]</span> 46,891,760  3.79MB/s   in 14s
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2022-01-13 13:22:24 <span class="o">(</span>3.23 MB/s<span class="o">)</span> - ‘amazon-cloudwatch-agent.rpm’ saved <span class="o">[</span>46891760/46891760<span class="o">]</span>
+</span></span></code></pre></div><p> </p>
+<p>45MB 크기의 CloudWatch 패키지 파일을 다운로드 받았습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls -lh
+</span></span><span class="line"><span class="cl">total 45M
+</span></span><span class="line"><span class="cl">-rw-rw-r-- <span class="m">1</span> ec2-user ec2-user 45M Aug  <span class="m">5</span> 01:07 amazon-cloudwatch-agent.rpm
+</span></span></code></pre></div><p> </p>
+<p>rpm 패키지 파일을 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo rpm -U ./amazon-cloudwatch-agent.rpm
+</span></span><span class="line"><span class="cl">create group cwagent, result: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">create user cwagent, result: <span class="m">0</span>
+</span></span></code></pre></div><p> </p>
+<h4 id="방법-2-yum-설치">방법 2: yum 설치</h4>
+<p>방법 2는 방법 1보다 더 간단하므로 이 방법을 통해 설치하는 걸 권장합니다.</p>
+<p>패키지 관리자인 <code>yum</code>을 사용해서 CloudWatch Agent 설치파일을 다운로드 받는 동시에 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo yum install amazon-cloudwatch-agent -y
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Loaded plugins: extras_suggestions, langpacks, priorities, update-motd
+</span></span><span class="line"><span class="cl">amzn2-core                                                                          <span class="p">|</span> 3.7 kB  00:00:00
+</span></span><span class="line"><span class="cl">amzn2extra-docker                                                                   <span class="p">|</span> 3.0 kB  00:00:00
+</span></span><span class="line"><span class="cl">amzn2extra-kernel-5.10                                                              <span class="p">|</span> 3.0 kB  00:00:00
+</span></span><span class="line"><span class="cl">amzn2extra-redis6                                                                   <span class="p">|</span> 3.0 kB  00:00:00
+</span></span><span class="line"><span class="cl">nginx                                                                               <span class="p">|</span> 2.9 kB  00:00:00
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Dependencies <span class="nv">Resolved</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">===========================================================================================================</span>
+</span></span><span class="line"><span class="cl"> Package                         Arch           Version                           Repository          <span class="nv">Size</span>
+</span></span><span class="line"><span class="cl"><span class="o">===========================================================================================================</span>
+</span></span><span class="line"><span class="cl">Installing:
+</span></span><span class="line"><span class="cl"> amazon-cloudwatch-agent         x86_64         1.247354.0b251981-1.amzn2         amzn2-core          <span class="m">45</span> M
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Transaction <span class="nv">Summary</span>
+</span></span><span class="line"><span class="cl"><span class="o">===========================================================================================================</span>
+</span></span><span class="line"><span class="cl">Install  <span class="m">1</span> Package
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">Running transaction
+</span></span><span class="line"><span class="cl">create group cwagent, result: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">create user cwagent, result: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">create user aoc, result: <span class="m">6</span>
+</span></span><span class="line"><span class="cl">  Installing : amazon-cloudwatch-agent-1.247354.0b251981-1.amzn2.x86_64                                1/1
+</span></span><span class="line"><span class="cl">  Verifying  : amazon-cloudwatch-agent-1.247354.0b251981-1.amzn2.x86_64                                1/1
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Installed:
+</span></span><span class="line"><span class="cl">  amazon-cloudwatch-agent.x86_64 0:1.247354.0b251981-1.amzn2
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Complete!
+</span></span></code></pre></div><p>명령어 한 줄로 CloudWatch Agent 설치를 완료했습니다.</p>
+<p> </p>
+<p>CloudWatch Agent 설치 마법사를 이용하면 간단하게 CloudWatch Agent를 초기 설정할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-config-wizard
+</span></span><span class="line"><span class="cl"><span class="o">=============================================================</span>
+</span></span><span class="line"><span class="cl"><span class="o">=</span> Welcome to the AWS CloudWatch Agent Configuration <span class="nv">Manager</span> <span class="o">=</span>
+</span></span><span class="line"><span class="cl"><span class="o">=============================================================</span>
+</span></span><span class="line"><span class="cl">On which OS are you planning to use the agent?
+</span></span><span class="line"><span class="cl">1. linux
+</span></span><span class="line"><span class="cl">2. windows
+</span></span><span class="line"><span class="cl">3. darwin
+</span></span><span class="line"><span class="cl">default choice: <span class="o">[</span>1<span class="o">]</span>:
+</span></span><span class="line"><span class="cl"><span class="m">1</span>
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p>보통 기본값일 경우, Enter 키를 입력해서 다음 단계로 계속 넘어갑니다.</p>
+<p>CloudWatch Agent 초기 설정 단계를 넘기다보면 로그 모니터링 쪽 설정 단계가 나옵니다.</p>
+<p> </p>
+<h3 id="로그-모니터링-설정">로그 모니터링 설정</h3>
+<p>CloudWatch Agent가 <code>/var/log/httpd/access_log</code> 와 <code>/var/log/httpd/error_log</code>를 수집하도록 설정합니다.</p>
+<p> </p>
+<h4 id="access_log-수집-설정">access_log 수집 설정</h4>
+<p>access_log의 절대경로는 <code>/var/log/httpd/access_log</code> 이다.</p>
+<p>로그 파일의 절대경로<sup>Log file path</sup>를 입력할 때 오타에 주의합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">Do you want to monitor any log files?
+</span></span><span class="line"><span class="cl">1. yes
+</span></span><span class="line"><span class="cl">2. no
+</span></span><span class="line"><span class="cl">default choice: <span class="o">[</span>1<span class="o">]</span>:
+</span></span><span class="line"><span class="cl"><span class="m">1</span>
+</span></span><span class="line"><span class="cl">Log file path:
+</span></span><span class="line"><span class="cl">/var/log/httpd/access_log
+</span></span><span class="line"><span class="cl">Log group name:
+</span></span><span class="line"><span class="cl">default choice: <span class="o">[</span>access_log<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Log stream name:
+</span></span><span class="line"><span class="cl">default choice: <span class="o">[{</span>instance_id<span class="o">}]</span>
+</span></span></code></pre></div><p> </p>
+<h4 id="error_log-수집-설정">error_log 수집 설정</h4>
+<p>error_log의 절대경로는 <code>/var/log/httpd/error_log</code> 입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">Do you want to specify any additional log files to monitor?
+</span></span><span class="line"><span class="cl">1. yes
+</span></span><span class="line"><span class="cl">2. no
+</span></span><span class="line"><span class="cl">default choice: <span class="o">[</span>1<span class="o">]</span>:
+</span></span><span class="line"><span class="cl"><span class="m">1</span>
+</span></span><span class="line"><span class="cl">Log file path:
+</span></span><span class="line"><span class="cl">/var/log/httpd/error_log
+</span></span><span class="line"><span class="cl">Log group name:
+</span></span><span class="line"><span class="cl">default choice: <span class="o">[</span>error_log<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Log stream name:
+</span></span><span class="line"><span class="cl">default choice: <span class="o">[{</span>instance_id<span class="o">}]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Do you want to specify any additional log files to monitor?
+</span></span><span class="line"><span class="cl">1. yes
+</span></span><span class="line"><span class="cl">2. no
+</span></span><span class="line"><span class="cl">default choice: <span class="o">[</span>1<span class="o">]</span>:
+</span></span><span class="line"><span class="cl"><span class="m">2</span>
+</span></span><span class="line"><span class="cl">Saved config file to /opt/aws/amazon-cloudwatch-agent/bin/config.json successfully.
+</span></span></code></pre></div><p>마지막에는 CloudWatch Agent의 설정파일 경로를 알려줍니다.</p>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Please check the above content of the config.
+</span></span><span class="line"><span class="cl">The config file is also located at /opt/aws/amazon-cloudwatch-agent/bin/config.json.
+</span></span><span class="line"><span class="cl">Edit it manually <span class="k">if</span> needed.
+</span></span></code></pre></div><p>CloudAgent 설정파일의 경로인 <code>/opt/aws/amazon-cloudwatch-agent/bin/config.json</code> 를 확인하라고 안내하고 있습니다.</p>
+<p> </p>
+<p>실제로 해당 경로에 위치한 CloudWatch Agent 설정파일을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat /opt/aws/amazon-cloudwatch-agent/bin/config.json
+</span></span><span class="line"><span class="cl"><span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;agent&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;metrics_collection_interval&#34;</span>: 60,
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;run_as_user&#34;</span>: <span class="s2">&#34;root&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;logs&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;logs_collected&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;files&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;collect_list&#34;</span>: <span class="o">[</span>
+</span></span><span class="line"><span class="cl">                    <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="s2">&#34;file_path&#34;</span>: <span class="s2">&#34;/var/log/httpd/access_log&#34;</span>,
+</span></span><span class="line"><span class="cl">                        <span class="s2">&#34;log_group_name&#34;</span>: <span class="s2">&#34;access_log&#34;</span>,
+</span></span><span class="line"><span class="cl">                        <span class="s2">&#34;log_stream_name&#34;</span>: <span class="s2">&#34;{instance_id}&#34;</span>
+</span></span><span class="line"><span class="cl">                    <span class="o">}</span>,
+</span></span><span class="line"><span class="cl">                    <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="s2">&#34;file_path&#34;</span>: <span class="s2">&#34;/var/log/httpd/error_log&#34;</span>,
+</span></span><span class="line"><span class="cl">                        <span class="s2">&#34;log_group_name&#34;</span>: <span class="s2">&#34;error_log&#34;</span>,
+</span></span><span class="line"><span class="cl">                        <span class="s2">&#34;log_stream_name&#34;</span>: <span class="s2">&#34;{instance_id}&#34;</span>
+</span></span><span class="line"><span class="cl">                    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">                <span class="o">]</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;metrics&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;append_dimensions&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;AutoScalingGroupName&#34;</span>: <span class="s2">&#34;</span><span class="si">${</span><span class="nv">aws</span><span class="p">:</span><span class="nv">AutoScalingGroupName</span><span class="si">}</span><span class="s2">&#34;</span>,
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;ImageId&#34;</span>: <span class="s2">&#34;</span><span class="si">${</span><span class="nv">aws</span><span class="p">:</span><span class="nv">ImageId</span><span class="si">}</span><span class="s2">&#34;</span>,
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;InstanceId&#34;</span>: <span class="s2">&#34;</span><span class="si">${</span><span class="nv">aws</span><span class="p">:</span><span class="nv">InstanceId</span><span class="si">}</span><span class="s2">&#34;</span>,
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;InstanceType&#34;</span>: <span class="s2">&#34;</span><span class="si">${</span><span class="nv">aws</span><span class="p">:</span><span class="nv">InstanceType</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>,
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;metrics_collected&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;collectd&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;metrics_aggregation_interval&#34;</span>: <span class="m">60</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>,
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;disk&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;measurement&#34;</span>: <span class="o">[</span>
+</span></span><span class="line"><span class="cl">                    <span class="s2">&#34;used_percent&#34;</span>
+</span></span><span class="line"><span class="cl">                <span class="o">]</span>,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;metrics_collection_interval&#34;</span>: 60,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;resources&#34;</span>: <span class="o">[</span>
+</span></span><span class="line"><span class="cl">                    <span class="s2">&#34;*&#34;</span>
+</span></span><span class="line"><span class="cl">                <span class="o">]</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>,
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;mem&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;measurement&#34;</span>: <span class="o">[</span>
+</span></span><span class="line"><span class="cl">                    <span class="s2">&#34;mem_used_percent&#34;</span>
+</span></span><span class="line"><span class="cl">                <span class="o">]</span>,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;metrics_collection_interval&#34;</span>: <span class="m">60</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>,
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;statsd&#34;</span>: <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;metrics_aggregation_interval&#34;</span>: 60,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;metrics_collection_interval&#34;</span>: 10,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;service_address&#34;</span>: <span class="s2">&#34;:8125&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div><p><strong>CloudWatch Agent의 설치 목적</strong><br>
+핵심 목적은 EC2 인스턴스에 CloudWatch Agent를 설치하면, 더 많은 지표를 수집할 수 있습니다.</p>
+<ul>
+<li><strong>메모리 사용률</strong></li>
+<li><strong>디스크 사용률</strong> : 각 파일시스템별 사용률</li>
+</ul>
+<p> </p>
+<h3 id="cloudwatch-agent-실행">CloudWatch Agent 실행</h3>
+<p><code>ssm:AmazonCloudWatch-linux</code> 는 Parameter Store의 기본<sup>default</sup> 이름입니다.<br>
+ssm은 AWS System Manager의 줄임말입니다.</p>
+<p> </p>
+<h4 id="명령어-설명">명령어 설명</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -a fetch-config <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -m ec2 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -c ssm:AmazonCloudWatch-linux <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -s
+</span></span></code></pre></div><ul>
+<li><code>-a fetch-config</code> : 에이전트가 최신 버전의 CloudWatch 에이전트 구성 파일을 로드합니다.</li>
+<li><code>-c ssm:AmazonCloudWatch-linux</code> : CloudAgent 구성 파일은 AWS System Manager<sup>ssm</sup>의 AmazonCloudWatch-linux 라는 이름의 파라미터 스토어에서 가져옵니다.</li>
+<li><code>-s</code> : 에이전트 설정이 끝난 후 CloudWatch 에이전트를 재시작합니다.</li>
+</ul>
+<p> </p>
+<h4 id="명령어-실행결과">명령어 실행결과</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -a fetch-config <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -m ec2 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -c ssm:AmazonCloudWatch-linux <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -s
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">****** processing amazon-cloudwatch-agent ******
+</span></span><span class="line"><span class="cl">/opt/aws/amazon-cloudwatch-agent/bin/config-downloader --output-dir /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d --download-source ssm:AmazonCloudWatch-linux --mode ec2 --config /opt/aws/amazon-cloudwatch-agent/etc/common-config.toml --multi-config default
+</span></span><span class="line"><span class="cl">Region: ap-northeast-2
+</span></span><span class="line"><span class="cl">credsConfig: map<span class="o">[]</span>
+</span></span><span class="line"><span class="cl">Successfully fetched the config and saved in /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/ssm_AmazonCloudWatch-linux.tmp
+</span></span><span class="line"><span class="cl">Start configuration validation...
+</span></span><span class="line"><span class="cl">/opt/aws/amazon-cloudwatch-agent/bin/config-translator --input /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json --input-dir /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d --output /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml --mode ec2 --config /opt/aws/amazon-cloudwatch-agent/etc/common-config.toml --multi-config default
+</span></span><span class="line"><span class="cl">2022/01/13 03:16:55 Reading json config file path: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/ssm_AmazonCloudWatch-linux.tmp ...
+</span></span><span class="line"><span class="cl">Valid Json input schema.
+</span></span><span class="line"><span class="cl">I! Detecting run_as_user...
+</span></span><span class="line"><span class="cl">No csm configuration found.
+</span></span><span class="line"><span class="cl">Configuration validation first phase succeeded
+</span></span><span class="line"><span class="cl">/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent -schematest -config /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml
+</span></span><span class="line"><span class="cl">Configuration validation second phase <span class="nv">failed</span>
+</span></span><span class="line"><span class="cl"><span class="o">========</span> Error <span class="nv">Log</span> <span class="o">========</span>
+</span></span><span class="line"><span class="cl">2022-01-13T03:16:55Z E! <span class="o">[</span>telegraf<span class="o">]</span> Error running agent: Error parsing /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml, open /usr/share/collectd/types.db: no such file or directory
+</span></span></code></pre></div><p>에러 로그가 출력되면서 CloudWatch Agent 실행이 실패했습니다.</p>
+<p> </p>
+<p>에러 로그 내용을 좀 더 살펴봅니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">========</span> Error <span class="nv">Log</span> <span class="o">========</span>
+</span></span><span class="line"><span class="cl">2022-01-13T03:16:55Z E! <span class="o">[</span>telegraf<span class="o">]</span> Error running agent: Error parsing /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml, open /usr/share/collectd/types.db: no such file or directory
+</span></span></code></pre></div><p>마지막 라인에서 <code>/usr/share/collectd/types.db: no such file or directory</code> 에러가 발생했습니다.<br>
+에러 로그의 내용처럼 <code>types.db</code> 파일이 <code>/usr/share/collectd/</code>에 실제로 존재하는 지 체크할 필요가 있습니다.</p>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls -l /usr/share/collectd/types.db
+</span></span><span class="line"><span class="cl">ls: cannot access /usr/share/collectd/types.db: No such file or directory
+</span></span></code></pre></div><p>확인해보니 해당 경로에 <code>types.db</code> 파일이 존재하지 않아서 발생하는 에러입니다.</p>
+<p> </p>
+<p>이 문제를 해결하기 위해 <code>/usr/share/collectd/</code> 경로에 <code>types.db</code> 파일을 새로 생성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo mkdir -p /usr/share/collectd/
+</span></span></code></pre></div><ul>
+<li><code>-p</code> : 중간에 디렉토리가 없으면 해당 상위 디렉토리도 같이 생성하는 옵션</li>
+</ul>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo touch /usr/share/collectd/types.db
+</span></span></code></pre></div><p><code>types.db</code> 파일도 생성합니다.</p>
+<p> </p>
+<p><code>types.db</code> 파일을 생성한 후 CloudWatch Agent를 다시 실행합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -a fetch-config <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -m ec2 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -c ssm:AmazonCloudWatch-linux <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -s
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">****** processing amazon-cloudwatch-agent ******
+</span></span><span class="line"><span class="cl">/opt/aws/amazon-cloudwatch-agent/bin/config-downloader --output-dir /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d --download-source ssm:AmazonCloudWatch-linux --mode ec2 --config /opt/aws/amazon-cloudwatch-agent/etc/common-config.toml --multi-config default
+</span></span><span class="line"><span class="cl">Region: ap-northeast-2
+</span></span><span class="line"><span class="cl">credsConfig: map<span class="o">[]</span>
+</span></span><span class="line"><span class="cl">Successfully fetched the config and saved in /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/ssm_AmazonCloudWatch-linux.tmp
+</span></span><span class="line"><span class="cl">Start configuration validation...
+</span></span><span class="line"><span class="cl">/opt/aws/amazon-cloudwatch-agent/bin/config-translator --input /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json --input-dir /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d --output /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml --mode ec2 --config /opt/aws/amazon-cloudwatch-agent/etc/common-config.toml --multi-config default
+</span></span><span class="line"><span class="cl">2022/01/13 03:19:19 Reading json config file path: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/ssm_AmazonCloudWatch-linux.tmp ...
+</span></span><span class="line"><span class="cl">Valid Json input schema.
+</span></span><span class="line"><span class="cl">I! Detecting run_as_user...
+</span></span><span class="line"><span class="cl">No csm configuration found.
+</span></span><span class="line"><span class="cl">Configuration validation first phase succeeded
+</span></span><span class="line"><span class="cl">/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent -schematest -config /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml
+</span></span><span class="line"><span class="cl">Configuration validation second phase succeeded
+</span></span><span class="line"><span class="cl">Configuration validation succeeded
+</span></span><span class="line"><span class="cl">amazon-cloudwatch-agent has already been stopped
+</span></span><span class="line"><span class="cl">Created symlink from /etc/systemd/system/multi-user.target.wants/amazon-cloudwatch-agent.service to /etc/systemd/system/amazon-cloudwatch-agent.service.
+</span></span><span class="line"><span class="cl">Redirecting to /bin/systemctl restart amazon-cloudwatch-agent.service
+</span></span></code></pre></div><p><code>types.db</code> 파일을 생성한 뒤부터 정상적으로 CloudWatch Agent가 실행됩니다.</p>
+<p> </p>
+<p>현재 CloudWatch Agent 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -a status <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -m ec2
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;status&#34;</span>: <span class="s2">&#34;running&#34;</span>,
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;starttime&#34;</span>: <span class="s2">&#34;2022-01-13T13:34:11+0000&#34;</span>,
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;configstatus&#34;</span>: <span class="s2">&#34;configured&#34;</span>,
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;cwoc_status&#34;</span>: <span class="s2">&#34;stopped&#34;</span>,
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;cwoc_starttime&#34;</span>: <span class="s2">&#34;&#34;</span>,
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;cwoc_configstatus&#34;</span>: <span class="s2">&#34;not configured&#34;</span>,
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;version&#34;</span>: <span class="s2">&#34;1.247349.0b251399&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div><p>AWS CloudWatch Agent가 정상적으로 실행중(<code>running</code>)이며, 에이전트가 설정된 상태(<code>configured</code>)입니다.</p>
+<p> </p>
+<h3 id="로그-수집-결과-확인">로그 수집 결과 확인</h3>
+<p>이제 AWS Console로 이동합니다. CloudWatch → Logs → Log group 메뉴로 접속합니다.</p>
+<p><img src="./5.jpg" alt="Untitled"></p>
+<p>EC2 인스턴스에 설치된 CloudWatch Agent가 로컬 로그파일인 <code>access_log</code>와 <code>error_log</code>를 CloudWatch Logs로 성공적으로 보냈습니다.</p>
+<p> </p>
+<p>OS상의 로그와 동일한 내용으로 로그가 잘 전송된 걸 확인할 수 있습니다.</p>
+<p><img src="./6.png" alt="Untitled"></p>
+<p> </p>
+<p>결과적으로 EC2 인스턴스는 다음과 같은 동작순서로 CloudWatch Logs에 로그를 보내게 됩니다.</p>
+<p><img src="./7.png" alt="CloudWatch Agent가 CloudWatch Logs에 로그를 쓰는 동작순서"></p>
+<p> </p>
+<p>이상으로 CloudWatch Agent 설치 및 구성 가이드를 마칩니다.</p>
+<p> </p>
+<h2 id="더-나아가서">더 나아가서</h2>
+<h3 id="cloudwatch-agent-cli-치트시트">cloudwatch-agent-cli 치트시트</h3>
+<details>
+<summary>명령어 모음</summary>
+<p>EC2에 설치된 CloudWatch Agent를 관리할 때 자주 사용하는 명령어들은 정리해놓았습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># CloudWatch Agent 설치 마법사 실행</span>
+</span></span><span class="line"><span class="cl">$ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-config-wizard
+</span></span></code></pre></div><p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># CloudWatch Agent 상태 확인 1 (CLI)</span>
+</span></span><span class="line"><span class="cl">$ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -m ec2 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -a status
+</span></span></code></pre></div><p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># CloudWatch Agent 상태 확인 2 (systemctl)</span>
+</span></span><span class="line"><span class="cl">$ systemctl status amazon-cloudwatch-agent
+</span></span></code></pre></div><p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># CloudWatch Agent 시작</span>
+</span></span><span class="line"><span class="cl">$ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -m ec2 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -a fetch-config <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -c ssm:AmazonCloudWatch-linux <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -s
+</span></span></code></pre></div><p><code>-c ssm:&lt;SSM_PARAMETER_STORE_NAME&gt;</code> 옵션에서 <code>&lt;SSM_PARAMETER_SOTRE_NAME&gt;</code> 값은 자신의 환경에 맞게 바꿔서 실행합니다.</p>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># CloudWatch Agent 중지</span>
+</span></span><span class="line"><span class="cl">$ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -m ec2 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -a stop
+</span></span></code></pre></div></details>
+<p> </p>
+<h2 id="결론">결론</h2>
+<p>이 포스팅은 CloudWatch Agent의 <strong>수동</strong> 설치를 다룹니다.</p>
+<p>수동 설치 방식은 Cloud Native의 핵심 가치인 자동화<sup>Automation</sup>와는 거리가 좀 있습니다.</p>
+<p>만약 CloudWatch Agent를 설치해야할 EC2 인스턴스가 200대라면, 200대 각각 들어가서 CloudWatch Agent를 설치하는건 비효율적이고(사람을 갈아넣으면 뭐든 가능하겠지만) 인적 실수<sup>Human fault</sup>를 유발할 확률이 높은 방식입니다.</p>
+<p>조만간 자동설치 관련해서 직접 글을 쓸 예정입니다.</p>
+<p>CloudWatch Agent 자동 설치 방법이 궁금하다면 OpsNow Techblog의 <a href="https://blog.opsnow.com/29">CloudWatch 에이전트를 손쉽게 설치하는 방법 – OpsNow Tech Blog</a> 포스팅을 참고하면 좋습니다.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

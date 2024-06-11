@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/extending-linux-fs-after-resizing-ebs-volume/" />
+    <title>EC2 EBS Volume 용량 증설</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>EC2 EBS Volume 용량 증설</h1>
+        <div>
+                <time>Updated January 31, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>EC2 인스턴스의 디스크 공간이 부족한 상황에서는 EBS 볼륨 용량을 늘리거나 파일시스템에 불필요한 파일들을 정리해서 여유공간을 다시 확보하는 조치가 필요합니다.</p>
+<p>이 문서에서는 Linux EC2 인스턴스의 EBS<sup>Elastic Block Storage</sup> Volume의 용량을 늘리는 방법을 소개합니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<p>인스턴스에 연결된 gp3 볼륨 하나의 용량을 <strong>무중단</strong>으로 늘리는 작업입니다.</p>
+<p><img src="./1.png" alt="EBS 볼륨 증설 작업 구성도"></p>
+<ul>
+<li><strong>OS</strong> : Amazon Linux 2</li>
+<li><strong>Type</strong> : t2.micro</li>
+<li><strong>EBS Volume</strong>
+<ul>
+<li><strong>Type</strong> : gp3 (General Purpose SSD)</li>
+<li><strong>Size</strong> : 10GiB → gp3 30GiB (xfs 타입)</li>
+</ul>
+</li>
+<li><strong>Shell</strong> : bash</li>
+<li><strong>ID</strong> : ec2-user</li>
+</ul>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="gp3-타입">gp3 타입</h3>
+<p>배경지식으로 설명하자면 EBS 볼륨은 되도록이면 gp2 타입의 다음 세대인 gp3 타입을 사용하도록 합니다.<br>
+EBS의 비용이나 성능 측면에서 모두 월등히 gp3가 좋습니다.<br>
+참고로 gp2 타입은 2014년에 처음 출시했습니다.</p>
+<p>AWS 블로그 포스팅에 따르면 gp3의 최고 성능은 gp2 볼륨의 최대 처리량보다 4배 빠르다고 합니다.<br>
+가격도 gp3가 기존 gp2 볼륨 타입보다 20% 저렴합니다.</p>
+<p><a href="https://aws.amazon.com/ko/blogs/korea/new-amazon-ebs-gp3-volume-lets-you-provision-performance-separate-from-capacity-and-offers-20-lower-price/">AWS 블로그 포스팅</a></p>
+<p> </p>
+<h2 id="준비사항">준비사항</h2>
+<h3 id="작업자의-로컬-환경">작업자의 로컬 환경</h3>
+<ul>
+<li>AWS Management Console에 미리 로그인되어 있어야 함</li>
+<li>SSH 또는 SSM Session Manager를 사용하여 EC2 Instance에 원격접속 가능한 네트워크 환경</li>
+</ul>
+<p> </p>
+<h2 id="해결방법">해결방법</h2>
+<h3 id="aws-management-console">AWS Management Console</h3>
+<p>EBS<sup>Elastic Block Storage</sup> Volume의 용량을 늘리는 작업은 AWS Management Console에서 진행합니다.<br>
+충분한 권한을 가진 AWS 계정으로 로그인했다는 전제하에 다음 과정을 진행합니다.</p>
+<p><img src="./2.png" alt="Volumes 화면"></p>
+<p>EC2 서비스 메뉴 → 왼쪽 사이드바 메뉴 → Volumes 클릭</p>
+<p>이후 작업대상 EC2에 부착된 EBS Volume을 체크합니다.</p>
+<p> </p>
+<p><img src="./3.png" alt="Modify volume 화면"></p>
+<p>우측 상단에 Actions → Modify volume 클릭.</p>
+<p> </p>
+<p><img src="./4.png" alt="Size 변경 화면"></p>
+<p>EBS 볼륨의 용량(<code>Size (GiB)</code>)을 원하는 값으로 변경합니다.</p>
+<blockquote>
+<p><a href="https://docs.aws.amazon.com/ko_kr/AWSEC2/latest/UserGuide/modify-volume-requirements.html#elastic-volumes-limitations"><strong>EBS 볼륨 스펙 변경 시 제약사항</strong></a><br>
+EBS 볼륨 사이즈 또는 타입을 한 번 수정하면, 해당 EBS 볼륨은 최소 6시간이 지난 후에 다시 용량 또는 볼륨 타입을 변경할 수 있습니다.</p>
+</blockquote>
+<p>현재 시나리오에서는 EBS 볼륨 용량을 10GB → 30GB로 올렸습니다.</p>
+<p> </p>
+<p><img src="./5.png" alt="Modify 선택시 안내문"></p>
+<p>위 안내문을 요약하자면 다음과 같습니다.</p>
+<ul>
+<li>AWS Console에서 늘리면 작업이 끝나는 게 아니라, EC2 인스턴스에 접속해서 일련의 추가 명령어 실행을 해야 완벽히 적용됩니다.</li>
+<li>AWS Console 영역에서 EBS Volume 용량 변경이 완료되는 데에는 몇 분 정도 소요될 수 있습니다.</li>
+<li>EBS Volume 용량 변경이 시작될 때부터 EBS Volume의 비용은 바뀐 용량 기준으로 청구됩니다.</li>
+</ul>
+<p>안내문을 이해했다면 [Modify] 버튼을 클릭합니다.</p>
+<p> </p>
+<h3 id="ec2">EC2</h3>
+<h4 id="1-ec2-접속">1. EC2 접속</h4>
+<p>작업이 필요한 인스턴스에 SSH 또는 SSM Session Manager를 사용해 원격 접속합니다.<br>
+각자 자신의 환경에서 접속 가능한 방법으로 EC2에 연결하면 됩니다.</p>
+<p> </p>
+<h4 id="2-디스크-구성-및-타입-확인">2. 디스크 구성 및 타입 확인</h4>
+<p>인스턴스의 파일시스템 구성과 타입을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">[</span>ec2-user@test-ec2 ~<span class="o">]</span>$ df -hT
+</span></span><span class="line"><span class="cl">Filesystem     Type      Size  Used Avail Use% Mounted on
+</span></span><span class="line"><span class="cl">devtmpfs       devtmpfs  474M     <span class="m">0</span>  474M   0% /dev
+</span></span><span class="line"><span class="cl">tmpfs          tmpfs     483M     <span class="m">0</span>  483M   0% /dev/shm
+</span></span><span class="line"><span class="cl">tmpfs          tmpfs     483M  404K  483M   1% /run
+</span></span><span class="line"><span class="cl">tmpfs          tmpfs     483M     <span class="m">0</span>  483M   0% /sys/fs/cgroup
+</span></span><span class="line"><span class="cl">/dev/xvda1     xfs        10G  1.6G  8.5G  16% /
+</span></span><span class="line"><span class="cl">tmpfs          tmpfs      97M     <span class="m">0</span>   97M   0% /run/user/0
+</span></span></code></pre></div><p>root 파일시스템이 <code>xfs</code> 타입인 걸 확인할 수 있습니다.</p>
+<p> </p>
+<h4 id="3-lsblk-확인">3. lsblk 확인</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">[</span>ec2-user@test-ec2 ~<span class="o">]</span>$ lsblk
+</span></span><span class="line"><span class="cl">NAME    MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+</span></span><span class="line"><span class="cl">xvda    202:0    <span class="m">0</span>  30G  <span class="m">0</span> disk
+</span></span><span class="line"><span class="cl">└─xvda1 202:1    <span class="m">0</span>  10G  <span class="m">0</span> part /
+</span></span></code></pre></div><p>루트 볼륨 <code>/dev/xvda</code>는 <code>/dev/xvda1</code> 파티션 하나로만 구성되어 있습니다.</p>
+<p>xvda 볼륨 전체용량은 <code>30G</code>이지만 xvda1 파티션의 용량은 <code>10G</code>만 할당되어 있으므로 확장이 필요합니다.</p>
+<p> </p>
+<h4 id="4-볼륨-확장">4. 볼륨 확장</h4>
+<p><code>xvda1</code> 파티션의 용량을 확장합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">[</span>ec2-user@test-ec2 ~<span class="o">]</span>$ sudo growpart /dev/xvda <span class="m">1</span>
+</span></span><span class="line"><span class="cl">CHANGED: <span class="nv">partition</span><span class="o">=</span><span class="m">1</span> <span class="nv">start</span><span class="o">=</span><span class="m">4096</span> old: <span class="nv">size</span><span class="o">=</span><span class="m">20967391</span> <span class="nv">end</span><span class="o">=</span><span class="m">20971487</span> new: <span class="nv">size</span><span class="o">=</span><span class="m">62910431</span> <span class="nv">end</span><span class="o">=</span><span class="m">62914527</span>
+</span></span></code></pre></div><p><code>xvda1</code> 파티션의 용량이 정상적으로 변경(<code>CHANGED</code>)된 걸 확인할 수 있습니다.</p>
+<p> </p>
+<h4 id="5-lsblk-재확인">5. lsblk 재확인</h4>
+<p><code>lsblk</code> 명령어를 다시 실행합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">[</span>ec2-user@test-ec2 ~<span class="o">]</span>$ lsblk
+</span></span><span class="line"><span class="cl">NAME    MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+</span></span><span class="line"><span class="cl">xvda    202:0    <span class="m">0</span>  30G  <span class="m">0</span> disk
+</span></span><span class="line"><span class="cl">└─xvda1 202:1    <span class="m">0</span>  30G  <span class="m">0</span> part /
+</span></span></code></pre></div><p>루트 파일시스템(<code>/</code>)에 연결된 <code>xvda1</code> 파티션이 <code>10G</code> → <code>30G</code>로 확장한 걸 확인할 수 있습니다.</p>
+<p> </p>
+<p>루트 파일시스템(<code>/</code>)의 디스크 사용률을 확인했을 때는 <code>16%</code>로 그대로입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">[</span>ec2-user@test-ec2 ~<span class="o">]</span>$ df -h
+</span></span><span class="line"><span class="cl">Filesystem      Size  Used Avail Use% Mounted on
+</span></span><span class="line"><span class="cl">devtmpfs        474M     <span class="m">0</span>  474M   0% /dev
+</span></span><span class="line"><span class="cl">tmpfs           483M     <span class="m">0</span>  483M   0% /dev/shm
+</span></span><span class="line"><span class="cl">tmpfs           483M  436K  483M   1% /run
+</span></span><span class="line"><span class="cl">tmpfs           483M     <span class="m">0</span>  483M   0% /sys/fs/cgroup
+</span></span><span class="line"><span class="cl">/dev/xvda1       10G  1.6G  8.5G  16% /
+</span></span><span class="line"><span class="cl">tmpfs            97M     <span class="m">0</span>   97M   0% /run/user/0
+</span></span></code></pre></div><p>아직 마지막 명령어가 남아있습니다.</p>
+<p> </p>
+<h4 id="6-파일시스템-확장-xfs">6. 파일시스템 확장 (xfs)</h4>
+<p>각 볼륨에서 파일 시스템을 확장하려면 <code>xfs_growfs</code> 명령을 사용합니다.</p>
+<p>아래 명령어는 루트 파일시스템(<code>/</code>)을 확장합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">[</span>ec2-user@test-ec2 ~<span class="o">]</span>$ sudo xfs_growfs -d /
+</span></span><span class="line"><span class="cl">meta-data<span class="o">=</span>/dev/xvda1             <span class="nv">isize</span><span class="o">=</span><span class="m">512</span>    <span class="nv">agcount</span><span class="o">=</span>6, <span class="nv">agsize</span><span class="o">=</span><span class="m">524159</span> <span class="nv">blks</span>
+</span></span><span class="line"><span class="cl">         <span class="o">=</span>                       <span class="nv">sectsz</span><span class="o">=</span><span class="m">512</span>   <span class="nv">attr</span><span class="o">=</span>2, <span class="nv">projid32bit</span><span class="o">=</span><span class="nv">1</span>
+</span></span><span class="line"><span class="cl">         <span class="o">=</span>                       <span class="nv">crc</span><span class="o">=</span><span class="m">1</span>        <span class="nv">finobt</span><span class="o">=</span><span class="m">1</span> <span class="nv">spinodes</span><span class="o">=</span><span class="m">0</span>
+</span></span><span class="line"><span class="cl"><span class="nv">data</span>     <span class="o">=</span>                       <span class="nv">bsize</span><span class="o">=</span><span class="m">4096</span>   <span class="nv">blocks</span><span class="o">=</span>2620923, <span class="nv">imaxpct</span><span class="o">=</span><span class="nv">25</span>
+</span></span><span class="line"><span class="cl">         <span class="o">=</span>                       <span class="nv">sunit</span><span class="o">=</span><span class="m">0</span>      <span class="nv">swidth</span><span class="o">=</span><span class="m">0</span> blks
+</span></span><span class="line"><span class="cl"><span class="nv">naming</span>   <span class="o">=</span>version <span class="m">2</span>              <span class="nv">bsize</span><span class="o">=</span><span class="m">4096</span>   ascii-ci<span class="o">=</span><span class="m">0</span> <span class="nv">ftype</span><span class="o">=</span><span class="m">1</span>
+</span></span><span class="line"><span class="cl"><span class="nv">log</span>      <span class="o">=</span>internal               <span class="nv">bsize</span><span class="o">=</span><span class="m">4096</span>   <span class="nv">blocks</span><span class="o">=</span>2560, <span class="nv">version</span><span class="o">=</span><span class="nv">2</span>
+</span></span><span class="line"><span class="cl">         <span class="o">=</span>                       <span class="nv">sectsz</span><span class="o">=</span><span class="m">512</span>   <span class="nv">sunit</span><span class="o">=</span><span class="m">0</span> blks, lazy-count<span class="o">=</span><span class="m">1</span>
+</span></span><span class="line"><span class="cl"><span class="nv">realtime</span> <span class="o">=</span>none                   <span class="nv">extsz</span><span class="o">=</span><span class="m">4096</span>   <span class="nv">blocks</span><span class="o">=</span>0, <span class="nv">rtextents</span><span class="o">=</span><span class="m">0</span>
+</span></span><span class="line"><span class="cl">data blocks changed from <span class="m">2620923</span> to <span class="m">7863803</span>
+</span></span></code></pre></div><p> </p>
+<h5 id="xfsprogs-패키지-설치-선택">xfsprogs 패키지 설치 (선택)</h5>
+<p><a href="https://xfs.wiki.kernel.org/#kernel_source">xfsprogs</a> 패키지에는 XFS 파일 시스템을 위한 관리 도구와 디버깅 도구가 포함되어 있습니다.</p>
+<p>아직 XFS 툴이 설치되지 않은 Amazon Linux 2 환경인 경우, 패키지 관리자 <code>yum</code>을 사용해서 <code>xfsprogs</code> 패키지를 설치할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo yum install xfsprogs -y
+</span></span></code></pre></div><p> </p>
+<p><code>df -h</code> 명령어로 파일시스템 사용률을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">[</span>ec2-user@test-ec2 ~<span class="o">]</span>$ df -h
+</span></span><span class="line"><span class="cl">Filesystem      Size  Used Avail Use% Mounted on
+</span></span><span class="line"><span class="cl">devtmpfs        474M     <span class="m">0</span>  474M   0% /dev
+</span></span><span class="line"><span class="cl">tmpfs           483M     <span class="m">0</span>  483M   0% /dev/shm
+</span></span><span class="line"><span class="cl">tmpfs           483M  436K  483M   1% /run
+</span></span><span class="line"><span class="cl">tmpfs           483M     <span class="m">0</span>  483M   0% /sys/fs/cgroup
+</span></span><span class="line"><span class="cl">/dev/xvda1       30G  1.7G   29G   6% /
+</span></span><span class="line"><span class="cl">tmpfs            97M     <span class="m">0</span>   97M   0% /run/user/0
+</span></span></code></pre></div><ul>
+<li>루트 파일시스템(<code>/</code>)의 <strong>용량</strong> :  10G → 30G로 증가</li>
+<li>루트 파일시스템(<code>/</code>)의 <strong>사용률</strong> : 16% → 6%로 감소</li>
+</ul>
+<p> </p>
+<p>이것으로 EC2 인스턴스의 디스크<sup>EBS Volume</sup> 증설 작업이 완료되었습니다.</p>
+<p> </p>
+<h2 id="결론">결론</h2>
+<p>인프라 운영 중에 EC2 디스크 증설 작업은 종종 발생하는 상황입니다.<br>
+EBS 볼륨의 파일 시스템 타입이 <code>xfs</code>인지 <code>ext4</code>에 따라 설정 명령어가 다르다는 점을 명심하도록 합니다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><strong>AWS 공식문서</strong><br>
+<a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/recognize-expanded-volume-linux.html#extend-file-system">Extend a Linux file system after resizing a volume</a><br>
+AWS 공식문서에도 디테일하게 설명되어 있습니다.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

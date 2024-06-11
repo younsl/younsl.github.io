@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/k8s/nri-bundle/" />
+    <title>nri-bundle</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>nri-bundle</h1>
+        <div>
+                <time>Updated February 16, 2024</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#배경지식">배경지식</a>
+      <ul>
+        <li><a href="#nri-bundle">nri-bundle</a></li>
+      </ul>
+    </li>
+    <li><a href="#설치">설치</a></li>
+    <li><a href="#설정-가이드">설정 가이드</a>
+      <ul>
+        <li><a href="#kubelet-설정">kubelet 설정</a></li>
+        <li><a href="#비용-최적화-기법">비용 최적화 기법</a></li>
+        <li><a href="#비용절감-효과">비용절감 효과</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>Newrelic 통합 차트를 사용해서 쿠버네티스 클러스터에 모니터링 수집 플랫폼 구축하는 방법을 소개합니다.</p>
+<p>이 가이드 문서에서 언급되는 Newrelic 헬름 차트는 통합 차트인 nri-bundle을 사용합니다.</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="nri-bundle">nri-bundle</h3>
+<p>여러 개의 뉴렐릭 모니터링 구성요소를 쉽게 배포하기 위해 New Relic Kubernetes 솔루션의 개별 차트를 그룹화한 통합 차트입니다.</p>
+<p>nri-bundle 차트에는 아래와 같이 <a href="https://github.com/newrelic/helm-charts/tree/master/charts/nri-bundle#bundled-charts">Sub chart</a>들이 포함되어 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># -- main chart</span>
+</span></span><span class="line"><span class="cl">nri-bundle                            5.0.18   https://newrelic.github.io/nri-bundle
+</span></span><span class="line"><span class="cl">└── charts/
+</span></span><span class="line"><span class="cl">    <span class="p">|</span>   <span class="c1"># -- sub charts</span>
+</span></span><span class="line"><span class="cl">    ├── newrelic-infrastructure       3.19.0   https://newrelic.github.io/nri-kubernetes
+</span></span><span class="line"><span class="cl">    ├── nri-prometheus                2.1.16   https://newrelic.github.io/nri-prometheus
+</span></span><span class="line"><span class="cl">    ├── newrelic-prometheus-agent     1.2.1    https://newrelic.github.io/newrelic-prometheus-configurator
+</span></span><span class="line"><span class="cl">    ├── nri-metadata-injection        4.3.1    https://newrelic.github.io/k8s-metadata-injection
+</span></span><span class="line"><span class="cl">    ├── newrelic-k8s-metrics-adapter  1.2.0    https://newrelic.github.io/newrelic-k8s-metrics-adapter
+</span></span><span class="line"><span class="cl">    ├── kube-state-metrics            4.23.0   https://prometheus-community.github.io/helm-charts
+</span></span><span class="line"><span class="cl">    ├── nri-kube-events               3.1.0    https://newrelic.github.io/nri-kube-events
+</span></span><span class="line"><span class="cl">    ├── newrelic-logging              1.14.2   https://newrelic.github.io/helm-charts
+</span></span><span class="line"><span class="cl">    ├── newrelic-pixie                2.1.1    https://newrelic.github.io/helm-charts
+</span></span><span class="line"><span class="cl">    ├── pixie-operator-chart          0.1.1    https://pixie-operator-charts.storage.googleapis.com
+</span></span><span class="line"><span class="cl">    └── newrelic-infra-operator       2.2.1    https://newrelic.github.io/newrelic-infra-operator
+</span></span></code></pre></div><p> </p>
+<h4 id="nri-bundle로-배포시-장점">nri-bundle로 배포시 장점</h4>
+<p>nri-bundle 통합 차트를 사용하는 것에는 여러 가지 장점이 있습니다.</p>
+<ul>
+<li><strong>관리의 간소화</strong>: 각 구성 요소를 개별적으로 관리하는 대신에, &rsquo;nri-bundle&rsquo;을 사용하면 여러 개의 New Relic 통합 및 관련 도구를 한 번에 배포하고 관리할 수 있습니다.</li>
+<li><strong>일관성</strong>: 번들 내의 모든 구성 요소는 함께 잘 작동하는 것이 검증되어 있습니다. 이는 일관된 경험을 제공합니다.</li>
+<li><strong>상호 운용성</strong>: 번들 내의 구성 요소들은 서로 매끄럽게 통합되도록 설계되어 있습니다. 이는 호환성 문제를 줄이고 업무 흐름을 간소화합니다.</li>
+<li><strong>배포의 용이성</strong>: 전체 번들을 배포하는 것은 한 번의 명령어 또는 구성 단계만으로 가능합니다. 이는 각 구성 요소를 별도로 배포하는 것과 비교하여 시간과 노력을 절약해줍니다.</li>
+<li><strong>최적화된 성능</strong>: 번들 내의 구성 요소들은 함께 효율적으로 작동하도록 최적화되어 있습니다. 이는 서로 다른 솔루션을 사용하는 것보다 더 나은 성능을 제공할 수 있습니다.</li>
+<li><strong>중앙 집중식 지원</strong>: 단일 번들을 사용하면 New Relic 또는 커뮤니티로부터 중앙 집중식 지원을 받을 수 있어요. 이는 문제를 해결하고 해결하는 데 더욱 편리합니다.</li>
+</ul>
+<p>결론적으로, nri-bundle 헬름 차트를 사용해서 뉴렐릭 모니터링 인프라를 구성할 경우, Kubernetes 환경에 대한 더 일관되고 효율적인 모니터링 솔루션을 제공함으로써 New Relic 통합 및 관련 도구의 배포 및 관리가 단순화됩니다.</p>
+<p> </p>
+<h2 id="설치">설치</h2>
+<p>헬름 차트 레포지터리를 로컬에 다운로드 받습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">git clone https://github.com/newrelic/helm-charts.git
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> helm-charts/charts/nri-bundle
+</span></span></code></pre></div><p> </p>
+<p>하위 차트들을 로컬에 다운로드 받습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">helm dependency update
+</span></span></code></pre></div><p> </p>
+<p>현재 디렉토리에 구성된 하위 차트 목록을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm dependency list
+</span></span><span class="line"><span class="cl">NAME                          VERSION  REPOSITORY                                                   STATUS
+</span></span><span class="line"><span class="cl">newrelic-infrastructure       3.19.0   https://newrelic.github.io/nri-kubernetes                    ok
+</span></span><span class="line"><span class="cl">nri-prometheus                2.1.16   https://newrelic.github.io/nri-prometheus                    ok
+</span></span><span class="line"><span class="cl">newrelic-prometheus-agent     1.2.1    https://newrelic.github.io/newrelic-prometheus-configurator  ok
+</span></span><span class="line"><span class="cl">nri-metadata-injection        4.3.1    https://newrelic.github.io/k8s-metadata-injection            ok
+</span></span><span class="line"><span class="cl">newrelic-k8s-metrics-adapter  1.2.0    https://newrelic.github.io/newrelic-k8s-metrics-adapter      ok
+</span></span><span class="line"><span class="cl">kube-state-metrics            4.23.0   https://prometheus-community.github.io/helm-charts           ok
+</span></span><span class="line"><span class="cl">nri-kube-events               3.1.0    https://newrelic.github.io/nri-kube-events                   ok
+</span></span><span class="line"><span class="cl">newrelic-logging              1.14.2   https://newrelic.github.io/helm-charts                       ok
+</span></span><span class="line"><span class="cl">newrelic-pixie                2.1.1    https://newrelic.github.io/helm-charts                       ok
+</span></span><span class="line"><span class="cl">pixie-operator-chart          0.1.1    https://pixie-operator-charts.storage.googleapis.com         ok
+</span></span><span class="line"><span class="cl">newrelic-infra-operator       2.2.1    https://newrelic.github.io/newrelic-infra-operator           ok
+</span></span></code></pre></div><p> </p>
+<p><code>nri-bundle</code> 메인 차트를 클러스터의 <code>newrelic</code> 네임스페이스에 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">helm upgrade <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --install <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --create-namespace <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --namespace newrelic <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  nri-bundle . <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --values values.yaml <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --wait
+</span></span></code></pre></div><p> </p>
+<h2 id="설정-가이드">설정 가이드</h2>
+<h3 id="kubelet-설정">kubelet 설정</h3>
+<p>newrelic-infrasturcture 메트릭 수집을 위한 kubelet 데몬셋이 배포됩니다.</p>
+<p><img src="./1.png" alt="kubelet 데몬셋의 Configmap 구조"></p>
+<p>kubelet 데몬셋에는 kubelet과 뉴렐릭 에이전트가 하나의 파드로 포함되어 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get ds -n newrelic
+</span></span><span class="line"><span class="cl">NAME                            DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+</span></span><span class="line"><span class="cl">newrelic-bundle-nrk8s-kubelet   <span class="m">91</span>        <span class="m">91</span>        <span class="m">91</span>      <span class="m">91</span>           <span class="m">91</span>          &lt;none&gt;          19d
+</span></span></code></pre></div><p> </p>
+<p>뉴렐릭 에이전트의 설정을 확인하려면 뉴렐릭 네임스페이스의 ConfigMap을 조회합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl get configmap newrelic-bundle-nrk8s-agent-kubelet <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -n newrelic <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -o yaml
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">data</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">newrelic-infra.yml</span><span class="p">:</span><span class="w"> </span><span class="p">|-</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">    # This is the configuration file for the infrastructure agent. See:
+</span></span></span><span class="line"><span class="cl"><span class="sd">    # https://docs.newrelic.com/docs/infrastructure/install-infrastructure-agent/configuration/infrastructure-agent-configuration-settings/
+</span></span></span><span class="line"><span class="cl"><span class="sd">    custom_attributes:
+</span></span></span><span class="line"><span class="cl"><span class="sd">      clusterName: TEST-CLUSTER
+</span></span></span><span class="line"><span class="cl"><span class="sd">    features:
+</span></span></span><span class="line"><span class="cl"><span class="sd">      docker_enabled: false
+</span></span></span><span class="line"><span class="cl"><span class="sd">    http_server_enabled: true
+</span></span></span><span class="line"><span class="cl"><span class="sd">    http_server_port: 8003
+</span></span></span><span class="line"><span class="cl"><span class="sd">    metrics_network_sample_rate: 300
+</span></span></span><span class="line"><span class="cl"><span class="sd">    metrics_nfs_sample_rate: 300
+</span></span></span><span class="line"><span class="cl"><span class="sd">    metrics_process_sample_rate: -1
+</span></span></span><span class="line"><span class="cl"><span class="sd">    metrics_storage_sample_rate: 300
+</span></span></span><span class="line"><span class="cl"><span class="sd">    metrics_system_sample_rate: 300</span><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">ConfigMap</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="l">...</span><span class="w">
+</span></span></span></code></pre></div><p><code>nri-bundle</code> 차트에서 newrelic-infrasturcture 관련 설정들은 ConfigMap에 추가되고, ConfigMap은 파드에 설정파일 <code>/etc/newrelic-infra.yml</code>로 마운트됩니다.</p>
+<p> </p>
+<h3 id="비용-최적화-기법">비용 최적화 기법</h3>
+<h4 id="low-data-mode-켜기">Low data mode 켜기</h4>
+<p><strong>연관된 차트 이름</strong>: <code>nri-bundle</code> (메인 차트)</p>
+<p><code>lowDataMode</code> 토글은 Newrelic으로 전송되는 데이터를 줄이는 가장 간단한 방법입니다.</p>
+<p>nri-bundle 차트에서 <code>global.lowDataMode</code> 값을 <code>true</code>로 설정하면 기본 스크레이핑 간격이 <code>15s</code><sup>기본값</sup> → <code>30s</code>로 변경됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># nri-bundle/values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># nri-bundle chart version v5.0.18</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">global</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- (bool) Reduces number of metrics sent in order to reduce costs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># @default -- false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">lowDataMode</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span></code></pre></div><p>lowDataMode가 활성화되면 기본 스크레이핑 간격이 <code>15s</code>에서 <code>30s</code>로 변경됩니다. 그리고 아래 4개 차트에 미리 세팅된 비용 최적화 세팅들이 자동 적용됩니다.</p>
+<ul>
+<li>Newrelic Infrastructure</li>
+<li>Prometheus Agent Integration</li>
+<li>Newrelic Logging</li>
+<li>Newrelic Pixie Integration</li>
+</ul>
+<p> </p>
+<p>어떤 이유로 인해 초 수를 미세 조정해야 하는 경우 <code>newrelic-infrastructure</code> 차트에서 <code>common.config.interval</code> 설정에 직접 선언해서 적용할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># nri-bundle/values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># nri-bundle chart version v5.0.18</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">newrelic-infrastructure</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">common</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l">40s</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">global</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">lowDataMode</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span></code></pre></div><p><code>interval</code> 값은 <code>40s</code>보다 큰 값으로 설정은 지원되지 않으며 이로 인해 NR UI가 제대로 작동하지 않게 됩니다.</p>
+<p> </p>
+<h4 id="메트릭-샘플링-주기-변경">메트릭 샘플링 주기 변경</h4>
+<p><strong>연관된 차트 이름</strong>: <code>newrelic-infrastructure</code> (하위 차트)</p>
+<p>메트릭 샘플링 주기를 좀 더 길게 변경합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># nri-bundle/values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># nri-bundle chart version v5.0.18</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">newrelic-infrasturcture</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">common</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">agentConfig</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">disable_all_plugin</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">metrics_network_sample_rate</span><span class="p">:</span><span class="w"> </span>-<span class="m">1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">metrics_process_sample_rate</span><span class="p">:</span><span class="w"> </span><span class="m">300</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">metrics_storage_sample_rate</span><span class="p">:</span><span class="w"> </span><span class="m">300</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">metrics_system_sample_rate</span><span class="p">:</span><span class="w"> </span><span class="m">300</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">metrics_nfs_sample_rate</span><span class="p">:</span><span class="w"> </span><span class="m">300</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span></code></pre></div><p><strong>관련문서</strong><br>
+<a href="https://docs.newrelic.com/kr/docs/infrastructure/install-infrastructure-agent/configuration/infrastructure-agent-configuration-settings/#%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-%EB%B3%80%EC%88%98">newrelic-infrasturcture 에이전트 설정 (disable_all_plugin)</a><br>
+<a href="https://docs.newrelic.com/kr/docs/infrastructure/install-infrastructure-agent/configuration/infrastructure-agent-configuration-settings/#%EC%83%98%ED%94%8C-%EB%B3%80%EC%88%98">newrelic-infrasturcture 에이전트 설정 (sample_rate)</a></p>
+<p> </p>
+<h4 id="네임스페이스-필터링">네임스페이스 필터링</h4>
+<p><strong>연관된 차트 이름</strong>: <code>newrelic-infrastructure</code> (하위 차트)</p>
+<p>지정된 네임스페이스에서만 ksm<sup>kube-state-metrics</sup> 및 kubelet 메트릭을 필터링합니다.</p>
+<p> </p>
+<p>간단한 필터링 설정은 <code>namespaceSelector.matchLabels</code>를 사용합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># nri-bundle/values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># nri-bundle chart version v5.0.18</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">newrelic-infrastructure</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">common</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">namespaceSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">newrelic.com/scrape</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span></code></pre></div><p>위 설정의 경우 <code>newrelic.com/scrape</code> 라벨이 붙은 네임스페이스만 수집하게 됩니다.</p>
+<p> </p>
+<p>더 복잡한 조건의 필터링 설정은 <code>namespaceSelector.matchExpressions</code>를 사용합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># nri-bundle/values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># nri-bundle chart version v5.0.18</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">newrelic-infrastructure</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">common</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">namespaceSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">matchExpressions</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span>- {<span class="nt">key: newrelic.com/scrape, operator: NotIn, values</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;false&#34;</span><span class="p">]</span>}<span class="w">
+</span></span></span></code></pre></div><p>실제 서비스와 연관된 Namespace만 모니터링하도록 하면 비용을 절감할 수 있습니다.</p>
+<p><strong>관련문서</strong><br>
+<a href="https://github.com/newrelic/nri-kubernetes/tree/main/charts/newrelic-infrastructure#values">newrelic-infrastructure values</a></p>
+<p> </p>
+<h4 id="쿠버네티스-리소스-필터링">쿠버네티스 리소스 필터링</h4>
+<p>불필요한 쿠버네티스 리소스를 메트릭 수집에서 제외합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># nri-bundle/values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># nri-bundle chart version v5.0.18</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">newrelic-infrastructure</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="l">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kube-state-metrics</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># kube-state-metrics.enabled -- Install the [`kube-state-metrics` chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics) from the stable helm charts repository.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># This is mandatory if `infrastructure.enabled` is set to `true` and the user does not provide its own instance of KSM version &gt;=1.8 and &lt;=2.0. Note, kube-state-metrics v2+ disables labels/annotations</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># metrics by default. You can enable the target labels/annotations metrics to be monitored by using the metricLabelsAllowlist/metricAnnotationsAllowList options described [here](https://github.com/prometheus-community/helm-charts/blob/159cd8e4fb89b8b107dcc100287504bb91bf30e0/charts/kube-state-metrics/values.yaml#L274) in</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># your Kubernetes clusters.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">collectors</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - certificatesigningrequests</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - configmaps</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - cronjobs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - daemonsets</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">deployments</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - endpoints</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - horizontalpodautoscalers</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">ingresses</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - jobs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - leases</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - limitranges</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - mutatingwebhookconfigurations</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">namespaces</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - networkpolicies</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">nodes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - persistentvolumeclaims</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - persistentvolumes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - poddisruptionbudgets</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">pods</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - replicasets</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - replicationcontrollers</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - resourcequotas</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - secrets</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - services</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">statefulsets</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - storageclasses</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - validatingwebhookconfigurations</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - volumeattachments</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<h4 id="deployment-히스토리-보관-수-조정">Deployment 히스토리 보관 수 조정</h4>
+<p>Deployment <code>spec</code> 설정 중 하나인 <code>revisionHistoryLimit</code>는 Kubernetes에서 Deployment의 롤아웃 기록을 보관할 최대 개수를 설정하는 속성입니다. 기본적으로 <code>10</code>개의 이전 버전이 보관되며, 이 제한을 초과하면 가장 오래된 배포 기록부터 삭제됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">apps/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Deployment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">revisionHistoryLimit</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span></code></pre></div><p>이는 시스템의 리소스를 효율적으로 사용하고 필요시 이전 버전으로 롤백할 수 있는 기능을 제공합니다.</p>
+<p> </p>
+<p><code>revisionHistoryLimit</code>을 기본값 <code>10</code> → <code>0</code>으로 줄이는 경우, <strong>20%의 데이터를 절감</strong>할 수 있습니다. 대신 Deployment의 롤백이 필요없는 경우에만 <code>revisionHistoryLimit</code>을 <code>0</code>으로 지정하도록 합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">apps/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Deployment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">revisionHistoryLimit</span><span class="p">:</span><span class="w"> </span><span class="m">0</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<h3 id="비용절감-효과">비용절감 효과</h3>
+<p>적용한 nri-bundle 상세설정</p>
+<ul>
+<li>Low data mode 켜기 (global)</li>
+<li>메트릭 샘플링 주기 변경 (newrelic-infrastructure 차트)</li>
+<li>쿠버네티스 리소스 필터링 (kube-state-metrics 차트)</li>
+<li>Deployment 히스토리 보관 수 조정 (쿠버네티스 네이티브한 설정)</li>
+</ul>
+<p> </p>
+<p>위 기법 적용시 다음과 같이 수집된 데이터 비용이 절감되었습니다.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>적용 전 한달</th>
+<th>적용 후 한달</th>
+<th>절감율</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Infrastructure integrations</td>
+<td>18,260 GB</td>
+<td>6,387 GB</td>
+<td>약 64% 절감</td>
+</tr>
+<tr>
+<td>Infrastructure processes</td>
+<td>257 GB</td>
+<td>443 GB</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Metrics</td>
+<td>9,039 GB</td>
+<td>7,902 GB</td>
+<td>약 10% 절감</td>
+</tr>
+</tbody>
+</table>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

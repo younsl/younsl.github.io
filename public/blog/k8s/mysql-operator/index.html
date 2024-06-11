@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/k8s/mysql-operator/" />
+    <title>mysql operator</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>mysql operator</h1>
+        <div>
+                <time>Updated November 11, 2024</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#배경지식">배경지식</a>
+      <ul>
+        <li><a href="#mysql-operator-for-kubernetes">MySQL Operator for kubernetes</a></li>
+      </ul>
+    </li>
+    <li><a href="#환경">환경</a>
+      <ul>
+        <li><a href="#클러스터">클러스터</a></li>
+        <li><a href="#헬름-차트">헬름 차트</a></li>
+      </ul>
+    </li>
+    <li><a href="#준비사항">준비사항</a></li>
+    <li><a href="#mysql-operator">MySQL Operator</a>
+      <ul>
+        <li><a href="#차트-다운로드">차트 다운로드</a></li>
+        <li><a href="#mysql-operator-차트-설치">mysql-operator 차트 설치</a></li>
+        <li><a href="#클러스터-상세-설정">클러스터 상세 설정</a></li>
+        <li><a href="#mysql-innodbcluster-차트-설치">mysql-innodbcluster 차트 설치</a></li>
+        <li><a href="#mysql-db-접속">MySQL DB 접속</a></li>
+      </ul>
+    </li>
+    <li><a href="#참고자료">참고자료</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>MySQL Operator를 설치한 후 사용하는 가이드입니다.</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="mysql-operator-for-kubernetes">MySQL Operator for kubernetes</h3>
+<p>Kubernetes용 MySQL Operator는 Kubernetes 클러스터 내에서 MySQL InnoDB 클러스터 설정을 관리하는 오퍼레이터입니다.</p>
+<p>MySQL Operator를 사용하면 롤링 업데이트 방식의 버전 업그레이드 및 MySQL DB 백업 자동화를 포함하는 설정, Maintenance를 통해 쉽게 MySQL DB 클러스터를 쿠버네티스 환경에서 관리할 수 있습니다.</p>
+<p><img src="./1.png" alt="MySQL operator 동작방식"></p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<h3 id="클러스터">클러스터</h3>
+<ul>
+<li><strong>EKS</strong> : v1.28</li>
+<li><strong>워크로드</strong> : EC2 Instance 기반 클러스터</li>
+</ul>
+<p> </p>
+<h3 id="헬름-차트">헬름 차트</h3>
+<ul>
+<li>Helm v3.13.3</li>
+<li><code>mysql-operator</code> : 8.2.0-2.1.1</li>
+<li><code>mysql-innodbcluster</code> : 8.2.0</li>
+</ul>
+<p> </p>
+<h2 id="준비사항">준비사항</h2>
+<p>작업자의 로컬 환경에 아래 CLI 툴들이 설치되어 있어야 합니다.</p>
+<ul>
+<li><strong>helm</strong> : 헬름 차트 설치할 때 필요합니다.</li>
+<li><strong>git</strong> : 차트 레포 다운로드에 필요한 CLI 툴 입니다.</li>
+<li><strong>kubectl</strong> : 쿠버네티스 클러스터를 운영, 관리할 때 필요한 CLI 툴 입니다.</li>
+</ul>
+<p> </p>
+<h2 id="mysql-operator">MySQL Operator</h2>
+<h3 id="차트-다운로드">차트 다운로드</h3>
+<p><code>mysql-operator</code> 프로젝트는 Github Cloud에 오픈소스로 제공됩니다.</p>
+<p>로컬 환경에 <a href="https://github.com/mysql/mysql-operator">mysql-operator</a> 레포지터리를 다운로드 받습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">git clone https://github.com/mysql/mysql-operator.git
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> mysql-operator/helm/mysql-operator
+</span></span></code></pre></div><p> </p>
+<p>MySQL Operator 차트 구조는 다음과 같이 2개로 구성되어 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ tree mysql-operator/helm/ -L <span class="m">2</span>
+</span></span><span class="line"><span class="cl">mysql-operator/helm/
+</span></span><span class="line"><span class="cl">├── mysql-innodbcluster
+</span></span><span class="line"><span class="cl">│   ├── Chart.yaml
+</span></span><span class="line"><span class="cl">│   ├── README.md
+</span></span><span class="line"><span class="cl">│   ├── charts
+</span></span><span class="line"><span class="cl">│   ├── crds
+</span></span><span class="line"><span class="cl">│   ├── templates
+</span></span><span class="line"><span class="cl">│   └── values.yaml
+</span></span><span class="line"><span class="cl">└── mysql-operator
+</span></span><span class="line"><span class="cl">    ├── Chart.yaml
+</span></span><span class="line"><span class="cl">    ├── README.md
+</span></span><span class="line"><span class="cl">    ├── charts
+</span></span><span class="line"><span class="cl">    ├── crds
+</span></span><span class="line"><span class="cl">    ├── templates
+</span></span><span class="line"><span class="cl">    └── values.yaml
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="m">9</span> directories, <span class="m">6</span> files
+</span></span></code></pre></div><ol>
+<li><a href="https://github.com/mysql/mysql-operator/tree/trunk/helm/mysql-operator"><strong>mysql-operator</strong></a> : MySQL Operator 설치에 필요한 헬름 차트</li>
+<li><a href="https://github.com/mysql/mysql-operator/tree/trunk/helm/mysql-innodbcluster"><strong>mysql-innodbcluster</strong></a> : MySQL 클러스터 생성에 필요한 헬름 차트</li>
+</ol>
+<p> </p>
+<p>설치 순서는 MySQL Operator를 가장 먼저 설치한 후, 커스텀 리소스인 mysql-innodbcluster를 설치하면 됩니다.</p>
+<p> </p>
+<h3 id="mysql-operator-차트-설치">mysql-operator 차트 설치</h3>
+<p><code>mysql-operator</code> 차트를 <code>mysql-operator</code> 네임스페이스에 먼저 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">helm upgrade <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  mysql-operator . <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --install <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --namespace mysql-operator <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --create-namespace <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --values values.yaml <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --wait
+</span></span></code></pre></div><p> </p>
+<p>mysql-operator 차트를 설치하면 MySQL Operator 파드가 새로 생성됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get all -n mysql-operator
+</span></span><span class="line"><span class="cl">NAME                                  READY   STATUS    RESTARTS   AGE
+</span></span><span class="line"><span class="cl">pod/mysql-operator-64d8b6dd5b-zlpqm   1/1     Running   <span class="m">0</span>          3d15h
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT<span class="o">(</span>S<span class="o">)</span>    AGE
+</span></span><span class="line"><span class="cl">service/mysql-operator   ClusterIP   172.20.39.138   &lt;none&gt;        9443/TCP   3d15h
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
+</span></span><span class="line"><span class="cl">deployment.apps/mysql-operator   1/1     <span class="m">1</span>            <span class="m">1</span>           3d15h
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">NAME                                        DESIRED   CURRENT   READY   AGE
+</span></span><span class="line"><span class="cl">replicaset.apps/mysql-operator-64d8b6dd5b   <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>       3d15h
+</span></span></code></pre></div><p> </p>
+<p>MySQL Operator에서 사용하는 커스텀 리소스 목록입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl api-resources --api-group mysql.oracle.com
+</span></span><span class="line"><span class="cl">NAME             SHORTNAMES   APIVERSION            NAMESPACED   KIND
+</span></span><span class="line"><span class="cl">innodbclusters   ic,ics       mysql.oracle.com/v2   <span class="nb">true</span>         InnoDBCluster
+</span></span><span class="line"><span class="cl">mysqlbackups     mbk          mysql.oracle.com/v2   <span class="nb">true</span>         MySQLBackup
+</span></span></code></pre></div><p>클러스터 관리자가 <code>innodbclusters</code> 리소스를 생성하면 MySQL Operator는 이를 감지한 후 쿠버네티스 클러스터 상에 MySQL Cluster를 파드 형태로 구성하는 동작 방식입니다.</p>
+<p> </p>
+<h3 id="클러스터-상세-설정">클러스터 상세 설정</h3>
+<p>로컬에 다운로드 받은 mysql-operator 레포지터리에서 아래 경로로 이동합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">cd</span> mysql-operator/helm/mysql-innodbcluster
+</span></span></code></pre></div><p> </p>
+<p>mysql-innodblucster의 <code>values.yaml</code> 파일을 수정합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># helm/mysql-innodbcluster/values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">image</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">IfNotPresent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pullSecrets</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">secretName</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">credentials</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">root</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l">root</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l">mysqlpassword</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;%&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">tls</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">useSelfSigned</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#  caSecretName:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#  serverCertAndPKsecretName:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#  routerCertAndPKsecretName: # our use router.certAndPKsecretName</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#serverVersion: 8.0.31</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">serverInstances</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">routerInstances</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="c"># or use router.instances</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">baseServerId</span><span class="p">:</span><span class="w"> </span><span class="m">1000</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">router</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">instances</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">podSpec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">router</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">resources</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">requests</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;300Mi&#34;</span><span class="w">  </span><span class="c"># adapt to your needs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;100m&#34;</span><span class="w">      </span><span class="c"># adapt to your needs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">limits</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1024Mi&#34;</span><span class="w">  </span><span class="c"># adapt to your needs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1000m&#34;</span><span class="w">      </span><span class="c"># adapt to your needs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">podSpec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">mysql</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">   </span><span class="nt">resources</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="nt">requests</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">       </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1024Mi&#34;</span><span class="w">  </span><span class="c"># adapt to your needs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">       </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1800m&#34;</span><span class="w">      </span><span class="c"># adapt to your needs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="nt">limits</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">       </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;2048Mi&#34;</span><span class="w">  </span><span class="c"># adapt to your needs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">       </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;2000m&#34;</span><span class="w">      </span><span class="c"># adapt to your needs</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<h3 id="mysql-innodbcluster-차트-설치">mysql-innodbcluster 차트 설치</h3>
+<p><code>mysql-innodbcluster</code> 차트를 설치하면 동시에 MySQL 클러스터가 생성됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">helm upgrade <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  mysql-cluster . <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --install <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --namespace mysql <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --create-namespace <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --values values.yaml <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --wait
+</span></span></code></pre></div><p> </p>
+<p>이 시나리오에서 각 헬름 차트는 다음 네임스페이스를 사용합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm list --all-namespaces --filter <span class="s1">&#39;mysql&#39;</span>
+</span></span><span class="line"><span class="cl">NAME          	NAMESPACE     	REVISION	UPDATED                             	STATUS  	CHART                    	APP VERSION
+</span></span><span class="line"><span class="cl">mysql-cluster 	mysql         	<span class="m">1</span>       	2024-01-09 14:41:17.942536 +0900 KST	deployed	mysql-innodbcluster-2.1.1	8.2.0
+</span></span><span class="line"><span class="cl">mysql-operator	mysql-operator	<span class="m">1</span>       	2024-01-09 14:39:22.884685 +0900 KST	deployed	mysql-operator-2.1.1     	8.2.0-2.1.1
+</span></span></code></pre></div><table>
+<thead>
+<tr>
+<th>No.</th>
+<th>헬름 차트 이름</th>
+<th>네임스페이스</th>
+<th>차트 설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>mysql-operator</td>
+<td>mysql-operator</td>
+<td>MySQL 오퍼레이터 파드</td>
+</tr>
+<tr>
+<td>2</td>
+<td>mysql-innodbcluster</td>
+<td>mysql</td>
+<td>MySQL 클러스터</td>
+</tr>
+</tbody>
+</table>
+<p> </p>
+<p>MySQL Cluster 클러스터의 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get pod -n mysql
+</span></span><span class="line"><span class="cl">NAME                                    READY   STATUS    RESTARTS   AGE
+</span></span><span class="line"><span class="cl">mysql-cluster-0                         2/2     Running   <span class="m">0</span>          10m
+</span></span><span class="line"><span class="cl">mysql-cluster-1                         2/2     Running   <span class="m">0</span>          10m
+</span></span><span class="line"><span class="cl">mysql-cluster-2                         2/2     Running   <span class="m">0</span>          10m
+</span></span><span class="line"><span class="cl">mysql-cluster-router-7b795dcbf7-xvshs   1/1     Running   <span class="m">0</span>          9m10s
+</span></span></code></pre></div><p>클러스터를 구성하는 모든 MySQL 서버 및 라우터는 실제로 파드입니다.</p>
+<p> </p>
+<p>설치한 <code>mysql-cluster</code> 차트의 세부 설정 값을 조회합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">helm get values mysql-cluster -n mysql
+</span></span></code></pre></div><p> </p>
+<p>MySQL Operator에서 사용하는 커스텀 리소스인 <code>innodbcluster</code>는 파드처럼 네임스페이스 영역에 속하는<sup>Namespaced</sup> 리소스입니다.</p>
+<p>헬름 차트로 설치한 innodbcluster 리소스를 조회합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Use fullname</span>
+</span></span><span class="line"><span class="cl">kubectl get innodbcluster -n mysql
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Use shortname</span>
+</span></span><span class="line"><span class="cl">kubectl get ic -n mysql
+</span></span></code></pre></div><blockquote>
+<p><code>innodbcluster</code> 리소스의 축약형 이름(Shortname)인 <code>ic</code>를 사용해서 조회할 수도 있습니다.</p>
+</blockquote>
+<p> </p>
+<p>3개의 MySQL DB로 구성된 클러스터이며 온라인 상태가 되면 정상 접속이 가능합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME            STATUS   ONLINE   INSTANCES   ROUTERS   AGE
+</span></span><span class="line"><span class="cl">mysql-cluster   ONLINE   <span class="m">3</span>        <span class="m">3</span>           <span class="m">1</span>         22m
+</span></span></code></pre></div><p> </p>
+<p>MySQL Operator는 innodbcluster 리소스를 감지한 후 MySQL 클러스터와 앞단에 Router를 자동 구성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get pod -n mysql
+</span></span><span class="line"><span class="cl">NAME                                   READY   STATUS    RESTARTS   AGE
+</span></span><span class="line"><span class="cl">mysql-cluster-0                        2/2     Running   <span class="m">0</span>          22m
+</span></span><span class="line"><span class="cl">mysql-cluster-1                        2/2     Running   <span class="m">0</span>          22m
+</span></span><span class="line"><span class="cl">mysql-cluster-2                        2/2     Running   <span class="m">0</span>          22m
+</span></span><span class="line"><span class="cl">mysql-cluster-router-9f9bd9b99-kmdl2   1/1     Running   <span class="m">0</span>          21m
+</span></span></code></pre></div><p>MySQL Cluster의 실체는 파드이며 Statefulset에 의해 MySQL 파드가 배포됩니다.</p>
+<p> </p>
+<p>MySQL Operator에 의해 쿠버네티스 시크릿도 같이 자동 생성됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get secret -n mysql
+</span></span><span class="line"><span class="cl">NAME                                  TYPE                 DATA   AGE
+</span></span><span class="line"><span class="cl">mysql-cluster-backup                  Opaque               <span class="m">2</span>      42h
+</span></span><span class="line"><span class="cl">mysql-cluster-cluster-secret          Opaque               <span class="m">3</span>      42h
+</span></span><span class="line"><span class="cl">mysql-cluster-privsecrets             Opaque               <span class="m">2</span>      42h
+</span></span><span class="line"><span class="cl">mysql-cluster-router                  Opaque               <span class="m">2</span>      42h
+</span></span><span class="line"><span class="cl">sh.helm.release.v1.mysql-cluster.v1   helm.sh/release.v1   <span class="m">1</span>      42h
+</span></span></code></pre></div><p><code>mysql-cluster-cluster-secret</code> 시크릿이 MySQL DB 파드에 비밀번호로 주입됩니다.</p>
+<p> </p>
+<p>MySQL DB 파드의 상세 설정을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl get pod -n mysql mysql-cluster-0 -o yaml
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nn">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">env</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">MYSQL_INITIALIZE_ONLY</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">MYSQL_ROOT_PASSWORD</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">valueFrom</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">secretKeyRef</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">rootPassword</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">mysql-cluster-cluster-secret</span><span class="w">
+</span></span></span></code></pre></div><p><code>MYSQL_ROOT_PASSWORD</code> 환경변수가 <code>mysql-cluster-cluster-secret</code> 시크릿을 참조하고 있습니다.</p>
+<p> </p>
+<h3 id="mysql-db-접속">MySQL DB 접속</h3>
+<p>운영 관리의 목적으로 생성한 MySQL DB 클러스터에 접속해야할 경우, 먼저 MySQL Operator 파드에 접속합니다.</p>
+<p><img src="./2.png" alt="MySQL Operator에서 mysql pod 접속"></p>
+<p>대부분의 MySQL DB 운영 업무는 MySQL Shell을 사용해서 수행하게 됩니다.</p>
+<p><a href="https://dev.mysql.com/doc/mysql-shell/8.0/en/">MySQL Shell 8.0 공식문서</a>에서도 MySQL Shell로 MySQL Server <code>5.7</code>, <code>8.0</code>를 관리하도록 권장하고 있습니다.</p>
+<p> </p>
+<p><code>kubectl</code>을 사용해서 mysql-operator 파드에 접속합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl <span class="nb">exec</span> -it <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -n mysql-operator <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  mysql-operator-64d8b6dd5b-zlpqm <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -- mysqlsh
+</span></span></code></pre></div><p> </p>
+<p>MySQL Operator 파드에는 기본적으로 <code>mysqlsh</code> 8.x 버전이 설치되어 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">MySQL Shell 8.2.0
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Copyright <span class="o">(</span>c<span class="o">)</span> 2016, 2023, Oracle and/or its affiliates.
+</span></span><span class="line"><span class="cl">Oracle is a registered trademark of Oracle Corporation and/or its affiliates.
+</span></span><span class="line"><span class="cl">Other names may be trademarks of their respective owners.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Type <span class="s1">&#39;\help&#39;</span> or <span class="s1">&#39;\?&#39;</span> <span class="k">for</span> help<span class="p">;</span> <span class="s1">&#39;\quit&#39;</span> to exit.
+</span></span><span class="line"><span class="cl"> MySQL  JS &gt;
+</span></span></code></pre></div><p> </p>
+<p><code>mysqlsh</code>의 <code>\connect</code> 명령어를 사용해서 생성한 innodbcluster DB에 접속합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"> MySQL  JS &gt; <span class="se">\c</span>onnect root@mysql-cluster.mysql.svc.cluster.local:3306
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Creating a session to <span class="s1">&#39;root@mysql-cluster.mysql.svc.cluster.local:3306&#39;</span>
+</span></span><span class="line"><span class="cl">Please provide the password <span class="k">for</span> <span class="s1">&#39;root@mysql-cluster.mysql.svc.cluster.local:3306&#39;</span>: **********
+</span></span><span class="line"><span class="cl">Fetching schema names <span class="k">for</span> auto-completion... Press ^C to stop.
+</span></span><span class="line"><span class="cl">Your MySQL connection id is <span class="m">183</span>
+</span></span><span class="line"><span class="cl">Server version: 8.2.0 MySQL Community Server - GPL
+</span></span><span class="line"><span class="cl">No default schema selected<span class="p">;</span> <span class="nb">type</span> <span class="se">\u</span>se &lt;schema&gt; to <span class="nb">set</span> one.
+</span></span></code></pre></div><p>root 계정의 password를 입력해야 로그인이 가능합니다.</p>
+<p>root 계정의 패스워드는 <code>mysql-innodbcluster</code> 헬름 차트의 <code>credentials.root.password</code> 값을 입력합니다.</p>
+<p> </p>
+<p>MySQL Shell에서는 <code>\sql</code>, <code>\py</code> 및 <code>\js</code> 명령어를 사용해서 모드를 변경할 수 있습니다.</p>
+<p><code>\sql</code> 명령어를 실행해서 MySQL Shell을 기본값 JavaScript 모드에서 SQL 모드로 변경합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"> MySQL  JS &gt; <span class="se">\s</span>ql
+</span></span><span class="line"><span class="cl">Switching to SQL mode... Commands end with <span class="p">;</span>
+</span></span><span class="line"><span class="cl">Fetching global names <span class="k">for</span> auto-completion... Press ^C to stop.
+</span></span></code></pre></div><p>MySQL Shell에서 사용 가능한 명령어 리스트를 확인하려면 <code>\help</code> 또는 <code>\?</code>를 입력합니다.</p>
+<p> </p>
+<p>현재 접속한 MySQL DB의 호스트네임 및 버전을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="c1">-- Hostname 및 DB 버전 확인
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">SELECT</span><span class="w"> </span><span class="o">@@</span><span class="n">hostname</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s1">&#39;Hostname&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">VERSION</span><span class="p">()</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s1">&#39;MySQL Version&#39;</span><span class="p">;</span><span class="w">
+</span></span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="o">+</span><span class="c1">-----------------+---------------+
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="o">|</span><span class="w"> </span><span class="n">Hostname</span><span class="w">        </span><span class="o">|</span><span class="w"> </span><span class="n">MySQL</span><span class="w"> </span><span class="k">Version</span><span class="w"> </span><span class="o">|</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">+</span><span class="c1">-----------------+---------------+
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="o">|</span><span class="w"> </span><span class="n">mysql</span><span class="o">-</span><span class="k">cluster</span><span class="o">-</span><span class="mi">0</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mi">8</span><span class="p">.</span><span class="mi">2</span><span class="p">.</span><span class="mi">0</span><span class="w">         </span><span class="o">|</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">+</span><span class="c1">-----------------+---------------+
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="mi">1</span><span class="w"> </span><span class="k">row</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">0004</span><span class="w"> </span><span class="n">sec</span><span class="p">)</span><span class="w">
+</span></span></span></code></pre></div><p>현재 <code>mysql-cluster-0</code> 파드에 접속한 상태이며, MySQL 버전은 <code>8.2.0</code> 입니다.</p>
+<p> </p>
+<p>MySQL 클러스터를 생성하면 기본적으로 Group Replication 형태로 HA 구성이 되어 있습니다.</p>
+<p>클러스터 생성 및 초기화 과정에서 MySQL 클러스터 이중화 상태가 정상적으로 구성되었는지 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="c1">-- Group Replication 상태 확인
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">SELECT</span><span class="w"> </span><span class="n">member_host</span><span class="p">,</span><span class="w"> </span><span class="n">member_state</span><span class="p">,</span><span class="w"> </span><span class="n">member_role</span><span class="p">,</span><span class="w"> </span><span class="n">member_version</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">FROM</span><span class="w"> </span><span class="n">performance_schema</span><span class="p">.</span><span class="n">replication_group_members</span><span class="p">;</span><span class="w">
+</span></span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="o">+</span><span class="c1">-----------------------------------------------------------------+--------------+-------------+----------------+
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="o">|</span><span class="w"> </span><span class="n">member_host</span><span class="w">                                                     </span><span class="o">|</span><span class="w"> </span><span class="n">member_state</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">member_role</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">member_version</span><span class="w"> </span><span class="o">|</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">+</span><span class="c1">-----------------------------------------------------------------+--------------+-------------+----------------+
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="o">|</span><span class="w"> </span><span class="n">mysql</span><span class="o">-</span><span class="k">cluster</span><span class="o">-</span><span class="mi">1</span><span class="p">.</span><span class="n">mysql</span><span class="o">-</span><span class="k">cluster</span><span class="o">-</span><span class="n">instances</span><span class="p">.</span><span class="n">mysql</span><span class="p">.</span><span class="n">svc</span><span class="p">.</span><span class="k">cluster</span><span class="p">.</span><span class="k">local</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">ONLINE</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="n">SECONDARY</span><span class="w">   </span><span class="o">|</span><span class="w"> </span><span class="mi">8</span><span class="p">.</span><span class="mi">2</span><span class="p">.</span><span class="mi">0</span><span class="w">          </span><span class="o">|</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">|</span><span class="w"> </span><span class="n">mysql</span><span class="o">-</span><span class="k">cluster</span><span class="o">-</span><span class="mi">0</span><span class="p">.</span><span class="n">mysql</span><span class="o">-</span><span class="k">cluster</span><span class="o">-</span><span class="n">instances</span><span class="p">.</span><span class="n">mysql</span><span class="p">.</span><span class="n">svc</span><span class="p">.</span><span class="k">cluster</span><span class="p">.</span><span class="k">local</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">ONLINE</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="mi">8</span><span class="p">.</span><span class="mi">2</span><span class="p">.</span><span class="mi">0</span><span class="w">          </span><span class="o">|</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">|</span><span class="w"> </span><span class="n">mysql</span><span class="o">-</span><span class="k">cluster</span><span class="o">-</span><span class="mi">2</span><span class="p">.</span><span class="n">mysql</span><span class="o">-</span><span class="k">cluster</span><span class="o">-</span><span class="n">instances</span><span class="p">.</span><span class="n">mysql</span><span class="p">.</span><span class="n">svc</span><span class="p">.</span><span class="k">cluster</span><span class="p">.</span><span class="k">local</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">ONLINE</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="n">SECONDARY</span><span class="w">   </span><span class="o">|</span><span class="w"> </span><span class="mi">8</span><span class="p">.</span><span class="mi">2</span><span class="p">.</span><span class="mi">0</span><span class="w">          </span><span class="o">|</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">+</span><span class="c1">-----------------------------------------------------------------+--------------+-------------+----------------+
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="mi">3</span><span class="w"> </span><span class="k">rows</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">0005</span><span class="w"> </span><span class="n">sec</span><span class="p">)</span><span class="w">
+</span></span></span></code></pre></div><p>클러스터를 구성하는 3개 MySQL DB가 모두 온라인 상태이며 Primary - Secondary 구성임을 확인할 수 있습니다. 현재 저희가 접속한 DB는 Primary DB인 <code>mysql-cluster-0</code> 입니다.</p>
+<p> </p>
+<p>MySQL Operator와 InnoDB Cluster의 아키텍처입니다.</p>
+<p><img src="./3.png" alt="Primary Secondary 구성"></p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><strong>MySQL Operator</strong><br>
+<a href="https://dev.mysql.com/doc/mysql-operator/en/">MySQL Operator 공식문서</a><br>
+<a href="https://github.com/mysql/mysql-operator">mysql-operator Github</a><br>
+<a href="https://github.com/mysql/mysql-operator/tree/trunk/helm">mysql-operator Github chart</a></p>
+<p><strong>MySQL Shell</strong><br>
+<a href="https://dev.mysql.com/doc/mysql-shell/8.0/en/">MySQL Shell 8.0 공식문서</a></p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

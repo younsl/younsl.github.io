@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/k8s/troubleshoot-karpenter-blocking-evictions/" />
+    <title>Karpenter PDB is blocking evictions</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Karpenter PDB is blocking evictions</h1>
+        <div>
+                <time>Updated March 3, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>Karpenter Controller가 불필요 노드를 자동 정리하지 못하는 문제가 발생한 경우 해결방법 기록</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<h3 id="클러스터-환경">클러스터 환경</h3>
+<ul>
+<li><strong>Cluster</strong> : EC2 기반의 EKS 클러스터</li>
+<li><strong>Kubernetes</strong> : v1.24</li>
+<li><strong>Cluster Autoscaler</strong> : Karpenter <code>v0.26.0</code>를 헬름 차트 배포해서 사용중</li>
+</ul>
+<p> </p>
+<h3 id="로컬-환경">로컬 환경</h3>
+<ul>
+<li><strong>OS</strong> : macOS 13.2.1 (Ventura)</li>
+<li><strong>Helm</strong> : v3.11.1</li>
+<li><strong>Shell</strong> : zsh + oh-my-zsh</li>
+</ul>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="karpenter-consolidation">Karpenter Consolidation</h3>
+<p>현재 EKS 클러스터에서 운영중인 Karpenter는 provisioners 리소스에 <a href="https://karpenter.sh/preview/concepts/provisioners/#specconsolidation">Consolidation</a> 설정이 활성화되어 있습니다.</p>
+<p> </p>
+<p>아래는 provisioners CRD를 배포하는 <code>crds.yaml</code> 파일의 일부 내용입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># Reference:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># https://karpenter.sh/v0.26.0/concepts/provisioners/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter.sh/v1alpha5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Provisioner</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l">v0.26.0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">maintainer</span><span class="p">:</span><span class="w"> </span><span class="l">younsung.lee</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Enables consolidation which attempts to reduce cluster cost by both removing un-needed nodes and down-sizing those</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># that can&#39;t be removed.  Mutually exclusive with the ttlSecondsAfterEmpty parameter.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">consolidation</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="l">...</span><span class="w">
+</span></span></span></code></pre></div><p>위와 같이 <code>spec.consolidation.enabled</code> 값이 <code>true</code>이면 <a href="https://karpenter.sh/preview/concepts/deprovisioning/#consolidation">Consolidation</a> 기능을 사용한다는 의미입니다.</p>
+<p><code>spec.consolidation.enabled</code> 값에 대한 설정이 없으면 Karpenter는 Consolidation 기능을 사용하지 않습니다. 이 경우에는 Karpenter가 한 번 노드를 생성하면 해당 노드가 비어있고 불필요한 상태가 되더라도 삭제하지 않고 계속 남아있게 됩니다.</p>
+<p>Consolidation 설정이 활성화되어 있는 경우, Karpenter Controller는 자동으로 비어있는 노드를 정리<sup>delete</sup>하거나 합치는 등의 교체<sup>replace</sup> 작업을 수행하며 전체 노드들을 자동 관리합니다.</p>
+<p> </p>
+<h3 id="pod와-pdb의-관계">Pod와 PDB의 관계</h3>
+<p>Pod에 PDB<sup>Pod Disruption Budget</sup>이 붙는 형태라고 이해하면 쉽습니다.</p>
+<p>아래는 개발자를 위한 쿠버네티스 리소스 간 관계도입니다.</p>
+<p><img src="./2.png" alt="개발자를 위한 쿠버네티스 리소스 간 관계도"></p>
+<p> </p>
+<h2 id="문제점">문제점</h2>
+<p>Karpenter Controller에서 노드를 자동 정리<sup>deprovisioning</sup>하지 못하는 문제가 발생했습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get node
+</span></span><span class="line"><span class="cl">NAME                                                STATUS                     ROLES    AGE     VERSION
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-176.ap-northeast-2.compute.internal   Ready                      &lt;none&gt;   9h      v1.24.9-eks-49d8fe8
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-178.ap-northeast-2.compute.internal   Ready                      &lt;none&gt;   8m27s   v1.24.10-eks-48e63af
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-222.ap-northeast-2.compute.internal   Ready,SchedulingDisabled   &lt;none&gt;   2d6h    v1.24.10-eks-48e63af
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-91.ap-northeast-2.compute.internal    Ready                      &lt;none&gt;   4m4s    v1.24.10-eks-48e63af
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-236.ap-northeast-2.compute.internal   Ready                      &lt;none&gt;   9h      v1.24.9-eks-49d8fe8
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-65.ap-northeast-2.compute.internal    Ready                      &lt;none&gt;   62m     v1.24.10-eks-48e63af
+</span></span></code></pre></div><p>Karpenter가 노드를 정리할 때에는 <code>SchedulingDisabled</code>된 이후 drain, Terminating 되며 노드가 자동 정리됩니다.<br>
+하지만 현재 해당 <code>222</code>번 노드는 <code>SchedulingDisabled</code>에 멈춰있는 상태입니다.</p>
+<p> </p>
+<p>문제가 발생한 노드의 상세 정보를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl describe node ip-xx-xxx-xxx-222.ap-northeast-2.compute.internal
+</span></span></code></pre></div><p> </p>
+<p><code>Events</code> 정보를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">Events:
+</span></span><span class="line"><span class="cl">  Type     Reason               Age                   From       Message
+</span></span><span class="line"><span class="cl">  ----     ------               ----                  ----       -------
+</span></span><span class="line"><span class="cl">  Warning  FailedDraining       4m33s <span class="o">(</span>x30 over 62m<span class="o">)</span>  karpenter  Failed to drain node, <span class="m">3</span> pods are waiting to be evicted
+</span></span><span class="line"><span class="cl">  Warning  FailedInflightCheck  2m40s <span class="o">(</span>x7 over 62m<span class="o">)</span>   karpenter  Can<span class="err">&#39;</span>t drain node, PDB istio-system/istiod is blocking evictions
+</span></span></code></pre></div><p>Karpenter Controller는 노드를 정리하기 전에 drain 과정을 통해 해당 노드에서 구동중인 모든 파드를 다른 노드로 옮깁니다.<br>
+그러나 PDB(PodDisruptionBudget)에 의해 거부되고 있습니다.</p>
+<p> </p>
+<h2 id="원인">원인</h2>
+<p>PodDisruptionBudget 정책으로 인해 1개로만 운영중인 <code>istiod</code> 파드를 중지할 수 없어 노드 Draining이 거부된 상황입니다.</p>
+<p><img src="./1.png" alt="문제 상황에 대한 시스템 구성도"></p>
+<p> </p>
+<p><code>istiod</code>의 <code>poddisruptionbudget</code> 정보를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get poddisruptionbudget <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n istio-system istiod
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME     MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+</span></span><span class="line"><span class="cl">istiod   <span class="m">1</span>               N/A               <span class="m">0</span>                     21d
+</span></span></code></pre></div><p>항상 최소 1개의 <code>istiod</code> 파드가 유지되도록 PDB<sup>PodDisruptionBudget</sup> 정책이 설정되어 있습니다.</p>
+<p> </p>
+<p>Karpenter Controller의 최근 로그도 같이 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl logs <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n karpenter <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -c controller <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -l app.kubernetes.io/name<span class="o">=</span>karpenter
+</span></span><span class="line"><span class="cl">    --tail <span class="m">100</span>
+</span></span></code></pre></div><p> </p>
+<p>노드가 Draining 실패하는 자세한 원인은 Karpenter 컨트롤러 로그의 <code>inflightchecks</code> 항목에서 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">2023-03-02T16:24:20.089Z  INFO  controller.inflightchecks Inflight check failed <span class="k">for</span> node, Can<span class="s1">&#39;t drain node, PDB istio-system/istiod is blocking evictions {&#34;commit&#34;: &#34;39b48fe&#34;, &#34;node&#34;: &#34;ip-xx-xxx-xxx-222.ap-northeast-2.compute.internal&#34;}
+</span></span></span><span class="line"><span class="cl"><span class="s1">2023-03-02T16:34:20.089Z  INFO  controller.inflightchecks Inflight check failed for node, Can&#39;</span>t drain node, PDB istio-system/istiod is blocking evictions <span class="o">{</span><span class="s2">&#34;commit&#34;</span>: <span class="s2">&#34;39b48fe&#34;</span>, <span class="s2">&#34;node&#34;</span>: <span class="s2">&#34;ip-xx-xxx-xxx-222.ap-northeast-2.compute.internal&#34;</span><span class="o">}</span>
+</span></span><span class="line"><span class="cl">2023-03-02T16:44:20.090Z  INFO  controller.inflightchecks Inflight check failed <span class="k">for</span> node, Can<span class="s1">&#39;t drain node, PDB istio-system/istiod is blocking evictions {&#34;commit&#34;: &#34;39b48fe&#34;, &#34;node&#34;: &#34;ip-xx-xxx-xxx-222.ap-northeast-2.compute.internal&#34;}
+</span></span></span><span class="line"><span class="cl"><span class="s1">2023-03-02T16:54:20.090Z  INFO  controller.inflightchecks Inflight check failed for node, Can&#39;</span>t drain node, PDB istio-system/istiod is blocking evictions <span class="o">{</span><span class="s2">&#34;commit&#34;</span>: <span class="s2">&#34;39b48fe&#34;</span>, <span class="s2">&#34;node&#34;</span>: <span class="s2">&#34;ip-xx-xxx-xxx-222.ap-northeast-2.compute.internal&#34;</span><span class="o">}</span>
+</span></span><span class="line"><span class="cl">2023-03-02T17:04:20.092Z  INFO  controller.inflightchecks Inflight check failed <span class="k">for</span> node, Can<span class="err">&#39;</span>t drain node, PDB istio-system/istiod is blocking evictions <span class="o">{</span><span class="s2">&#34;commit&#34;</span>: <span class="s2">&#34;39b48fe&#34;</span>, <span class="s2">&#34;node&#34;</span>: <span class="s2">&#34;ip-xx-xxx-xxx-222.ap-northeast-2.compute.internal&#34;</span><span class="o">}</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="해결방법">해결방법</h3>
+<p>문제 해결방법은 다음 순서대로 진행합니다.</p>
+<ol>
+<li>노드 <code>drain</code>을 거부하고 있는 문제원인 Pod를 1개에서 2개로 스케일 아웃합니다.</li>
+<li>PDB<sup>PodDisruptionBudget</sup>이 최소 1개 파드를 유지하도록 설정되어 있으므로, 이제 Karpenter가 2개 파드 중 1개 파드를 삭제해도 통과합니다.</li>
+<li>정리할 노드는 파드가 없이 빈 상태가 됩니다.</li>
+<li>Karpenter Controller가 자동으로 비어있는 노드를 삭제(Terminate)합니다.</li>
+</ol>
+<p> </p>
+<h3 id="상세-해결방법">상세 해결방법</h3>
+<p>현재 클러스터 노드 관리 에드온으로 Cluster Autoscaler 대신 Karpenter를 사용중입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm list -n karpenter
+</span></span><span class="line"><span class="cl">NAME       NAMESPACE  REVISION  UPDATED                               STATUS    CHART              APP VERSION
+</span></span><span class="line"><span class="cl">karpenter  karpenter  <span class="m">3</span>         2023-03-03 01:13:11.505177 +0900 KST  deployed  karpenter-v0.26.0  0.26.0
+</span></span></code></pre></div><p>헬름 차트 형태로 Karpenter <code>v0.26.0</code> 버전이 클러스터에 배포되어 있습니다.</p>
+<p> </p>
+<p>Karpenter Controller Pod가 정상적으로 동작하고 있는지 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get pod -n karpenter
+</span></span><span class="line"><span class="cl">NAME                         READY   STATUS    RESTARTS   AGE
+</span></span><span class="line"><span class="cl">karpenter-86b577fd9f-69rxc   1/1     Running   <span class="m">0</span>          9h
+</span></span><span class="line"><span class="cl">karpenter-86b577fd9f-s9gj5   1/1     Running   <span class="m">0</span>          9h
+</span></span></code></pre></div><p> </p>
+<p>일반적인 경우와 마찬가지로 <code>istiod</code> Pod는 <code>istiod</code> Deployment에 의해 컨트롤 되고 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get deploy,pod <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n istio-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -l <span class="nv">app</span><span class="o">=</span>istiod
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME                     READY   UP-TO-DATE   AVAILABLE   AGE
+</span></span><span class="line"><span class="cl">deployment.apps/istiod   1/1     <span class="m">1</span>            <span class="m">1</span>           21d
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">NAME                          READY   STATUS    RESTARTS   AGE
+</span></span><span class="line"><span class="cl">pod/istiod-59b4475f45-zg2sm   1/1     Running   <span class="m">0</span>          9h
+</span></span></code></pre></div><p> </p>
+<p><code>istiod</code> Pod 개수를 1개에서 2개로 늘립니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl scale deploy <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --replicas <span class="m">2</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n istio-system istiod
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">deployment.apps/istiod scaled
+</span></span></code></pre></div><p> </p>
+<p><code>istiod</code> deploy 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get deploy -n istio-system istiod
+</span></span></code></pre></div><p> </p>
+<p>2대의 파드가 Ready 상태로 운영중입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME     READY   UP-TO-DATE   AVAILABLE   AGE
+</span></span><span class="line"><span class="cl">istiod   2/2     <span class="m">2</span>            <span class="m">2</span>           21d
+</span></span></code></pre></div><p> </p>
+<p>전체 워커노드 리스트를 다시 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get node
+</span></span></code></pre></div><p> </p>
+<p>Karpenter Controller가 PodDisruptionBudget 정책을 통과했으므로 <code>222</code>번 노드를 삭제했습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME                                                STATUS   ROLES    AGE   VERSION
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-176.ap-northeast-2.compute.internal   Ready    &lt;none&gt;   18h   v1.24.9-eks-49d8fe8
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-178.ap-northeast-2.compute.internal   Ready    &lt;none&gt;   8h    v1.24.10-eks-48e63af
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-91.ap-northeast-2.compute.internal    Ready    &lt;none&gt;   8h    v1.24.10-eks-48e63af
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-236.ap-northeast-2.compute.internal   Ready    &lt;none&gt;   18h   v1.24.9-eks-49d8fe8
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-65.ap-northeast-2.compute.internal    Ready    &lt;none&gt;   9h    v1.24.10-eks-48e63af
+</span></span></code></pre></div><p> </p>
+<p>Karpenter Controller 로그를 다시 확인해봅니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl logs -f <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n karpenter <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -c controller <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -l app.kubernetes.io/name<span class="o">=</span>karpenter
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">2023-03-02T17:18:57.644Z  INFO  controller.termination  deleted node  <span class="o">{</span><span class="s2">&#34;commit&#34;</span>: <span class="s2">&#34;39b48fe&#34;</span>, <span class="s2">&#34;node&#34;</span>: <span class="s2">&#34;ip-xx-xxx-xxx-222.ap-northeast-2.compute.internal&#34;</span><span class="o">}</span>
+</span></span></code></pre></div><p>문제가 발생했던 <code>222</code>번 EC2 노드를 삭제 완료한 기록을 확인할 수 있습니다.</p>
+<p> </p>
+<p>이제 Karpenter가 노드를 자동 정리(Terminate)하지 못하는 문제가 해결되었습니다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://karpenter.sh/preview/troubleshooting/#disruption-budgets">Karpenter - Disruption budgets</a><br>
+Karpenter 공식문서</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

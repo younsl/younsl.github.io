@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/k8s/delete-process-argocd-application-with-gloo/" />
+    <title>Gloo 환경에서 ArgoCD 리소스 삭제</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Gloo 환경에서 ArgoCD 리소스 삭제</h1>
+        <div>
+                <time>Updated July 21, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>API Gateway로 Gloo Edge를 사용하는 인프라 환경에서는 ArgoCD의 ApplicationSet 리소스를 삭제할 때 주의해야 합니다.<br>
+Gloo Edge에서 먼저 Application과 연관된 라우트를 제거하고, Gloo의 웹훅 설정을 비활성화한 다음, ArgoCD에서 Application 또는 ApplicationSet을 삭제해야 합니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<p>Gloo Edge를 통해 들어오는 유저의 Inbound traffic flow는 다음과 같이 진행됩니다.<br>
+이 가이드에서는 AWS에서 운영되는 쿠버네티스 환경이라고 가정하겠습니다.</p>
+<p><img src="./1.png" alt="정상 트래픽 흐름"></p>
+<p> </p>
+<h2 id="문제와-영향">문제와 영향</h2>
+<p>Gloo Edge는 무시하고 ArgoCD에서만 Application을 삭제하게 될 경우 서비스가 영향 받게 됩니다.</p>
+<p>Gloo에서 미리 webhook을 끄고 Route를 제거하지 않은 상태에서 ArgoCD의 Application을 강제 삭제하게 될 경우, 다음과 같은 문제가 발생하게 됩니다.</p>
+<ul>
+<li>(ArgoCD 웹에서 볼 떄) Application에 있는 Upstream 리소스만 삭제되지 않고 남아있게 됩니다.</li>
+<li>gloo는 설정된 라우팅에 따라 사용자를 백엔드의 Application으로 연결해주지만, 실제 백엔드의 application은 이미 삭제된 상태입니다. 결국 사용자의 세션은 장애 영향을 받게 됩니다.</li>
+</ul>
+<p><img src="./2.png" alt="비정상적 트래픽 흐름"></p>
+<p> </p>
+<h2 id="조치방법">조치방법</h2>
+<p>그러면 어떻게 해야 안전하게 ArgoCD의 Application(Set)을 지울 수 있을까요?<br>
+방법은 Gloo Edge에서 연관된 route를 제거하고, 웹훅 기능을 비활성화한 다음에 ArgoCD에서 Application(Set)을 제거하면 됩니다.</p>
+<p> </p>
+<h2 id="상세절차">상세절차</h2>
+<p>Gloo Edge를 API Gateway로 쓰는 환경에서 ArgoCD의 application(set)을 삭제하는 절차는 다음과 같이 진행됩니다.</p>
+<p><strong>(1)</strong> Gloo에서 해당 Application들이 연결되어 있는 Route를 먼저 제거합니다.</p>
+<p><strong>(2)</strong> Gloo에서 Webhook 기능을 비활성화합니다. <a href="https://docs.solo.io/gloo-edge/latest/guides/traffic_management/configuration_validation/admission_control/">Gloo 공식문서</a></p>
+<p>Gloo에서는 <code>settings</code> 리소스를 통해 잘못된 리소스를 거부하도록 웹훅을 구성할 수 있습니다.</p>
+<p>gloo의 CRD인 <code>settings</code>의 스펙을 확인합니다.<br>
+<a href="https://docs.solo.io/gloo-edge/latest/introduction/architecture/custom_resources/">settings</a> 커스텀 리소스는 모든 Gloo Edge 컨테이너에 대한 전역 설정을 담당합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get settings default <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n gloo-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -o yaml
+</span></span></code></pre></div><p>결과값은 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">consoleOptions</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">apiExplorerEnabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">readOnly</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="l">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">gateway</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">readGatewaysFromAllNamespaces</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">validation</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">allowWarnings</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c"># alwaysAccept: false = webhook &#34;enabled&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c"># alwaysAccept: true  = webhook &#34;disabled&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c"># -&gt; ready to delete application via ArgoCD</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">alwaysAccept</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">disableTransformationValidation</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">proxyValidationServerAddr</span><span class="p">:</span><span class="w"> </span><span class="l">gloo:xxxx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">validationServerGrpcMaxSizeBytes</span><span class="p">:</span><span class="w"> </span><span class="m">1234567</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">warnRouteShortCircuiting</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span></code></pre></div><h3 id="alwaysaccept-설정값">alwaysAccept 설정값</h3>
+<ul>
+<li>gloo의 웹훅 기능은 <code>settings</code> 리소스의 <code>spec.gateway.validation.alwaysAccept</code> 설정값에 따라 유효성 검사를 엄격하게 할지, 허용할지 결정됩니다.</li>
+<li><code>spec.gateway.validation.alwaysAccept</code> 값을 <code>true</code>로 변경하면 gloo의 웹훅 기능이 비활성화 됩니다.</li>
+<li>기존에 <code>alwaysAccept: false</code> 설정으로 Gloo를 운영중이었다면 이 과정은 건너뛰어도 됩니다.</li>
+</ul>
+<p><strong>(3)</strong> 이제 ArgoCD 웹에서 Application을 삭제(delete)합니다.</p>
+<p><strong>(4)</strong> 이후 다시 Gloo 웹훅 설정을 원래대로 돌려놓습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get settings default <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n gloo-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -o yaml
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">consoleOptions</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">apiExplorerEnabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">readOnly</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="l">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">gateway</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">readGatewaysFromAllNamespaces</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">validation</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">allowWarnings</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c"># alwaysAccept: false = webhook &#34;enabled&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c"># alwaysAccept: true  = webhook &#34;disabled&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">alwaysAccept</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">disableTransformationValidation</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">proxyValidationServerAddr</span><span class="p">:</span><span class="w"> </span><span class="l">gloo:xxxx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">validationServerGrpcMaxSizeBytes</span><span class="p">:</span><span class="w"> </span><span class="m">1234567</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">warnRouteShortCircuiting</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span></code></pre></div><p><code>alwaysAccept</code> 값을 <code>true</code>에서 <code>false</code>로 다시 돌려놓았습니다.</p>
+<p> </p>
+<h3 id="gloo-리소스-upstream">Gloo 리소스: Upstream</h3>
+<p><code>upstream</code>은 gloo에서 사용하는 대표적인 리소스 타입입니다.<br>
+<code>upstream</code>을 간단하게 설명하자면 라우팅을 받는 특정 kubernetes 서비스를 나타내는 단위입니다.</p>
+<p><img src="./3.png" alt="Gloo Resources"></p>
+<p>Gloo Edge에서 사용하는 주요 리소스에는 <code>Gateway</code>, <code>VirtualService</code>, <code>Upstream</code>이 있습니다.</p>
+<p>더 자세한 내용은 공식문서
+<a href="https://docs.solo.io/gloo-edge/master/introduction/traffic_management/">Gloo Edge Configuration</a>를 참고하세요.<br>
+공식문서는 대다수의 블로그이나 스택 오버플로우의 글과는 다르게 최신 정보나 변경사항 또는 함수의 구조 등에 대해 매우 정확하게 확인할 수 있는 가장 확실한 경로입니다.</p>
+<p>어떤 정보에 대해 확신이 들지 않고 의심이 간다면 무조건 공식문서를 찾아 보는 습관은 중요합니다.</p>
+<p> </p>
+<p>사용자와 맞닿는 로드밸런서인 Gateway Proxy와 내부 클러스터용 Gateway를 구분해서 사용하도록 구성할 수 있습니다.</p>
+<p><img src="./4.png" alt="Gateway proxy와 Gateway"></p>
+<p>이 때 Gateway와 Gateway Proxy의 실체는 쿠버네티스의 <code>service</code> 리소스입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get svc <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n gloo-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -l <span class="s1">&#39;app=gloo&#39;</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME               TYPE           CLUSTER-IP       EXTERNAL-IP                                                                          PORT<span class="o">(</span>S<span class="o">)</span>                               AGE
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">gateway            ClusterIP      11.222.333.444   &lt;none&gt;                                                                               443/TCP                               123d
+</span></span><span class="line"><span class="cl">gateway-proxy      LoadBalancer   11.222.333.44    k8s-gloosyst-xxxxxxxx-xxxxxxxxx-xxxxxxxxxxxxxxxxx.elb.ap-northeast-2.amazonaws.com   80:11111/TCP,443:22222/TCP            123d
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p> </p>
+<p>인프라 구성 환경에 따라 다르겠지만 일반적으로 Gloo의 <code>Upstream</code> 리소스는 Gloo System에 하나, ArgoCD Application 안에 하나. 각 어플리케이션마다 2개씩 한 쌍으로 존재하게 됩니다.</p>
+<p><code>VirtualService</code> 리소스는 설정된 라우팅 룰에 따라 어떤 <code>Upstream</code>으로 사용자 트래픽을 보낼 지 결정하는 역할을 합니다.</p>
+<p> </p>
+<p>쿠버네티스 클러스터에서 Gloo에서 사용하는 API 리소스를 확인하는 방법입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="c1"># Currently connected to the EKS cluster.</span>
+</span></span><span class="line"><span class="cl">$ kubectl api-resources
+</span></span><span class="line"><span class="cl">NAME                              SHORTNAMES        APIVERSION                             NAMESPACED   KIND
+</span></span><span class="line"><span class="cl">...                               ...               ...                                    ...          ...
+</span></span><span class="line"><span class="cl">gateways                          gw,ggw            gateway.solo.io/v1                     <span class="nb">true</span>         Gateway
+</span></span><span class="line"><span class="cl">httpgateways                      hgw,ghgw          gateway.solo.io/v1                     <span class="nb">true</span>         MatchableHttpGateway
+</span></span><span class="line"><span class="cl">routeoptions                      rto,rtopts,grto   gateway.solo.io/v1                     <span class="nb">true</span>         RouteOption
+</span></span><span class="line"><span class="cl">routetables                       rt,grt            gateway.solo.io/v1                     <span class="nb">true</span>         RouteTable
+</span></span><span class="line"><span class="cl">virtualhostoptions                vho,vhopts,gvho   gateway.solo.io/v1                     <span class="nb">true</span>         VirtualHostOption
+</span></span><span class="line"><span class="cl">virtualservices                   vs,gvs            gateway.solo.io/v1                     <span class="nb">true</span>         VirtualService
+</span></span><span class="line"><span class="cl">proxies                           px,gpx            gloo.solo.io/v1                        <span class="nb">true</span>         Proxy
+</span></span><span class="line"><span class="cl">settings                          st,gst            gloo.solo.io/v1                        <span class="nb">true</span>         Settings
+</span></span><span class="line"><span class="cl">upstreamgroups                    ug,gug            gloo.solo.io/v1                        <span class="nb">true</span>         UpstreamGroup
+</span></span><span class="line"><span class="cl">upstreams                         us,gus            gloo.solo.io/v1                        <span class="nb">true</span>         Upstream
+</span></span><span class="line"><span class="cl">...                               ...               ...                                    ...          ...
+</span></span></code></pre></div><p><code>Gateway</code>, <code>VirtualService</code>, <code>Upstream</code> 외에도 Gloo에서 사용하는 리소스가 다양하게 있는 걸 확인할 수 있습니다.</p>
+<p> </p>
+<p>아래는 Upstream 리소스의 샘플 yaml manifest입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">gloo.solo.io/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Upstream</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">kubectl.kubernetes.io/last-applied-configuration</span><span class="p">:</span><span class="w"> </span><span class="p">&gt;</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      ...</span><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">creationTimestamp</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;2022-07-21T05:24:09Z&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">generation</span><span class="p">:</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">argocd.argoproj.io/instance</span><span class="p">:</span><span class="w"> </span><span class="l">hello-greeter-beta1-dev-a</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">discovery.solo.io/function_discovery</span><span class="p">:</span><span class="w"> </span><span class="l">enabled</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">hello-greeter-beta1-http</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">hello-greeter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">resourceVersion</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;123456789&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">uid</span><span class="p">:</span><span class="w"> </span><span class="l">9f1367cf-b07a-42df-8780-76f821bf0172</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">kube</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">serviceName</span><span class="p">:</span><span class="w"> </span><span class="l">hello-greeter-beta1-blue</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">serviceNamespace</span><span class="p">:</span><span class="w"> </span><span class="l">hello-greeter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">servicePort</span><span class="p">:</span><span class="w"> </span><span class="m">80</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">status</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">statuses</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">gloo-system</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">reportedBy</span><span class="p">:</span><span class="w"> </span><span class="l">gloo</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<h2 id="결론">결론</h2>
+<p>API Gateway로 Gloo Edge를 사용하는 환경에서 ArgoCD의 Application(Set)을 삭제할 때는 Gloo에서 몇 가지 선행 조치가 필요합니다.</p>
+<p>Application(Set)을 삭제하기 전에 먼저 해당 Application(Set)을 Gloo와 완전히 격리시키고 삭제해야 서비스 장애가 발생하지 않습니다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://docs.solo.io/gloo-edge/latest/introduction/architecture/custom_resources/">Gloo | Custom Resource Usage</a><br>
+글루에서 사용하는 커스텀 리소스의 전체 리스트와 역할을 설명하는 공식문서.</p>
+<p><a href="https://docs.solo.io/gloo-edge/latest/guides/traffic_management/configuration_validation/admission_control/">Gloo | Admission Control</a></p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

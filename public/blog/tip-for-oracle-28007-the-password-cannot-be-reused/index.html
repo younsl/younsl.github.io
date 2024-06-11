@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/tip-for-oracle-28007-the-password-cannot-be-reused/" />
+    <title>ORA-28007 조치방법</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>ORA-28007 조치방법</h1>
+        <div>
+                <time>Updated May 15, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="증상">증상</h2>
+<p>DB 계정의 패스워드를 갱신하는 상황에서 <code>ORA-28007: the password cannot be reused</code> 에러 메세지가 출력되면서 패스워드를 갱신할 수 없는 문제를 해결한다.</p>
+<p><strong>에러 메세지</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SQL</span><span class="o">&gt;</span><span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">MAXGAUGE</span><span class="w"> </span><span class="n">IDENTIFIED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="s2">&#34;...&#34;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">ALTER</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">MAXGAUGE</span><span class="w"> </span><span class="n">IDENTIFIED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="s2">&#34;...&#34;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">*</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">ERROR</span><span class="w"> </span><span class="k">at</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">ORA</span><span class="o">-</span><span class="mi">28007</span><span class="p">:</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">password</span><span class="w"> </span><span class="n">cannot</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">reused</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<h2 id="원인">원인</h2>
+<p><code>ORA-28007: the password cannot be reused</code>는 동일한 패스워드를 Limit 개수만큼 변경했을 때 발생하는 오류이다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<ul>
+<li><strong>OS</strong> : Red Hat Enterprise Linux Server release 5.10 (Tikanga)</li>
+<li><strong>ID</strong> : oracle</li>
+<li><strong>Shell</strong> : bash</li>
+<li><strong>Database</strong> : Oracle Database 11g Release 11.2.0.3.0 - Production</li>
+</ul>
+<p> </p>
+<h2 id="해결법">해결법</h2>
+<h3 id="1-oracle-접속">1. Oracle 접속</h3>
+<p>oracle 계정으로 접속한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ id
+</span></span><span class="line"><span class="cl"><span class="nv">uid</span><span class="o">=</span>501<span class="o">(</span>oracle<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>501<span class="o">(</span>dba<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>501<span class="o">(</span>dba<span class="o">)</span>
+</span></span></code></pre></div><p> </p>
+<p>sysdba 권한을 얻어 sys 계정 접속한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sqlplus sys as sysdba
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">SQL*Plus: Release 11.2.0.3.0 Production on Thu Sep <span class="m">2</span> 13:28:01 <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Copyright <span class="o">(</span>c<span class="o">)</span> 1982, 2011, Oracle.  All rights reserved.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Enter password: &lt;Password 입력&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Connected to:
+</span></span><span class="line"><span class="cl">Oracle Database 11g Release 11.2.0.3.0 - Production
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">SQL&gt; 
+</span></span></code></pre></div><p><code>Connected to:</code> 메세지와 함께 Oracle DB에 정상 접속된 걸 확인할 수 있다.</p>
+<p> </p>
+<h3 id="2-계정의-프로필-확인">2. 계정의 프로필 확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SQL</span><span class="o">&gt;</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="n">linesize</span><span class="w"> </span><span class="mi">200</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">SQL</span><span class="o">&gt;</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">USERNAME</span><span class="p">,</span><span class="w"> </span><span class="n">ACCOUNT_STATUS</span><span class="p">,</span><span class="w"> </span><span class="n">PROFILE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">DBA_USERS</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">USERNAME</span><span class="o">=</span><span class="s1">&#39;MAXGAUGE&#39;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">USERNAME</span><span class="w">                       </span><span class="n">ACCOUNT_STATUS</span><span class="w">                   </span><span class="n">PROFILE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">------------------------------ -------------------------------- ------------------------------
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">MAXGAUGE</span><span class="w">                       </span><span class="n">EXPIRED</span><span class="w">                          </span><span class="k">DEFAULT</span><span class="w">
+</span></span></span></code></pre></div><p>MAXGAUGE 계정이 만료된(<code>EXPIRED</code>) 상태이며, <code>Default</code> Profile 을 사용하는 걸 확인할 수 있다.</p>
+<p> </p>
+<h3 id="3-프로필-설정확인">3. 프로필 설정확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SQL</span><span class="o">&gt;</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">DBA_PROFILES</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">PROFILE</span><span class="o">=</span><span class="s1">&#39;DEFAULT&#39;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">PROFILE</span><span class="w">                        </span><span class="n">RESOURCE_NAME</span><span class="w">                    </span><span class="n">RESOURCE</span><span class="w"> </span><span class="k">LIMIT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">------------------------------ -------------------------------- -------- ----------------------------------------
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">COMPOSITE_LIMIT</span><span class="w">                  </span><span class="n">KERNEL</span><span class="w">   </span><span class="n">UNLIMITED</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">SESSIONS_PER_USER</span><span class="w">                </span><span class="n">KERNEL</span><span class="w">   </span><span class="n">UNLIMITED</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">CPU_PER_SESSION</span><span class="w">                  </span><span class="n">KERNEL</span><span class="w">   </span><span class="n">UNLIMITED</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">CPU_PER_CALL</span><span class="w">                     </span><span class="n">KERNEL</span><span class="w">   </span><span class="n">UNLIMITED</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">LOGICAL_READS_PER_SESSION</span><span class="w">        </span><span class="n">KERNEL</span><span class="w">   </span><span class="n">UNLIMITED</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">LOGICAL_READS_PER_CALL</span><span class="w">           </span><span class="n">KERNEL</span><span class="w">   </span><span class="n">UNLIMITED</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">IDLE_TIME</span><span class="w">                        </span><span class="n">KERNEL</span><span class="w">   </span><span class="n">UNLIMITED</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">CONNECT_TIME</span><span class="w">                     </span><span class="n">KERNEL</span><span class="w">   </span><span class="n">UNLIMITED</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">PRIVATE_SGA</span><span class="w">                      </span><span class="n">KERNEL</span><span class="w">   </span><span class="n">UNLIMITED</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">FAILED_LOGIN_ATTEMPTS</span><span class="w">            </span><span class="n">PASSWORD</span><span class="w"> </span><span class="mi">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">PASSWORD_LIFE_TIME</span><span class="w">               </span><span class="n">PASSWORD</span><span class="w"> </span><span class="mi">90</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">PASSWORD_REUSE_TIME</span><span class="w">              </span><span class="n">PASSWORD</span><span class="w"> </span><span class="mi">356</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">PASSWORD_REUSE_MAX</span><span class="w">               </span><span class="n">PASSWORD</span><span class="w"> </span><span class="mi">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">PASSWORD_VERIFY_FUNCTION</span><span class="w">         </span><span class="n">PASSWORD</span><span class="w"> </span><span class="n">VERIFY_FUNCTION</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">PASSWORD_LOCK_TIME</span><span class="w">               </span><span class="n">PASSWORD</span><span class="w"> </span><span class="mi">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">DEFAULT</span><span class="w">                        </span><span class="n">PASSWORD_GRACE_TIME</span><span class="w">              </span><span class="n">PASSWORD</span><span class="w"> </span><span class="mi">5</span><span class="w">
+</span></span></span></code></pre></div><p><strong>암호 재사용 방지와 관련된 설정값</strong><br>
+<a href="https://docs.oracle.com/cd/B19306_01/server.102/b14200/statements_6010.htm">Database SQL Reference - CREATE PROFILE</a></p>
+<table>
+<thead>
+<tr>
+<th>Parameter 이름</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PASSWORD_REUSE_TIME</code></td>
+<td>주어진 날 수 동안 암호를 재사용할 수 없도록 지정. (PASSWORD_REUSE_TIME 값이 5일 경우, 5일 안에는 똑같은 암호를 사용할 수 없다.)</td>
+</tr>
+<tr>
+<td><code>PASSWORD_REUSE_MAX</code></td>
+<td>사용했던 암호를 기억하는 횟수. 사용했던 암호를 재사용하는 걸 방지하는 목적의 설정값.</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>위 두 설정값은 사용자가 지정된 기간 동안 암호를 재사용하지 못하게 한다.</li>
+<li>이 두 파라미터는 반드시 같이 설정해야 동작한다.</li>
+</ul>
+<p> </p>
+<h3 id="4-보안설정-해제">4. 보안설정 해제</h3>
+<p>불가피하게 패스워드 재사용이 필요할 경우, 암호 재사용 방지와 관련된 설정값을 해제한다.</p>
+<ul>
+<li><code>PASSWORD_REUSE_TIME</code>과 <code>PASSWORD_REUSE_MAX</code> 파라미터를 모두 <code>UNLIMITED</code>로 설정하면 데이터베이스가 두 파라미터를 모두 무시한다.</li>
+</ul>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SQL</span><span class="o">&gt;</span><span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="n">PROFILE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="n">PASSWORD_REUSE_TIME</span><span class="w"> </span><span class="n">UNLIMITED</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">Profile</span><span class="w"> </span><span class="n">altered</span><span class="p">.</span><span class="w">
+</span></span></span></code></pre></div><p><code>PASSWORD_REUSE_TIME</code> 파라미터를 비활성화한다.</p>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SQL</span><span class="o">&gt;</span><span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="n">PROFILE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="n">PASSWORD_REUSE_MAX</span><span class="w"> </span><span class="n">UNLIMITED</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">Profile</span><span class="w"> </span><span class="n">altered</span><span class="p">.</span><span class="w">
+</span></span></span></code></pre></div><p><code>PASSWORD_REUSE_MAX</code> 파라미터를 비활성화한다.</p>
+<p> </p>
+<h3 id="5-패스워드-갱신">5. 패스워드 갱신</h3>
+<p><strong>명령어 형식</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SQL</span><span class="o">&gt;</span><span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="o">&lt;</span><span class="err">계정</span><span class="w"> </span><span class="err">이름</span><span class="o">&gt;</span><span class="w"> </span><span class="n">IDENTIFIED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="s2">&#34;&lt;갱신할 패스워드&gt;&#34;</span><span class="p">;</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<p><strong>명령어 예시</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SQL</span><span class="o">&gt;</span><span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">MAXGAUGE</span><span class="w"> </span><span class="n">IDENTIFIED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="s2">&#34;change!me!please&#34;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">User</span><span class="w"> </span><span class="n">altered</span><span class="p">.</span><span class="w">
+</span></span></span></code></pre></div><p>새 패스워드로 갱신 완료되었다.</p>
+<p> </p>
+<h3 id="6-계정-상태-확인">6. 계정 상태 확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SQL</span><span class="o">&gt;</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">USERNAME</span><span class="p">,</span><span class="w"> </span><span class="n">ACCOUNT_STATUS</span><span class="p">,</span><span class="w"> </span><span class="n">PROFILE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">DBA_USERS</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">USERNAME</span><span class="o">=</span><span class="s1">&#39;MAXGAUGE&#39;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">USERNAME</span><span class="w">                       </span><span class="n">ACCOUNT_STATUS</span><span class="w">                   </span><span class="n">PROFILE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">------------------------------ -------------------------------- ------------------------------
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">MAXGAUGE</span><span class="w">                       </span><span class="k">OPEN</span><span class="w">                             </span><span class="k">DEFAULT</span><span class="w">
+</span></span></span></code></pre></div><p><code>MAXGAUGE</code> 계정이 잠금해제<sup><code>OPEN</code></sup> 상태로 변경되었다.</p>
+<p> </p>
+<h3 id="7-보안설정-원복하기">7. 보안설정 원복하기</h3>
+<p>패스워드 갱신을 완료했으면 해제했던 암호 재사용 방지 관련 설정값을 다시 돌려놓는다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SQL</span><span class="o">&gt;</span><span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="n">PROFILE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="n">PASSWORD_REUSE_TIME</span><span class="w"> </span><span class="mi">356</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">Profile</span><span class="w"> </span><span class="n">altered</span><span class="p">.</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SQL</span><span class="o">&gt;</span><span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="n">PROFILE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="n">PASSWORD_REUSE_MAX</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">Profile</span><span class="w"> </span><span class="n">altered</span><span class="p">.</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<h2 id="결론">결론</h2>
+<p>불가피하게 패스워드 재사용이 필요할 경우 위 방법을 사용한다.<br>
+그러나 무분별한 패스워드 재사용은 보안 취약점이다.<br>
+번거롭더라도 완전히 새로운 패스워드로 갱신하는 것이 안전하며 정상적인 조치 방법이다.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

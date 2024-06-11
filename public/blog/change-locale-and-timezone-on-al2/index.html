@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/change-locale-and-timezone-on-al2/" />
+    <title>Amazon Linux 2 로케일과 타임존 변경</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Amazon Linux 2 로케일과 타임존 변경</h1>
+        <div>
+                <time>Updated January 17, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요---1-timezone-설정">개요 - 1. timezone 설정</a></li>
+    <li><a href="#환경">환경</a></li>
+    <li><a href="#배경지식">배경지식</a></li>
+    <li><a href="#ec2-타임존-설정">EC2 타임존 설정</a>
+      <ul>
+        <li><a href="#인스턴스-접속">인스턴스 접속</a></li>
+        <li><a href="#os-버전-확인">OS 버전 확인</a></li>
+        <li><a href="#현재-타임존-확인">현재 타임존 확인</a></li>
+        <li><a href="#타임존-목록-확인">타임존 목록 확인</a></li>
+        <li><a href="#타임존-변경">타임존 변경</a></li>
+        <li><a href="#타임존-설정-재확인">타임존 설정 재확인</a></li>
+        <li><a href="#타임존-설정의-유지">타임존 설정의 유지</a></li>
+      </ul>
+    </li>
+    <li><a href="#참고자료">참고자료</a></li>
+    <li><a href="#개요---2-locale과-charset-설정">개요 - 2. locale과 charset 설정</a></li>
+    <li><a href="#인스턴스-환경">인스턴스 환경</a></li>
+    <li><a href="#해결방안">해결방안</a></li>
+    <li><a href="#상세-해결방법">상세 해결방법</a>
+      <ul>
+        <li><a href="#조치-전-설정-확인">조치 전 설정 확인</a></li>
+        <li><a href="#locale-설정변경">locale 설정변경</a></li>
+        <li><a href="#설정결과-확인">설정결과 확인</a></li>
+      </ul>
+    </li>
+    <li><a href="#참고자료-1">참고자료</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<p>이 가이드에서는 Amazon Linux 2 인스턴스의 로케일 &amp; 문자셋과 타임존을 변경하는 방법을 소개합니다.</p>
+<p> </p>
+<h2 id="개요---1-timezone-설정">개요 - 1. timezone 설정</h2>
+<p>EC2 인스턴스의 표준시를 변경하는 방법을 소개합니다.</p>
+<p>종종 EC2 인스턴스의 시간을 한국 표준시로 변경해야하는 경우가 있습니다.</p>
+<p>제 최근 사례로는 EC2 인스턴스 로컬에서 돌리는 테스트 코드로 인해 생성되는 로그 시간이 협정 세계시<sup>UTC, Universal Time Coordinated</sup>가 아닌 한국 표준시<sup>KST, Korea Standard Time</sup>로 찍히도록 해야하는 상황 등이 있었습니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<ul>
+<li><strong>OS</strong> : Amazon Linux 2</li>
+<li><strong>Shell</strong> : bash</li>
+</ul>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<ul>
+<li>Amazon Linux 2 인스턴스는 기본적으로 UTC<sup>협정 세계시</sup> 표준 시간대로 설정됩니다.</li>
+<li>타임존을 변경하게 되면 인스턴스를 리부팅 해도 타임존 설정은 그대로 유지됩니다.</li>
+</ul>
+<p> </p>
+<h2 id="ec2-타임존-설정">EC2 타임존 설정</h2>
+<h3 id="인스턴스-접속">인스턴스 접속</h3>
+<p>타임존을 설정하기 위해 SSH 또는 SSM Session Manager를 이용해 인스턴스에 원격 접속합니다.</p>
+<p>현재 <code>ec2-user</code> 계정으로 EC2 인스턴스에 로그인했습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ id
+</span></span><span class="line"><span class="cl"><span class="nv">uid</span><span class="o">=</span>1000<span class="o">(</span>ec2-user<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1000<span class="o">(</span>ec2-user<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1000<span class="o">(</span>ec2-user<span class="o">)</span>,4<span class="o">(</span>adm<span class="o">)</span>,10<span class="o">(</span>wheel<span class="o">)</span>,190<span class="o">(</span>systemd-journal<span class="o">)</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="os-버전-확인">OS 버전 확인</h3>
+<p>현재 접속한 인스턴스의 운영체제가 Amazon Linux 2 임을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat /etc/os-release
+</span></span><span class="line"><span class="cl"><span class="nv">NAME</span><span class="o">=</span><span class="s2">&#34;Amazon Linux&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&#34;2&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">ID</span><span class="o">=</span><span class="s2">&#34;amzn&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">ID_LIKE</span><span class="o">=</span><span class="s2">&#34;centos rhel fedora&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">VERSION_ID</span><span class="o">=</span><span class="s2">&#34;2&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">PRETTY_NAME</span><span class="o">=</span><span class="s2">&#34;Amazon Linux 2&#34;</span>
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p>인스턴스의 OS 버전이 <code>Amazon Linux 2</code>입니다.</p>
+<p> </p>
+<h3 id="현재-타임존-확인">현재 타임존 확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ timedatectl
+</span></span><span class="line"><span class="cl">      Local time: Tue 2022-05-31 08:58:34 UTC
+</span></span><span class="line"><span class="cl">  Universal time: Tue 2022-05-31 08:58:34 UTC
+</span></span><span class="line"><span class="cl">        RTC time: Tue 2022-05-31 08:58:35
+</span></span><span class="line"><span class="cl">       Time zone: n/a <span class="o">(</span>UTC, +0000<span class="o">)</span>
+</span></span><span class="line"><span class="cl">     NTP enabled: yes
+</span></span><span class="line"><span class="cl">NTP synchronized: yes
+</span></span><span class="line"><span class="cl"> RTC in <span class="nb">local</span> TZ: no
+</span></span><span class="line"><span class="cl">      DST active: n/a
+</span></span></code></pre></div><p>현재 설정된 <code>Time zone</code> 값이 <code>n/a</code>이면 협정 세계시<sup>UTC</sup>를 의미합니다.</p>
+<p> </p>
+<h3 id="타임존-목록-확인">타임존 목록 확인</h3>
+<p>전체 타임존 목록 중 Seoul로 검색합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ timedatectl list-timezones <span class="p">|</span> grep -i seoul
+</span></span><span class="line"><span class="cl">Asia/Seoul
+</span></span></code></pre></div><p>이제 인스턴스의 타임존을 서울 <code>Asia/Seoul</code>로 설정하겠습니다.</p>
+<p> </p>
+<h3 id="타임존-변경">타임존 변경</h3>
+<p>타임존을 <code>Asia/Seoul</code>로 변경합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo timedatectl set-timezone Asia/Seoul
+</span></span></code></pre></div><p> </p>
+<h3 id="타임존-설정-재확인">타임존 설정 재확인</h3>
+<p><code>Time zone</code> 값이 <code>n/a (UTC, +0000)</code>에서 <code>Asia/Seoul (KST, +0900)</code>으로 변경되었습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ timedatectl
+</span></span><span class="line"><span class="cl">      Local time: Tue 2022-05-31 17:58:59 KST
+</span></span><span class="line"><span class="cl">  Universal time: Tue 2022-05-31 08:58:59 UTC
+</span></span><span class="line"><span class="cl">        RTC time: Tue 2022-05-31 08:59:00
+</span></span><span class="line"><span class="cl">       Time zone: Asia/Seoul <span class="o">(</span>KST, +0900<span class="o">)</span>
+</span></span><span class="line"><span class="cl">     NTP enabled: yes
+</span></span><span class="line"><span class="cl">NTP synchronized: yes
+</span></span><span class="line"><span class="cl"> RTC in <span class="nb">local</span> TZ: no
+</span></span><span class="line"><span class="cl">      DST active: n/a
+</span></span></code></pre></div><p> </p>
+<p><code>date</code> 명령어로 현재 시간을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ date
+</span></span><span class="line"><span class="cl">Tue May <span class="m">31</span> 17:59:01 KST <span class="m">2022</span>
+</span></span></code></pre></div><p><code>date</code> 결과도 한국 표준시<sup>KST</sup>로 출력되는 걸 확인할 수 있습니다.</p>
+<p> </p>
+<h3 id="타임존-설정의-유지">타임존 설정의 유지</h3>
+<p>위 과정에서 조치한 EC2 타임존 설정은 영구적용이기 때문에 EC2 인스턴스가 리부팅된 후에도 계속 유지됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ uptime
+</span></span><span class="line"><span class="cl"> 19:49:56 up <span class="m">0</span> min,  <span class="m">0</span> users,  load average: 0.13, 0.03, 0.01
+</span></span></code></pre></div><p>현재 EC2 인스턴스의 업타임을 보면 방금 전 리부팅된 상태입니다.</p>
+<p> </p>
+<p>리부팅이 완료된 후 타임존을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ timedatectl
+</span></span><span class="line"><span class="cl">      Local time: Tue 2022-05-31 19:49:58 KST
+</span></span><span class="line"><span class="cl">  Universal time: Tue 2022-05-31 10:49:58 UTC
+</span></span><span class="line"><span class="cl">        RTC time: Tue 2022-05-31 10:49:59
+</span></span><span class="line"><span class="cl">       Time zone: Asia/Seoul <span class="o">(</span>KST, +0900<span class="o">)</span>
+</span></span><span class="line"><span class="cl">     NTP enabled: yes
+</span></span><span class="line"><span class="cl">NTP synchronized: yes
+</span></span><span class="line"><span class="cl"> RTC in <span class="nb">local</span> TZ: no
+</span></span><span class="line"><span class="cl">      DST active: n/a
+</span></span></code></pre></div><p>EC2 인스턴스를 리부팅한 뒤에도 <code>Time zone</code> 값이 그대로 <code>Asia/Seoul (KST, +0900)</code>로 유지되는 걸 확인할 수 있습니다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><strong>AWS 공식문서</strong><br>
+<a href="https://docs.aws.amazon.com/ko_kr/AWSEC2/latest/UserGuide/set-time.html#change_time_zone">Amazon Linux의 표준 시간대 변경</a></p>
+<p> </p>
+<hr>
+<p> </p>
+<h2 id="개요---2-locale과-charset-설정">개요 - 2. locale과 charset 설정</h2>
+<p>이제 Amazon Linux 2 인스턴스에서 locale과 문자셋을 변경하는 방법을 소개합니다.<br>
+개발자로부터 외부 연동하는 서버와 한글이 euc-kr로 연동되어야 하는데, ksc5601로 encoding하여 페이로드를 보내도 한글이 깨져서 들어오는 문제가 제보되었습니다.</p>
+<p>과거에도 EC2 인스턴스의 charset이 euc-kr로 설정되어 있으면, 한글 연동 시 서버의 문자셋 영향을 받았던 경험이 있었습니다.</p>
+<p> </p>
+<h2 id="인스턴스-환경">인스턴스 환경</h2>
+<ul>
+<li><strong>OS</strong> : Amazon Linux 2</li>
+<li><strong>CPU 아키텍처</strong> : aarch64 (<code>t4g.small</code>)</li>
+<li><strong>AMI ID</strong> : ami-0ae9ae3937eac86b9</li>
+<li><strong>AMI Name</strong> : amzn2-ami-ecs-hvm-2.0.20221213-arm64-ebs</li>
+<li><strong>Shell</strong> : bash</li>
+</ul>
+<p> </p>
+<h2 id="해결방안">해결방안</h2>
+<p>Amazon Linux 2가 설치된 EC2 인스턴스에서 문자셋을 <code>ko_KR.euckr</code>로 변경하면 됩니다.<br>
+Amazon Linux 2의 문자셋 기본값은 <code>en_US.UTF-8</code>입니다.</p>
+<p> </p>
+<h2 id="상세-해결방법">상세 해결방법</h2>
+<h3 id="조치-전-설정-확인">조치 전 설정 확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ grep PRETTY_NAME /etc/os-release
+</span></span><span class="line"><span class="cl"><span class="nv">PRETTY_NAME</span><span class="o">=</span><span class="s2">&#34;Amazon Linux 2&#34;</span>
+</span></span></code></pre></div><p>현재 locale과 charset을 변경할 EC2 인스턴스의 OS는 Amazon Linux 2입니다.</p>
+<p> </p>
+<p>현재 Locale 설정을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ locale
+</span></span><span class="line"><span class="cl"><span class="nv">LANG</span><span class="o">=</span>en_US.UTF-8
+</span></span><span class="line"><span class="cl"><span class="nv">LC_CTYPE</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_NUMERIC</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_TIME</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_COLLATE</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_MONETARY</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_MESSAGES</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_PAPER</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_NAME</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_ADDRESS</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_TELEPHONE</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_MEASUREMENT</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_IDENTIFICATION</span><span class="o">=</span><span class="s2">&#34;en_US.UTF-8&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_ALL</span><span class="o">=</span>
+</span></span></code></pre></div><p> </p>
+<p>환경변수도 같이 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">echo</span> <span class="nv">$LANG</span>
+</span></span><span class="line"><span class="cl">en_US.UTF-8
+</span></span></code></pre></div><p><code>LANG</code> 환경변수<sup>environment variable</sup>를 출력해보면 로케일<sup>locale</sup>과 문자셋<sup>character set</sup> 방식을 알 수 있습니다.</p>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat /etc/locale.conf
+</span></span><span class="line"><span class="cl"><span class="c1"># Created by cloud-init v. 19.3-46.amzn2 on Thu, 15 Dec 2022 05:18:25 +0000</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LANG</span><span class="o">=</span>en_US.UTF-8
+</span></span></code></pre></div><p> </p>
+<h3 id="locale-설정변경">locale 설정변경</h3>
+<p>locale 환경변수인 LANG을 <code>ko_KR.euckr</code>로 설정합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">export</span> <span class="nv">LANG</span><span class="o">=</span>ko_KR.euckr
+</span></span></code></pre></div><p> </p>
+<p>EC2에서 사용 가능한 locale 전체 리스트를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ locale -a <span class="p">|</span> grep kr
+</span></span><span class="line"><span class="cl">ko_KR.euckr
+</span></span></code></pre></div><p> </p>
+<p><code>/etc/locale.conf</code> 설정파일에서 <code>LANG</code> 값을 <code>ko_KR.euckr</code>로 변경합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat /etc/locale.conf
+</span></span><span class="line"><span class="cl"><span class="c1"># Created by cloud-init v. 19.3-46.amzn2 on Thu, 15 Dec 2022 05:18:25 +0000</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># LANG=en_US.UTF-8</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LANG</span><span class="o">=</span>ko_KR.euckr
+</span></span></code></pre></div><p> </p>
+<p><code>/etc/sysconfig/i18n</code> 설정파일에서도 <code>LANG</code> 값을 <code>ko_KR.euckr</code>로 변경합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat /etc/sysconfig/i18n
+</span></span><span class="line"><span class="cl"><span class="nv">LANG</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="설정결과-확인">설정결과 확인</h3>
+<p><code>locale</code> 명령어로 현재 인스턴스에 설정된 언어값을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ locale
+</span></span><span class="line"><span class="cl"><span class="nv">LANG</span><span class="o">=</span>ko_KR.euckr
+</span></span><span class="line"><span class="cl"><span class="nv">LC_CTYPE</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_NUMERIC</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_TIME</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_COLLATE</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_MONETARY</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_MESSAGES</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_PAPER</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_NAME</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_ADDRESS</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_TELEPHONE</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_MEASUREMENT</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_IDENTIFICATION</span><span class="o">=</span><span class="s2">&#34;ko_KR.euckr&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LC_ALL</span><span class="o">=</span>
+</span></span></code></pre></div><p>LANG 값이 모두 <code>en_US.UTF-8</code>에서 <code>ko_KR.euckr</code>로 변경된 것을 확인할 수 있습니다.</p>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ env <span class="p">|</span> grep LANG
+</span></span><span class="line"><span class="cl"><span class="nv">LANG</span><span class="o">=</span>ko_KR.euckr
+</span></span></code></pre></div><p> </p>
+<p>인스턴스가 리부팅 가능한 상황인 경우, OS 리부팅 후에도 동일한 locale &amp; charset 설정을 그대로 유지하고 있는 지까지 체크하도록 합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># EC2 리부팅 후 아래 명령어로 확인</span>
+</span></span><span class="line"><span class="cl">$ <span class="nb">echo</span> <span class="nv">$LANG</span>
+</span></span><span class="line"><span class="cl">$ locale
+</span></span><span class="line"><span class="cl">$ cat /etc/sysconfig/i18n
+</span></span></code></pre></div><p> </p>
+<h2 id="참고자료-1">참고자료</h2>
+<p><a href="https://youngjinmo.github.io/2021/04/aws-ec2-setlocale/">AWS EC2 Timezone, Locale 변경하기</a></p>
+<p><a href="/blog/change-ec2-timezone/">타임존 변경</a><br>
+Amazon Linux 2 인스턴스에서 locale 값이 아닌 timezone 변경이 필요한 경우 위 글을 참조합니다.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/ghe-backup-utils/" />
+    <title>Github Enterprise 백업 인스턴스 구성</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Github Enterprise 백업 인스턴스 구성</h1>
+        <div>
+                <time>Updated July 29, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#배경지식">배경지식</a>
+      <ul>
+        <li><a href="#github-backup-utils">github-backup-utils</a></li>
+      </ul>
+    </li>
+    <li><a href="#환경">환경</a>
+      <ul>
+        <li><a href="#github-enterprise-서버">Github Enterprise 서버</a></li>
+        <li><a href="#백업-전용-ec2-인스턴스">백업 전용 EC2 인스턴스</a></li>
+      </ul>
+    </li>
+    <li><a href="#설치방법">설치방법</a>
+      <ul>
+        <li><a href="#백업-인스턴스-생성">백업 인스턴스 생성</a></li>
+        <li><a href="#백업-인스턴스에-접속">백업 인스턴스에 접속</a></li>
+        <li><a href="#github-backup-utils-패키지-설치">github-backup-utils 패키지 설치</a></li>
+        <li><a href="#백업-설정파일-작성">백업 설정파일 작성</a></li>
+        <li><a href="#cronie-설치">cronie 설치</a></li>
+        <li><a href="#백업-스케줄-등록">백업 스케줄 등록</a></li>
+        <li><a href="#ssh-키-등록">SSH 키 등록</a></li>
+        <li><a href="#백업-결과-확인">백업 결과 확인</a></li>
+        <li><a href="#수동-백업하기">수동 백업하기</a></li>
+        <li><a href="#백업-및-복구-진행사항-모니터링">백업 및 복구 진행사항 모니터링</a></li>
+      </ul>
+    </li>
+    <li><a href="#정리">정리</a></li>
+    <li><a href="#더-나아가서">더 나아가서</a>
+      <ul>
+        <li><a href="#쿠버네티스-기반-backup-utils">쿠버네티스 기반 backup-utils</a></li>
+      </ul>
+    </li>
+    <li><a href="#참고자료">참고자료</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>Github Enterprise Server v3.8.4에서 Backup 인스턴스(backup-utils) 구축하기</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="github-backup-utils">github-backup-utils</h3>
+<p>Github Enterprise Server를 운영할 때 공식적으로 github-backup-utils를 사용해서 백업을 수행해야 합니다.</p>
+<p>Github Support 측 공식 답변으로는 GHE 서버의 백업은 AWS Backup의 경우 보조 개념으로 사용하고, github-backup-utils를 메인 백업으로 사용하는 걸 권장한다고 합니다.</p>
+<p>이 경우 AWS Backup은 Optional한 선택지이므로 github-backup-utils만 사용해도 무방할 것 같습니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<p>Github Enterprise 시스템 구성은 다음과 같습니다.</p>
+<p><img src="./1.png" alt="Github Enterprise 백업 시스템 구성"></p>
+<p>퍼블릭 클라우드인 AWS를 기반으로 Github Enterprise Server와 백업 서버를 구축한 환경입니다.</p>
+<p> </p>
+<h3 id="github-enterprise-서버">Github Enterprise 서버</h3>
+<ul>
+<li><strong>OS</strong> : Debian 10</li>
+<li><strong>Github Enterprise v3.8.4</strong></li>
+<li><strong>CPU 아키텍처</strong> : x86_64</li>
+</ul>
+<p> </p>
+<h3 id="백업-전용-ec2-인스턴스">백업 전용 EC2 인스턴스</h3>
+<ul>
+<li><strong>OS</strong> : Amazon Linux 2023</li>
+<li><strong>인스턴스 타입</strong> : t4g.large</li>
+<li><strong>CPU 아키텍처</strong> : ARM64</li>
+<li><strong>백업 패키지 버전</strong> : <a href="https://github.com/github/backup-utils/releases/tag/v3.8.1">backup-utils v3.8.1</a></li>
+</ul>
+<p> </p>
+<h2 id="설치방법">설치방법</h2>
+<h3 id="백업-인스턴스-생성">백업 인스턴스 생성</h3>
+<h4 id="os">OS</h4>
+<p>Github 측에서는 공식적으로 Ubuntu OS를 기준으로 백업 소프트웨어를 테스트 되었으므로 Ubuntu OS를 권장하고 있습니다.</p>
+<p>그러나 저는 이번 기회에 Amazon Linux 2023을 써보고 싶어서 백업 서버의 AMI로 Amazon Linux 2023을 선정했습니다.</p>
+<p> </p>
+<p>제 경우 백업 서버의 OS로 Amazon Linux 2023 + ARM64 아키텍처를 사용했는데 운영에 전혀 영향이 없었습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat /etc/os-release
+</span></span><span class="line"><span class="cl"><span class="nv">NAME</span><span class="o">=</span><span class="s2">&#34;Amazon Linux&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&#34;2023&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">ID</span><span class="o">=</span><span class="s2">&#34;amzn&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">ID_LIKE</span><span class="o">=</span><span class="s2">&#34;fedora&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">VERSION_ID</span><span class="o">=</span><span class="s2">&#34;2023&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">PLATFORM_ID</span><span class="o">=</span><span class="s2">&#34;platform:al2023&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">PRETTY_NAME</span><span class="o">=</span><span class="s2">&#34;Amazon Linux 2023&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">ANSI_COLOR</span><span class="o">=</span><span class="s2">&#34;0;33&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">CPE_NAME</span><span class="o">=</span><span class="s2">&#34;cpe:2.3:o:amazon:amazon_linux:2023&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">HOME_URL</span><span class="o">=</span><span class="s2">&#34;https://aws.amazon.com/linux/&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">BUG_REPORT_URL</span><span class="o">=</span><span class="s2">&#34;https://github.com/amazonlinux/amazon-linux-2023&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">SUPPORT_END</span><span class="o">=</span><span class="s2">&#34;2028-03-01&#34;</span>
+</span></span></code></pre></div><p> </p>
+<h4 id="리소스-스펙">리소스 스펙</h4>
+<p>CPU 및 메모리 요구 사항은 GitHub Enterprise Server 어플라이언스의 크기에 따라 다릅니다.<br>
+GitHub Enterprise Backup Utilities를 실행하는 호스트에는 최소 4개의 코어와 8GB의 RAM이 권장됩니다.</p>
+<p> </p>
+<h4 id="디스크-볼륨">디스크 볼륨</h4>
+<p>백업 서버에 연결하는 EBS 볼륨 크기는 Primary GHE 서버 볼륨의 <a href="https://github.com/github/backup-utils/blob/master/docs/requirements.md#storage-requirements"><strong>최소 5배</strong></a>를 권장하고 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ df -hT
+</span></span><span class="line"><span class="cl">Filesystem     Type      Size  Used Avail Use% Mounted on
+</span></span><span class="line"><span class="cl">devtmpfs       devtmpfs  4.0M     <span class="m">0</span>  4.0M   0% /dev
+</span></span><span class="line"><span class="cl">tmpfs          tmpfs     3.9G     <span class="m">0</span>  3.9G   0% /dev/shm
+</span></span><span class="line"><span class="cl">tmpfs          tmpfs     1.6G  468K  1.6G   1% /run
+</span></span><span class="line"><span class="cl">/dev/nvme0n1p1 xfs       1.5T   13G  1.5T   1% /
+</span></span><span class="line"><span class="cl">tmpfs          tmpfs     3.9G     <span class="m">0</span>  3.9G   0% /tmp
+</span></span><span class="line"><span class="cl">tmpfs          tmpfs     783M     <span class="m">0</span>  783M   0% /run/user/1000
+</span></span></code></pre></div><p> </p>
+<h4 id="가용영역-선정">가용영역 선정</h4>
+<p>퍼블릭 클라우드 환경에서 Github Enterprise Server를 설치해서 사용하는 경우, 백업서버의 가용영역 선정이 중요합니다.</p>
+<p>가용영역 레벨의 장애가 발생할 경우를 대비하기 위해 반드시 <strong>Github Enterprise Primary 서버와 다른</strong> 가용영역에 배치합니다.</p>
+<p><img src="./2.png" alt="Github Enterprise Primary 서버와 백업 서버의 AZ 분산 배치"></p>
+<p> </p>
+<h3 id="백업-인스턴스에-접속">백업 인스턴스에 접속</h3>
+<p>Github Enterprise 백업 인스턴스에 SSH로 접속합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># SSH access command example</span>
+</span></span><span class="line"><span class="cl">$ ssh -i my-ec2-ssh-key.pem -p <span class="m">22</span> -l ec2-user 10.190.33.44
+</span></span></code></pre></div><p>2023년 7월 기준으로 Amazon Linux 2023은 Session Manager를 사용할 수 없고 SSH만 지원합니다.<br>
+<a href="https://docs.aws.amazon.com/linux/al2023/ug/connecting-to-instances.html">Amazon Linux 2023 공식문서</a></p>
+<p> </p>
+<h4 id="필수-유틸리티">필수 유틸리티</h4>
+<p>백업 서버에 git을 설치합니다. 백업 수행에 필요한 유틸리티입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo yum install -y git
+</span></span></code></pre></div><p> </p>
+<p>백업 서버에 설치가 필요한 패키지는 다음과 같습니다.<br>
+Amazon Linux 2023 기준으로 대부분이 이미 설치되어 있지만 git과 cronie는 별도 설치가 필요했습니다.</p>
+<table>
+<thead>
+<tr>
+<th>기능 구분</th>
+<th>설치가 필요한 패키지</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>일반</td>
+<td>bash, git, ssh, rsync, jq</td>
+</tr>
+<tr>
+<td>병렬 백업 및 복구</td>
+<td>GNU awk, moreutils</td>
+</tr>
+</tbody>
+</table>
+<p>자세한 사항은 공식문서 <a href="https://github.com/github/backup-utils/blob/master/docs/requirements.md#backup-host-requirements">Backup host requirements</a>를 참고하세요.</p>
+<p> </p>
+<h3 id="github-backup-utils-패키지-설치">github-backup-utils 패키지 설치</h3>
+<p><a href="https://github.com/github/backup-utils/releases/tag/v3.8.1">github-backup-utils v3.8.1</a> 패키지를 <code>/opt/</code> 밑에 다운로드 받습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ wget https://github.com/github/backup-utils/releases/download/v3.8.1/github-backup-utils-v3.8.1.tar.gz <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -O /opt/github-backup-utils-v3.8.1.tar.gz
+</span></span></code></pre></div><p>위 명령어가 실행되기 위해서 백업서버가 NAT Gateway를 경유해서 인터넷 아웃바운드 가능한 네트워크 환경이어야 합니다.</p>
+<p><img src="./3.png" alt="인터넷 아웃바운드가 가능한 AWS 네트워크 구성"></p>
+<blockquote>
+<p><strong>인터넷 아웃바운드의 필요 시점</strong><br>
+패키지 다운로드 작업이 완료된 이후부터는 인터넷 아웃바운드가 필요 없습니다.<br>
+백업 서버의 보안그룹에서 인터넷으로 나가는 아웃바운드 룰을 삭제해도 백업 수행에 영향이 없습니다.</p>
+</blockquote>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">--2023-06-16 00:47:24--  https://github.com/github/backup-utils/releases/download/v3.8.1/github-backup-utils-v3.8.1.tar.gz
+</span></span><span class="line"><span class="cl">Resolving github.com <span class="o">(</span>github.com<span class="o">)</span>... 20.200.245.247
+</span></span><span class="line"><span class="cl">Connecting to github.com <span class="o">(</span>github.com<span class="o">)</span><span class="p">|</span>20.200.245.247<span class="p">|</span>:443... connected.
+</span></span><span class="line"><span class="cl">HTTP request sent, awaiting response... <span class="m">302</span> Found
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">Resolving objects.githubusercontent.com <span class="o">(</span>objects.githubusercontent.com<span class="o">)</span>... 185.199.110.133, 185.199.111.133, 185.199.108.133, ...
+</span></span><span class="line"><span class="cl">Connecting to objects.githubusercontent.com <span class="o">(</span>objects.githubusercontent.com<span class="o">)</span><span class="p">|</span>185.199.110.133<span class="p">|</span>:443... connected.
+</span></span><span class="line"><span class="cl">HTTP request sent, awaiting response... cd200 OK
+</span></span><span class="line"><span class="cl">Length: <span class="m">117155</span> <span class="o">(</span>114K<span class="o">)</span> <span class="o">[</span>application/octet-stream<span class="o">]</span>
+</span></span><span class="line"><span class="cl">Saving to: ‘/opt/github-backup-utils-v3.8.1.tar.gz’
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">/opt/github-backup-utils-v3.8.1.t 100%<span class="o">[==========================================================</span>&gt;<span class="o">]</span> 114.41K  --.-KB/s    in 0.009s
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">2023-06-16 00:47:25 <span class="o">(</span>12.9 MB/s<span class="o">)</span> - ‘/opt/github-backup-utils-v3.8.1.tar.gz’ saved <span class="o">[</span>117155/117155<span class="o">]</span>
+</span></span></code></pre></div><p>정상적으로 패키지를 다운로드 받았습니다.</p>
+<p> </p>
+<p>현재 <code>/opt/</code> 밑에 GHE backup util v3.8.1 설치파일을 다운로드 받았습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> /opt/
+</span></span><span class="line"><span class="cl">$ ls -lh
+</span></span><span class="line"><span class="cl">total 132K
+</span></span><span class="line"><span class="cl">drwxr-xr-x.  <span class="m">4</span> root     root       <span class="m">33</span> Jun  <span class="m">9</span> 20:43 aws
+</span></span><span class="line"><span class="cl">-rw-r--r--.  <span class="m">1</span> root     root     115K Jun <span class="m">14</span> 22:00 github-backup-utils-v3.8.1.tar.gz
+</span></span></code></pre></div><p> </p>
+<p>다운로드 받은 <code>github-backup-utils-v3.8.1.tar.gz</code> 파일을 압축 해제합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ tar -xzvf /opt/github-backup-utils-v3.8.1.tar.gz
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">github-backup-utils-v3.8.1/
+</span></span><span class="line"><span class="cl">github-backup-utils-v3.8.1/.dockerignore
+</span></span><span class="line"><span class="cl">github-backup-utils-v3.8.1/.github/
+</span></span><span class="line"><span class="cl">github-backup-utils-v3.8.1/.github/dependabot.yml
+</span></span><span class="line"><span class="cl">github-backup-utils-v3.8.1/.github/workflows/
+</span></span><span class="line"><span class="cl">github-backup-utils-v3.8.1/.github/workflows/docker-image.yml
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">github-backup-utils-v3.8.1/test/testlib.sh
+</span></span></code></pre></div><p> </p>
+<p>Github Enterprise 백업 유틸리티에서 기본적으로 인식할 수 있도록 디렉토리 이름을 <code>backup-utils</code>로 변경합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ mv github-backup-utils-v3.8.1 backup-utils
+</span></span></code></pre></div><p> </p>
+<h3 id="백업-설정파일-작성">백업 설정파일 작성</h3>
+<p>샘플 백업 설정파일 <code>/opt/backup-utils/backup.config-example</code>을 확인합니다.<br>
+예제 설정파일 원본은 <a href="https://github.com/github/backup-utils/blob/v3.8.1/backup.config-example">Github</a>에서 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat backup.config-example
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># GitHub Enterprise Server backup configuration file</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The hostname of the GitHub Enterprise Server appliance to back up. The host</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># must be reachable via SSH from the backup host.</span>
+</span></span><span class="line"><span class="cl"><span class="nv">GHE_HOSTNAME</span><span class="o">=</span><span class="s2">&#34;github.example.com&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Path to where backup data is stored. By default this is the &#34;data&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># directory next to this file but can be set to an absolute path</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># elsewhere for backing up to a separate partition / mount point.</span>
+</span></span><span class="line"><span class="cl"><span class="nv">GHE_DATA_DIR</span><span class="o">=</span><span class="s2">&#34;data&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The number of backup snapshots to retain. Old snapshots are pruned after each</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># successful ghe-backup run. This option should be tuned based on the frequency</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># of scheduled backup runs. If backups are scheduled hourly, snapshots will be</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># available for the past N hours; if backups are scheduled daily, snapshots will</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># be available for the past N days ...</span>
+</span></span><span class="line"><span class="cl"><span class="nv">GHE_NUM_SNAPSHOTS</span><span class="o">=</span><span class="m">10</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The hostname of the GitHub appliance to restore. If you&#39;ve set up a separate</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># GitHub appliance to act as a standby for recovery, specify its IP or hostname</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># here. The host to restore to may also be specified directly when running</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># ghe-restore so use of this variable isn&#39;t strictly required.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_RESTORE_HOST=&#34;github-standby.example.com&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># If set to &#39;yes&#39;, ghe-restore will omit the restore of audit logs.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_RESTORE_SKIP_AUDIT_LOGS=no</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># When verbose output is enabled with `-v`, it&#39;s written to stdout by default. If</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># you&#39;d prefer it to be written to a separate file, set this option.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_VERBOSE_LOG=&#34;/var/log/backup-verbose.log&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Any extra options passed to the SSH command.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># In a single instance environment, nothing is required by default.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># In a clustering environment, &#34;-i abs-path-to-ssh-private-key&#34; is required.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_EXTRA_SSH_OPTS=&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Any extra options passed to the rsync command. Nothing required by default.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_EXTRA_RSYNC_OPTS=&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># If set to &#39;no&#39;, GHE_DATA_DIR will not be created automatically</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># and restore/backup will exit 8</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_CREATE_DATA_DIR=yes</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># If set to &#39;yes&#39;, git fsck will run on the repositories</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># and print some additional info.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># WARNING: do not enable this, only useful for debugging/development</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_BACKUP_FSCK=no</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Cadence of MSSQL backups</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># &lt;full&gt;,&lt;differential&gt;,&lt;transactionlog&gt; all in minutes</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># e.g.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#   - Full backup every week (10080 minutes)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#   - Differential backup every day (1440 minutes)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#   - Transactionlog backup every 15 minutes</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_MSSQL_BACKUP_CADENCE=10080,1440,15</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># If set to &#39;yes&#39;, ghe-backup jobs will run in parallel. Defaults to &#39;no&#39;.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_PARALLEL_ENABLED=yes</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Sets the maximum number of jobs to run in parallel. Defaults to the number</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># of available processing units on the machine.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_PARALLEL_MAX_JOBS=2</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Sets the maximum number of rsync jobs to run in parallel. Defaults to the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># configured GHE_PARALLEL_MAX_JOBS, or the number of available processing</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># units on the machine.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># GHE_PARALLEL_RSYNC_MAX_JOBS=3</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># When jobs are running in parallel wait as needed to avoid starting new jobs</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># when the system&#39;s load average is not below the specified percentage. Defaults to</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># unrestricted.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_PARALLEL_MAX_LOAD=50</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># When running an external mysql database, run this script to trigger a MySQL backup</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># rather than attempting to backup via backup-utils directly.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#EXTERNAL_DATABASE_BACKUP_SCRIPT=&#34;/bin/false&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># When running an external mysql database, run this script to trigger a MySQL restore</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># rather than attempting to backup via backup-utils directly.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#EXTERNAL_DATABASE_RESTORE_SCRIPT=&#34;/bin/false&#34;</span>
+</span></span></code></pre></div><ul>
+<li><strong>GHE_HOSTNAME</strong> : &ldquo;github.company.com&quot;과 같은 Primary 깃허브 서버 도메인 주소</li>
+<li><strong>GHE_DATA_DIR</strong> : 백업 데이터가 저장되는 경로</li>
+<li><strong>GHE_NUM_SNAPSHOTS</strong> : 최대 보관하려는 스냅샷 개수</li>
+</ul>
+<p> </p>
+<p>다음과 같이 <code>backup.config-example</code> 설정파일을 수정합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># GitHub Enterprise Server backup configuration file</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The hostname of the GitHub Enterprise Server appliance to back up. The host</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># must be reachable via SSH from the backup host.</span>
+</span></span><span class="line"><span class="cl"><span class="nv">GHE_HOSTNAME</span><span class="o">=</span><span class="s2">&#34;github.company.com&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Path to where backup data is stored. By default this is the &#34;data&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># directory next to this file but can be set to an absolute path</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># elsewhere for backing up to a separate partition / mount point.</span>
+</span></span><span class="line"><span class="cl"><span class="nv">GHE_DATA_DIR</span><span class="o">=</span><span class="s2">&#34;data&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The number of backup snapshots to retain. Old snapshots are pruned after each</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># successful ghe-backup run. This option should be tuned based on the frequency</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># of scheduled backup runs. If backups are scheduled hourly, snapshots will be</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># available for the past N hours; if backups are scheduled daily, snapshots will</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># be available for the past N days ...</span>
+</span></span><span class="line"><span class="cl"><span class="nv">GHE_NUM_SNAPSHOTS</span><span class="o">=</span><span class="m">72</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The hostname of the GitHub appliance to restore. If you&#39;ve set up a separate</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># GitHub appliance to act as a standby for recovery, specify its IP or hostname</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># here. The host to restore to may also be specified directly when running</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># ghe-restore so use of this variable isn&#39;t strictly required.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_RESTORE_HOST=&#34;github-standby.example.com&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># If set to &#39;yes&#39;, ghe-restore will omit the restore of audit logs.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_RESTORE_SKIP_AUDIT_LOGS=no</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># When verbose output is enabled with `-v`, it&#39;s written to stdout by default. If</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># you&#39;d prefer it to be written to a separate file, set this option.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_VERBOSE_LOG=&#34;/var/log/backup-verbose.log&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Any extra options passed to the SSH command.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># In a single instance environment, nothing is required by default.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># In a clustering environment, &#34;-i abs-path-to-ssh-private-key&#34; is required.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_EXTRA_SSH_OPTS=&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Any extra options passed to the rsync command. Nothing required by default.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_EXTRA_RSYNC_OPTS=&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># If set to &#39;no&#39;, GHE_DATA_DIR will not be created automatically</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># and restore/backup will exit 8</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_CREATE_DATA_DIR=yes</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># If set to &#39;yes&#39;, git fsck will run on the repositories</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># and print some additional info.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># WARNING: do not enable this, only useful for debugging/development</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_BACKUP_FSCK=no</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Cadence of MSSQL backups</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># &lt;full&gt;,&lt;differential&gt;,&lt;transactionlog&gt; all in minutes</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># e.g.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#   - Full backup every week (10080 minutes)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#   - Differential backup every day (1440 minutes)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#   - Transactionlog backup every 15 minutes</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_MSSQL_BACKUP_CADENCE=10080,1440,15</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># If set to &#39;yes&#39;, ghe-backup jobs will run in parallel. Defaults to &#39;no&#39;.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_PARALLEL_ENABLED=yes</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Sets the maximum number of jobs to run in parallel. Defaults to the number</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># of available processing units on the machine.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_PARALLEL_MAX_JOBS=2</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Sets the maximum number of rsync jobs to run in parallel. Defaults to the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># configured GHE_PARALLEL_MAX_JOBS, or the number of available processing</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># units on the machine.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># GHE_PARALLEL_RSYNC_MAX_JOBS=3</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># When jobs are running in parallel wait as needed to avoid starting new jobs</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># when the system&#39;s load average is not below the specified percentage. Defaults to</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># unrestricted.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#GHE_PARALLEL_MAX_LOAD=50</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># When running an external mysql database, run this script to trigger a MySQL backup</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># rather than attempting to backup via backup-utils directly.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#EXTERNAL_DATABASE_BACKUP_SCRIPT=&#34;/bin/false&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># When running an external mysql database, run this script to trigger a MySQL restore</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># rather than attempting to backup via backup-utils directly.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#EXTERNAL_DATABASE_RESTORE_SCRIPT=&#34;/bin/false&#34;</span>
+</span></span></code></pre></div><p>저희는 1시간마다 백업을 수행하도록 스케줄 설정할 예정입니다.<br>
+총 3일치를 보관하기 위해 72개 스냅샷을 보관하도록 설정했습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nv">GHE_NUM_SNAPSHOTS</span><span class="o">=</span><span class="m">72</span>
+</span></span></code></pre></div><p> </p>
+<p>이후 작성한 설정파일은 Github Enterprise backup-utils 기본 경로인 <code>/opt/github-backup-utils</code>에 위치시킵니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo mkdir /etc/github-backup-utils
+</span></span><span class="line"><span class="cl">$ sudo mv backup.config-example /etc/github-backup-utils/backup.config
+</span></span></code></pre></div><p> </p>
+<h3 id="cronie-설치">cronie 설치</h3>
+<p>Amazon Linux 2023에는 기본적으로 crontab이 설치되어 있지 않습니다.<br>
+스케줄 백업을 지정하기 위해 cron 데몬(cronie)을 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo yum install -y cronie
+</span></span></code></pre></div><p>Amazon Linux 2023은 내부 반복 작업을 <a href="https://www.freedesktop.org/software/systemd/man/systemd.timer.html">systemd 타이머</a>로 마이그레이션했기 때문에 의도적으로 cron이 제외되었습니다. <a href="https://github.com/amazonlinux/amazon-linux-2023/issues/300#issuecomment-1481592973">#300</a></p>
+<p> </p>
+<p>백업서버가 재부팅될 경우에도 cron 데몬을 자동시작하도록 enable 설정합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo systemctl <span class="nb">enable</span> crond.service
+</span></span></code></pre></div><p> </p>
+<p>cron 데몬을 시작한 후 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo systemctl start crond.service
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo systemctl status crond.service
+</span></span><span class="line"><span class="cl">● crond.service - Command Scheduler
+</span></span><span class="line"><span class="cl">     Loaded: loaded <span class="o">(</span>/usr/lib/systemd/system/crond.service<span class="p">;</span> enabled<span class="p">;</span> preset: enabled<span class="o">)</span>
+</span></span><span class="line"><span class="cl">     Active: active <span class="o">(</span>running<span class="o">)</span> since Thu 2023-06-15 12:15:15 UTC<span class="p">;</span> 13h ago
+</span></span><span class="line"><span class="cl">   Main PID: <span class="m">32401</span> <span class="o">(</span>crond<span class="o">)</span>
+</span></span><span class="line"><span class="cl">      Tasks: <span class="m">1</span> <span class="o">(</span>limit: 9292<span class="o">)</span>
+</span></span><span class="line"><span class="cl">     Memory: 808.0K
+</span></span><span class="line"><span class="cl">        CPU: 851ms
+</span></span><span class="line"><span class="cl">     CGroup: /system.slice/crond.service
+</span></span><span class="line"><span class="cl">             └─32401 /usr/sbin/crond -n
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Jun <span class="m">15</span> 22:01:01 ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal CROND<span class="o">[</span>78810<span class="o">]</span>: <span class="o">(</span>root<span class="o">)</span> CMDEND <span class="o">(</span>run-parts /etc/cron.hourly<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Jun <span class="m">15</span> 23:01:01 ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal CROND<span class="o">[</span>82822<span class="o">]</span>: <span class="o">(</span>root<span class="o">)</span> CMD <span class="o">(</span>run-parts /etc/cron.hourly<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Jun <span class="m">15</span> 23:01:01 ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal CROND<span class="o">[</span>82821<span class="o">]</span>: <span class="o">(</span>root<span class="o">)</span> CMDEND <span class="o">(</span>run-parts /etc/cron.hourly<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Jun <span class="m">16</span> 00:01:01 ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal CROND<span class="o">[</span>86817<span class="o">]</span>: <span class="o">(</span>root<span class="o">)</span> CMD <span class="o">(</span>run-parts /etc/cron.hourly<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Jun <span class="m">16</span> 00:01:01 ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal anacron<span class="o">[</span>86828<span class="o">]</span>: Anacron started on 2023-06-16
+</span></span><span class="line"><span class="cl">Jun <span class="m">16</span> 00:01:01 ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal anacron<span class="o">[</span>86828<span class="o">]</span>: Normal <span class="nb">exit</span> <span class="o">(</span><span class="m">0</span> <span class="nb">jobs</span> run<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Jun <span class="m">16</span> 00:01:01 ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal CROND<span class="o">[</span>86816<span class="o">]</span>: <span class="o">(</span>root<span class="o">)</span> CMDEND <span class="o">(</span>run-parts /etc/cron.hourly<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Jun <span class="m">16</span> 01:01:01 ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal CROND<span class="o">[</span>91127<span class="o">]</span>: <span class="o">(</span>root<span class="o">)</span> CMD <span class="o">(</span>run-parts /etc/cron.hourly<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Jun <span class="m">16</span> 01:01:01 ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal anacron<span class="o">[</span>91138<span class="o">]</span>: Anacron started on 2023-06-16
+</span></span><span class="line"><span class="cl">Jun <span class="m">16</span> 01:01:01 ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal anacron<span class="o">[</span>91138<span class="o">]</span>: Normal <span class="nb">exit</span> <span class="o">(</span><span class="m">0</span> <span class="nb">jobs</span> run<span class="o">)</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="백업-스케줄-등록">백업 스케줄 등록</h3>
+<p>crontab에 스케줄 백업을 등록합니다.</p>
+<p>백업 빈도는 백업 계획에서 최악의 복구 지점 목표(RPO)를 나타냅니다.<br>
+<a href="https://github.com/github/backup-utils/blob/master/docs/scheduling-backups.md#scheduling-backups">backup-utils 공식문서</a> 기준으로 최소한 1시간 단위 백업을 권장하고 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ crontab -e
+</span></span><span class="line"><span class="cl"><span class="c1"># Hourly backup</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Note: The backup-utils team recommends hourly backups at the least.</span>
+</span></span><span class="line"><span class="cl"><span class="m">0</span> * * * * /opt/backup-utils/bin/ghe-backup -v 1&gt;&gt;/opt/backup-utils/backup.log 2&gt;<span class="p">&amp;</span><span class="m">1</span>
+</span></span></code></pre></div><p>위 설정의 경우 1시간 간격(정시)마다 백업이 수행되고, 백업 로그는 <code>/opt/backup-utils/backup.log</code>에 저장됩니다.</p>
+<p>위 백업 빈도의 경우, 가장 최악의 복구 지점에서 장애가 발생할 때를 가정해보면 최근 1시간 동안의 코드 소실이 발생할 가능성이 있습니다.<br>
+백업 빈도는 각 환경의 <a href="https://ko.wikipedia.org/wiki/%EC%9E%AC%EB%82%9C_%EB%B3%B5%EA%B5%AC_%EA%B3%84%ED%9A%8D">재해 복구 계획</a><sup>DRP, Disaster Recovery Plan</sup>에 맞춰 조정하도록 합니다.</p>
+<p> </p>
+<p>아래는 <a href="https://devhints.io/cron">cron 스케줄 치트시트</a>입니다.<br>
+crontab에 백업 스케줄 작성 시 참고하세요.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">* * * * * <span class="nb">command</span> to be executed
+</span></span><span class="line"><span class="cl">┬ ┬ ┬ ┬ ┬
+</span></span><span class="line"><span class="cl">│ │ │ │ └─────────────  Day of Week   <span class="o">(</span><span class="nv">0</span><span class="o">=</span>Sun .. <span class="nv">6</span><span class="o">=</span>Sat<span class="o">)</span>
+</span></span><span class="line"><span class="cl">│ │ │ └───────────────  Month         <span class="o">(</span>1..12<span class="o">)</span>
+</span></span><span class="line"><span class="cl">│ │ └─────────────────  Day of Month  <span class="o">(</span>1..31<span class="o">)</span>
+</span></span><span class="line"><span class="cl">│ └───────────────────  Hour          <span class="o">(</span>0..23<span class="o">)</span>
+</span></span><span class="line"><span class="cl">└─────────────────────  Minute        <span class="o">(</span>0..59<span class="o">)</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="ssh-키-등록">SSH 키 등록</h3>
+<p>백업 서버의 SSH 공개키가 Primary Github Enterprise 서버에 등록되어 있어야 백업 수행이 가능합니다.</p>
+<p>백업 서버에서 새로운 SSH 키페어를 생성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ssh-keygen -t ed25519 -C <span class="s2">&#34;admin@github.company.com&#34;</span>
+</span></span></code></pre></div><ul>
+<li><code>-t</code> (Type) : 어떠한 암호화 방식을 사용할 것인지를 지정합니다. 사용 가능한 타입으로는 rsa, dsa, ecdsa, ed25519 등이 있습니다.</li>
+<li><code>-C</code> (Comment) : 생성한 키에 주석 달기. 일반적으로는 Github Enterprise 관리자의 이메일 주소를 입력합니다.</li>
+</ul>
+<p> </p>
+<p>백업 서버에서 SSH 키페어 생성이 완료되면 <code>~/.ssh/</code> 경로에 비밀키 <code>id_ed25519</code>, 공개키 <code>id_ed25519.pub</code>가 생성됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls ~/.ssh/
+</span></span><span class="line"><span class="cl">authorized_keys  id_ed25519  id_ed25519.pub  known_hosts
+</span></span></code></pre></div><p> </p>
+<p>백업서버 공개키 <code>id_ed25519.pub</code> 내용을 Primary 서버 Management Console에 접속해서 등록합니다.</p>
+<p><img src="./4.png" alt="SSH 키 전달 시에 구성"></p>
+<p>또는 아래와 같이 Primary 서버의 <code>~/.ssh/authorized_keys</code> 파일에 추가해도 콘솔에서 설정한 것과 동일한 효과를 나타냅니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat ~/.ssh/authorized_keys
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl"><span class="c1"># 백업서버의 공개키 id_ed25519.pub</span>
+</span></span><span class="line"><span class="cl">ssh-ed25519 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX admin@github.company.com
+</span></span></code></pre></div><p> </p>
+<p>이후 다시 백업 서버로 돌아옵니다.</p>
+<p>백업 대상인 GHE Primary 인스턴스와 통신 문제가 없는지 체크하기 위해 <code>/opt/backup-utils/bin/ghe-host-check</code> 명령어를 실행합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ./ghe-host-check
+</span></span><span class="line"><span class="cl">Connect github.company.com:122 OK <span class="o">(</span>v3.8.4<span class="o">)</span>
+</span></span></code></pre></div><p>실행결과로 <code>Connect &lt;YOUR_GITHUB_DOMAIN&gt;:122 OK</code>가 출력되면 정상적으로 백업이 준비되었다고 판단할 수 있습니다.</p>
+<p> </p>
+<p><strong>보안그룹 설정 시 주의사항</strong><br>
+백업서버가 아웃바운드 122로 Github Primary 서버에 도달할 수 있어야 하고, Primary 서버의 인바운드 룰에는 백업서버로부터 122로 들어올 수 있도록 허용되어 있어야 합니다.</p>
+<p><img src="./5.png" alt="백업 서버와 Primary 서버간의 SG 구성"></p>
+<p> </p>
+<h3 id="백업-결과-확인">백업 결과 확인</h3>
+<p>스케줄링 시간이 지난 후 백업로그를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ tail -f /opt/backup-utils/backup.log
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">sent <span class="m">270</span> bytes  received 18,226 bytes  36,992.00 bytes/sec
+</span></span><span class="line"><span class="cl">total size is 262,741  speedup is 14.21
+</span></span><span class="line"><span class="cl">* Enabling ES index flushing ...
+</span></span><span class="line"><span class="cl">Pruning <span class="m">1</span> expired snapshot<span class="o">(</span>s<span class="o">)</span> ...
+</span></span><span class="line"><span class="cl">End time: <span class="m">1686877217</span>
+</span></span><span class="line"><span class="cl">Runtime: <span class="m">15</span> seconds
+</span></span><span class="line"><span class="cl">Completed backup of github.company.com:122 in snapshot 20230616T010002 at 01:00:17
+</span></span><span class="line"><span class="cl">Checking <span class="k">for</span> leaked ssh keys ...
+</span></span><span class="line"><span class="cl">* No leaked keys found
+</span></span></code></pre></div><p>정상적으로 백업이 수행된 것을 확인할 수 있습니다.</p>
+<p> </p>
+<p>백업 스냅샷 파일을 확인합니다.<br>
+백업 스냅샷은 기본적으로 <code>/opt/backup-utils/data/</code>에 쌓입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls -lh /opt/backup-utils/data/
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">total 160K
+</span></span><span class="line"><span class="cl">drwxr-xr-x. <span class="m">9</span> ec2-user ec2-user 16K Jun <span class="m">15</span> 16:00 20230615T160001
+</span></span><span class="line"><span class="cl">drwxr-xr-x. <span class="m">9</span> ec2-user ec2-user 16K Jun <span class="m">15</span> 17:00 20230615T170001
+</span></span><span class="line"><span class="cl">drwxr-xr-x. <span class="m">9</span> ec2-user ec2-user 16K Jun <span class="m">15</span> 18:00 20230615T180001
+</span></span><span class="line"><span class="cl">drwxr-xr-x. <span class="m">9</span> ec2-user ec2-user 16K Jun <span class="m">15</span> 19:00 20230615T190001
+</span></span><span class="line"><span class="cl">drwxr-xr-x. <span class="m">9</span> ec2-user ec2-user 16K Jun <span class="m">15</span> 20:00 20230615T200001
+</span></span><span class="line"><span class="cl">drwxr-xr-x. <span class="m">9</span> ec2-user ec2-user 16K Jun <span class="m">15</span> 21:00 20230615T210001
+</span></span><span class="line"><span class="cl">drwxr-xr-x. <span class="m">9</span> ec2-user ec2-user 16K Jun <span class="m">15</span> 22:00 20230615T220001
+</span></span><span class="line"><span class="cl">drwxr-xr-x. <span class="m">9</span> ec2-user ec2-user 16K Jun <span class="m">15</span> 23:00 20230615T230001
+</span></span><span class="line"><span class="cl">drwxr-xr-x. <span class="m">9</span> ec2-user ec2-user 16K Jun <span class="m">16</span> 00:00 20230616T000001
+</span></span><span class="line"><span class="cl">drwxr-xr-x. <span class="m">9</span> ec2-user ec2-user 16K Jun <span class="m">16</span> 01:00 20230616T010002
+</span></span><span class="line"><span class="cl">lrwxrwxrwx. <span class="m">1</span> ec2-user ec2-user  <span class="m">15</span> Jun <span class="m">16</span> 01:00 current -&gt; 20230616T010002
+</span></span></code></pre></div><p> </p>
+<h3 id="수동-백업하기">수동 백업하기</h3>
+<p>스케줄 백업 말고도 설치 경로의 <code>bin</code> 디렉토리 안에 백업 관련 명령어들이 들어있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Backup instance with backup-utils v3.8.1 installed</span>
+</span></span><span class="line"><span class="cl">$ ls -l /opt/backup-utils/bin/
+</span></span><span class="line"><span class="cl">total <span class="m">56</span>
+</span></span><span class="line"><span class="cl">-rwxrwxr-x. <span class="m">1</span> ec2-user ec2-user <span class="m">10926</span> Jun <span class="m">29</span> 22:36 ghe-backup
+</span></span><span class="line"><span class="cl">-rwxrwxr-x. <span class="m">1</span> ec2-user ec2-user  <span class="m">9431</span> Jun <span class="m">29</span> 22:36 ghe-host-check
+</span></span><span class="line"><span class="cl">-rwxrwxr-x. <span class="m">1</span> ec2-user ec2-user <span class="m">26618</span> Jun <span class="m">29</span> 22:36 ghe-restore
+</span></span></code></pre></div><p> </p>
+<p>백업 인스턴스에 접속한 상태에서 <code>ghe-backup</code> 명령어를 실행해서 수동 백업을 할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> /opt/backup-utils/bin/
+</span></span><span class="line"><span class="cl">$ ./ghe-backup
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:05Z  INFO  Backing up GitHub settings ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:08Z  INFO  Backing up SSH authorized keys ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:08Z  INFO  Backing up SSH host keys ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:08Z  INFO  Backing up MySQL database using binary backup strategy ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:20Z  INFO  Backing up MSSQL databases ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up Actions data ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up Redis database ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up audit log ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up Git repositories ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up GitHub Pages artifacts ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up storage data ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up custom Git hooks ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up Elasticsearch indices ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:31Z  INFO  Runtime: <span class="m">32</span> seconds
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:31Z  INFO  Completed backup of github.company.com:122 in snapshot 20230714T005159 at 00:52:31
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:31Z  INFO  Checking <span class="k">for</span> leaked ssh keys ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:31Z  INFO  * No leaked keys found
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:31Z  INFO  Backup of github.company.com:122 finished.
+</span></span></code></pre></div><p> </p>
+<p>또는 백업 명령어 파일의 절대경로를 써서 실행해도 결과는 동일합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ /opt/backup-utils/bin/ghe-backup
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:05Z  INFO  Backing up GitHub settings ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:08Z  INFO  Backing up SSH authorized keys ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:08Z  INFO  Backing up SSH host keys ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:08Z  INFO  Backing up MySQL database using binary backup strategy ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:20Z  INFO  Backing up MSSQL databases ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up Actions data ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up Redis database ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up audit log ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up Git repositories ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up GitHub Pages artifacts ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up storage data ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up custom Git hooks ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:21Z  INFO  Backing up Elasticsearch indices ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:31Z  INFO  Runtime: <span class="m">32</span> seconds
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:31Z  INFO  Completed backup of github.company.com:122 in snapshot 20230714T005159 at 00:52:31
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:31Z  INFO  Checking <span class="k">for</span> leaked ssh keys ...
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:31Z  INFO  * No leaked keys found
+</span></span><span class="line"><span class="cl">2023-07-14T00:52:31Z  INFO  Backup of github.company.com:122 finished.
+</span></span></code></pre></div><p> </p>
+<h3 id="백업-및-복구-진행사항-모니터링">백업 및 복구 진행사항 모니터링</h3>
+<blockquote>
+<p>백업 및 복구 진행사항 모니터링 기능은 backup-utils <code>v3.9.0</code>부터 지원합니다.<br>
+<a href="https://docs.github.com/en/enterprise-server@3.9/admin/release-notes#3.9.0-backups">관련 Github Engterprise 릴리즈 노트</a></p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Backup instance with backup-utils v3.9.0 installed</span>
+</span></span><span class="line"><span class="cl">$ ls -l /opt/backup-utils/bin/
+</span></span><span class="line"><span class="cl">total <span class="m">56</span>
+</span></span><span class="line"><span class="cl">-rwxrwxr-x. <span class="m">1</span> ec2-user ec2-user <span class="m">10926</span> Jun <span class="m">29</span> 22:36 ghe-backup
+</span></span><span class="line"><span class="cl">-rwxrwxr-x. <span class="m">1</span> ec2-user ec2-user  <span class="m">1210</span> Jun <span class="m">29</span> 22:36 ghe-backup-progress
+</span></span><span class="line"><span class="cl">-rwxrwxr-x. <span class="m">1</span> ec2-user ec2-user  <span class="m">9431</span> Jun <span class="m">29</span> 22:36 ghe-host-check
+</span></span><span class="line"><span class="cl">-rwxrwxr-x. <span class="m">1</span> ec2-user ec2-user <span class="m">26618</span> Jun <span class="m">29</span> 22:36 ghe-restore
+</span></span></code></pre></div><p><code>ghe-backup-progress</code> 명령어는 백업 진행상황과 복구상황을 실시간으로 모니터링할 수 있는 명령어입니다.</p>
+<p> </p>
+<p>명령어 사용 예시는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ /opt/backup-utils/bin/ghe-backup-progress
+</span></span><span class="line"><span class="cl">Backup progress: 138.00 % <span class="o">(</span><span class="m">25</span> / <span class="m">18</span> <span class="o">)</span> ghe-backup-es-rsync took 1s
+</span></span></code></pre></div><p><code>top</code> 명령어처럼 백업 또는 복구 작업의 진행사항이 실시간으로 출력됩니다.<br>
+전체 스탭 25개 중에 18번째 스탭을 수행하고 있는 걸 확인할 수 있습니다.</p>
+<p> </p>
+<h2 id="정리">정리</h2>
+<p>백업 서버에서 사용하는 핵심 파일 경로는 다음과 같습니다.</p>
+<ul>
+<li><strong>설정파일 기본경로</strong> : /etc/github-backup-utils/backup.config</li>
+<li><strong>패키지 경로</strong> : /opt/backup-utils/</li>
+<li><strong>스냅샷이 저장되는 경로</strong> : /opt/backup-utils/data/</li>
+<li><strong>백업 로그 경로</strong> : /opt/backup-utils/backup.log</li>
+</ul>
+<p> </p>
+<h2 id="더-나아가서">더 나아가서</h2>
+<h3 id="쿠버네티스-기반-backup-utils">쿠버네티스 기반 backup-utils</h3>
+<p>아쉽게도 Github Enterprise 백업서버는 공식 헬름차트를 제공하지 않습니다.</p>
+<p>제 경우는 되도록이면 대부분의 시스템을 쿠버네티스에 올리는 걸 선호하는데요, 시스템 운영이 자동화된다는 장점과 별도의 인스턴스 구동이 필요 없이 리소스를 절약할 수 있다는 장점 때문입니다.</p>
+<p><img src="./6.png" alt="쿠버네티스 기반 backup-utils 아키텍처"></p>
+<p>그래서 백업서버 인프라를 쿠버네티스 클러스터에 CronJob 형태로 운영하는 결정을 했습니다. gp3 타입의 EBS 볼륨에 백업 데이터를 증적하는 메커니즘은 동일합니다.<br>
+다만 백업을 수행하는 주체가 EC2 대신 <code>CronJob</code>이 주기적으로 스케줄링하는 <code>Pod</code>로 바뀐다는 점이 가장 큰 차이점입니다.</p>
+<p>이에 대한 설치 방법은 이 글의 주제를 벗어나므로 생략하겠습니다. 더 관심 있으신 분들은 제가 개발한 <a href="https://github.com/younsl/charts/tree/main/charts/backup-utils">backup-utils-chart</a> 레포지터리를 확인하세요.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://github.com/github/backup-utils#documentation">GitHub Enterprise Server Backup Utilities - Documentation</a><br>
+github-backup-utils 공식문서에 전체적인 설명이 잘 나와 있습니다.</p>
+<p><a href="https://jainsaket-1994.medium.com/installing-crontab-on-amazon-linux-2023-ec2-98cf2708b171">Installing CronTab on Amazon Linux 2023 EC2</a><br>
+Amazon Linux 2023에서 CronTab 설치 시에 참고한 글</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

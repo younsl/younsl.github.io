@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/k8s/ingress-nginx/" />
+    <title>Ingress nginx controller</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Ingress nginx controller</h1>
+        <div>
+                <time>May 16, 2024</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#환경">환경</a></li>
+    <li><a href="#구성하기">구성하기</a>
+      <ul>
+        <li><a href="#ingress-nginx-chart">ingress-nginx chart</a></li>
+        <li><a href="#tls-termination-설정">TLS Termination 설정</a></li>
+        <li><a href="#grafana-ingress-구성">Grafana ingress 구성</a></li>
+      </ul>
+    </li>
+    <li><a href="#결론">결론</a></li>
+    <li><a href="#참고자료">참고자료</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>ingress-nginx controller와 Internal NLB + ACM 조합해서 네트워크 구성하기.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<p><img src="./1.png" alt="ingress-nginx 구성"></p>
+<p> </p>
+<h2 id="구성하기">구성하기</h2>
+<h3 id="ingress-nginx-chart">ingress-nginx chart</h3>
+<p><code>ingress-nginx</code> 차트에서 service를 생성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># ingress-nginx/values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">controller</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="l">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">service</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- Enable controller services or not. This does not influence the creation of either the admission webhook or the metrics service.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c"># -- Enable the external controller service or not. Useful for internal-only deployments.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- Annotations to be added to the external controller service. See `controller.service.internal.annotations` for annotations to be added to the internal controller service.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-name</span><span class="p">:</span><span class="w"> </span><span class="l">&lt;INTERNAL_NLB_NAME&gt;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-scheme</span><span class="p">:</span><span class="w"> </span><span class="l">internal</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-nlb-target-type</span><span class="p">:</span><span class="w"> </span><span class="l">ip</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;true&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-ssl-cert</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;arn:aws:acm:ap-northeast-2:&lt;ACCOUNT_ID&gt;:certificate/&lt;ACM_ID&gt;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-security-groups</span><span class="p">:</span><span class="w"> </span><span class="l">sg-013f5ee1423faf2ca</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-attributes</span><span class="p">:</span><span class="w"> </span><span class="l">deletion_protection.enabled=true</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<p><code>ingress-nginx</code> 파드에 고가용성 및 파드 오토스케일링을 적용하기 위해 다음과 HPA<sup>Horizontal Pod Autoscaler</sup>를 설정합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># ingress-nginx/values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">controller</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Mutually exclusive with keda autoscaling</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">autoscaling</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">annotations</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">minReplicas</span><span class="p">:</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">maxReplicas</span><span class="p">:</span><span class="w"> </span><span class="m">11</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">targetCPUUtilizationPercentage</span><span class="p">:</span><span class="w"> </span><span class="m">50</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">targetMemoryUtilizationPercentage</span><span class="p">:</span><span class="w"> </span><span class="m">50</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">behavior</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span></code></pre></div><p>CPU 사용률이 50% 또는 메모리 사용률이 50%를 기준으로 HPA에 의해 파드 스케일 인/아웃이 진행됩니다.</p>
+<p> </p>
+<p><code>nginx</code> IngressClass를 클러스터의 디폴트 ingressClass로 지정하려면 <code>controller.ingressClassResource.default</code> 값을 <code>true</code>로 설정합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># ingress-nginx/values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">controller</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="l">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">ingressClassResource</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- Name of the IngressClass</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">nginx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- Create the IngressClass or not</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- If true, Ingresses without `ingressClassName` get assigned to this IngressClass on creation.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># Ingress creation gets rejected if there are multiple default IngressClasses.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># Ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#default-ingress-class</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<p><code>nginx</code> IngressClass는 <code>ingress-nginx</code> 컨트롤러 차트에 포함되어 있습니다. 차트를 설치하면 <code>nginx</code> ingressClass가 같이 생성됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get ingressclass
+</span></span><span class="line"><span class="cl">NAME    CONTROLLER             PARAMETERS   AGE
+</span></span><span class="line"><span class="cl">alb     ingress.k8s.aws/alb    &lt;none&gt;       5d19h
+</span></span><span class="line"><span class="cl">nginx   k8s.io/ingress-nginx   &lt;none&gt;       5d19h
+</span></span></code></pre></div><p> </p>
+<p><code>ingress-nginx</code> 컨트롤러를 통해 특정 Ingress를 제어하고 싶은 경우에는 ingressClassName을 <code>nginx</code>로 지정할 수 있습니다.</p>
+<p>아래는 <code>Ingress</code> 리소스에 <code>ingressClass</code>로 <code>nginx</code>를 지정하는 예시입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">networking.k8s.io/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Ingress</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">ingressClassName</span><span class="p">:</span><span class="w"> </span><span class="l">nginx</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<p><code>ingress-nginx</code> 헬름 차트를 설치하면 <code>LoadBalancer</code> 타입의 Service 리소스가 생성됩니다.</p>
+<p><code>ingress-nginx</code> 차트에 의해 배포, 관리되는 인프라 리소스 영역은 다음과 같습니다.</p>
+<p><img src="./2.png" alt="ingress-nginx 차트에 의해 배포되는 리소스 관리 영역"></p>
+<p> </p>
+<p>사전에 헬름 차트를 통해 <a href="https://github.com/kubernetes-sigs/aws-load-balancer-controller/">AWS Load Balancer Controller</a>가 위 서비스 리소스에 설정된 annotation을 확인한 후, 그에 맞게 설정이 적용된 Network Load Balancer를 생성합니다.</p>
+<p><img src="./3.png" alt="AWS 콘솔에서 확인한 NLB 설정"></p>
+<p>ingress-nginx 차트에서 NLB는 loadBalancer 타입의 service 리소스를 통해 생성되며, 자세한 상세 설정은 AWS LBC에 의해 제어되는 구조입니다.</p>
+<p> </p>
+<h3 id="tls-termination-설정">TLS Termination 설정</h3>
+<p>NLB에 TLS Termination 설정을 적용합니다.</p>
+<p>앞단의 NLB에서 TLS Termination이 적용되지 않으면 ingress-nginx 뒷단의 서비스들로 접근시 400 Bad Request 에러, 즉 <code>The plain HTTP request was sent to HTTPS port</code> 에러가 발생할 수 있습니다.</p>
+<p>트래픽이 NLB의 443 포트 리스너로 들어오면 TLS를 종료하고 ingress-nginx Pod의 80 포트로 전달하도록 <code>loadBalancer</code> 서비스 설정을 변경합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-diff" data-lang="diff"><span class="line"><span class="cl">controller:
+</span></span><span class="line"><span class="cl">  ...
+</span></span><span class="line"><span class="cl">  service:
+</span></span><span class="line"><span class="cl">    ...
+</span></span><span class="line"><span class="cl">    ports:
+</span></span><span class="line"><span class="cl">      # -- Port the external HTTP listener is published with.
+</span></span><span class="line"><span class="cl">      http: 80
+</span></span><span class="line"><span class="cl">      # -- Port the external HTTPS listener is published with.
+</span></span><span class="line"><span class="cl">      https: 443
+</span></span><span class="line"><span class="cl">    targetPorts:
+</span></span><span class="line"><span class="cl">      # -- Port of the ingress controller the external HTTP listener is mapped to.
+</span></span><span class="line"><span class="cl">      http: http
+</span></span><span class="line"><span class="cl">      # -- Port of the ingress controller the external HTTPS listener is mapped to.
+</span></span><span class="line"><span class="cl"><span class="gd">-     https: https
+</span></span></span><span class="line"><span class="cl"><span class="gd"></span><span class="gi">+     https: http
+</span></span></span></code></pre></div><p>위 <code>service</code> 리소스의 설정을 변경하고 헬름 차트를 재배포하게 되면 AWS Load Balancer Controller는 NLB의 443 포트 리스너 설정을 변경합니다.</p>
+<p>더 자세한 사항은 <a href="https://stackoverflow.com/questions/70733110/kubernetes-ingress-controller-400-bad-request-plain-http-request-sent-to-http">Stack overflow 논의</a>를 확인합니다.</p>
+<p> </p>
+<h3 id="grafana-ingress-구성">Grafana ingress 구성</h3>
+<p><code>ingress-nginx</code> 파드가 트래픽을 받은 후, Grafana 파드로 연결하기 위해 Grafana Ingress 리소스를 생성합니다.</p>
+<p>이 때, Grafana Ingress를 <code>ingress-nginx</code> 컨트롤러와 연결하기 위해 <code>ingressClassName</code>과 <code>kubernetes.io/ingress.class</code> 어노테이션을 추가합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># kube-proemtheus-stack/values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">grafana</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">ingress</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c">## If true, Grafana Ingress will be created</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c">##</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c">## IngressClassName for Grafana Ingress.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c">## Should be provided if Ingress is enable.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c">##</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">ingressClassName</span><span class="p">:</span><span class="w"> </span><span class="l">nginx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c">## Annotations for Grafana Ingress</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c">##</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">nginx.ingress.kubernetes.io/rewrite-target</span><span class="p">:</span><span class="w"> </span><span class="l">/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">nginx.ingress.kubernetes.io/ssl-redirect</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;false&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">kubernetes.io/ingress.class</span><span class="p">:</span><span class="w"> </span><span class="l">nginx</span><span class="w">
+</span></span></span></code></pre></div><p>ingress-nginx 컨트롤러가 설치된 환경에서 <code>ingressClassName: nginx</code>로 설정하면, Grafana Ingress 리소스는 NGINX Ingress 컨트롤러에 의해 처리됩니다. 이는 NGINX 컨트롤러가 Grafana에 대한 HTTP(S) 요청을 관리하고 라우팅함을 의미합니다.</p>
+<p> </p>
+<p>Ingress 리소스에서 <code>kubernetes.io/ingress.class</code> annotation은 <a href="https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#deprecating-the-ingress-class-annotation">Kubernetes v1.18부터 deprecation</a> 되었습니다. 대신 <code>spec.ingressClassName</code>을 사용합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-diff" data-lang="diff"><span class="line"><span class="cl">apiVersion: networking.k8s.io/v1
+</span></span><span class="line"><span class="cl">kind: Ingress
+</span></span><span class="line"><span class="cl">metadata:
+</span></span><span class="line"><span class="cl">  annotations:
+</span></span><span class="line"><span class="cl"><span class="gd">-   kubernetes.io/ingress.class: nginx
+</span></span></span><span class="line"><span class="cl"><span class="gd"></span>  name: kube-prometheus-stack-grafana
+</span></span><span class="line"><span class="cl">  namespace: monitoring
+</span></span><span class="line"><span class="cl">spec:
+</span></span><span class="line"><span class="cl"><span class="gi">+ ingressClassName: nginx
+</span></span></span></code></pre></div><p> </p>
+<p>위 <code>kube-prometheus-stack</code>의 차트 설정에 의해 생성된 grafana ingress 리소스 설정은 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">networking.k8s.io/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Ingress</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">meta.helm.sh/release-name</span><span class="p">:</span><span class="w"> </span><span class="l">kube-prometheus-stack</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">meta.helm.sh/release-namespace</span><span class="p">:</span><span class="w"> </span><span class="l">monitoring</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">nginx.ingress.kubernetes.io/rewrite-target</span><span class="p">:</span><span class="w"> </span><span class="l">/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">nginx.ingress.kubernetes.io/ssl-redirect</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;false&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app.kubernetes.io/instance</span><span class="p">:</span><span class="w"> </span><span class="l">kube-prometheus-stack</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app.kubernetes.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l">Helm</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l">grafana</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app.kubernetes.io/version</span><span class="p">:</span><span class="w"> </span><span class="m">10.4.1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">helm.sh/chart</span><span class="p">:</span><span class="w"> </span><span class="l">grafana-7.3.9</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">kube-prometheus-stack-grafana</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">monitoring</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">ingressClassName</span><span class="p">:</span><span class="w"> </span><span class="l">nginx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">grafana.example.com</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">backend</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">service</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">kube-prometheus-stack-grafana</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">number</span><span class="p">:</span><span class="w"> </span><span class="m">80</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">pathType</span><span class="p">:</span><span class="w"> </span><span class="l">Prefix</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">status</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">loadBalancer</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">ingress</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l">&lt;REDACTED&gt;</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<h2 id="결론">결론</h2>
+<p><code>ingress-nginx</code> 컨트롤러를 도입했을 때 가장 큰 기대효과는 여러 네임스페이스의 여러 개의 ingress 리소스를 <code>nginx</code> 파드를 통해 쉽게 라우팅 제어할 수 있습니다.</p>
+<p><img src="./4.png" alt="ingress-nginx"></p>
+<p> </p>
+<p>ingress-nginx-controller와 같은 Ingress controller를 사용하지 않으면 Kubernetes 클러스터에서 네임스페이스마다 Ingress 리소스와 ALB (Application Load Balancer)를 각각 설정해야 할 필요가 생깁니다. 이는 네트워크 인프라 관리의 복잡성과 비용을 증가시킬 수 있습니다.</p>
+<p><img src="./5.png" alt="Ingress Controller를 사용하지 않을 경우의 구조"></p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><strong>NLB</strong><br>
+<a href="https://aws.amazon.com/ko/about-aws/whats-new/2023/08/network-load-balancer-supports-security-groups/">Network Load Balancer, 이제 보안 그룹 지원</a><br>
+<a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.7/guide/service/nlb/">AWS Load Balancer Controller의 NLB 설정</a></p>
+<p><strong>Kubernetes</strong><br>
+<a href="https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#deprecating-the-ingress-class-annotation">Deprecating the Ingress Class Annotation</a></p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/guide-to-setup-ghe-on-aws/" />
+    <title>Github Enterprise on AWS 구축 가이드</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Github Enterprise on AWS 구축 가이드</h1>
+        <div>
+                <time>Updated August 18, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#참고자료">참고자료</a></li>
+    <li><a href="#가이드">가이드</a>
+      <ul>
+        <li><a href="#github-enterprise-ec2의-인스턴스-타입-선정">Github Enterprise EC2의 인스턴스 타입 선정</a></li>
+        <li><a href="#github-actions">Github Actions</a></li>
+        <li><a href="#actions-sync">actions-sync</a></li>
+        <li><a href="#tls-인증서-설치">TLS 인증서 설치</a></li>
+        <li><a href="#smtp">SMTP</a></li>
+        <li><a href="#이중화-구성">이중화 구성</a></li>
+        <li><a href="#github-for-jira-연동">Github for Jira 연동</a></li>
+        <li><a href="#릴리즈-노트">릴리즈 노트</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<hr>
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>금융당국의 규제<sup>Compliance</sup>를 준수하기 위해 핀테크에서는 Github Cloud가 아닌 Github Enterprise를 EC2에 배포해서 자체 운영 &amp; 사용했습니다.</p>
+<p> </p>
+<p>토스뱅크, 당근페이, 그린랩스 파이낸셜 등의 핀테크 기업의 경우 금융이라는 도메인 특성 때문에 Github Cloud를 사용하지 못하는 한계 때문에 버전 컨트롤 시스템으로 Github Enterprise Server를 사용합니다.</p>
+<p> </p>
+<p>아래는 Github Enterprise 공식문서에 나와있는 Github Enterprise Server의 시스템 아키텍처입니다.</p>
+<p><img src="./1.png" alt="아키텍처" title="Github Enterprise on AWS 아키텍처"></p>
+<p>Github Enterprise Server는 기본적으로 Internet Gateway와 NAT Gateway를 통해 인터넷과 연결되어 있지 않아도 문제 없이 사용 가능하도록 설계되어 있습니다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://aws.amazon.com/ko/quickstart/architecture/github-enterprise/">AWS | Github Enterprise on AWS 소개</a><br>
+<a href="https://enterprise.github.com/trial?ref_cta=Start+a+free+trial&amp;ref_loc=hero&amp;ref_page=%2Fenterprise&amp;source=pricing-card-enterprise">Github | 라이센스 신청</a><br>
+<a href="https://docs.github.com/en/enterprise-server@3.2/admin/installation/setting-up-a-github-enterprise-server-instance/installing-github-enterprise-server-on-aws">Github | AWS 설치 가이드</a><br>
+<a href="https://www.youtube.com/watch?v=8a2-b9X7Xno">Youtube | 당근페이, 6개월 간의 인프라 구축 이야기(강진우) - 당근 SRE 밋업 2회</a></p>
+<p> </p>
+<h2 id="가이드">가이드</h2>
+<p> </p>
+<hr>
+<p> </p>
+<h3 id="github-enterprise-ec2의-인스턴스-타입-선정">Github Enterprise EC2의 인스턴스 타입 선정</h3>
+<h4 id="ec2-인스턴스-타입-선정">EC2 인스턴스 타입 선정</h4>
+<p><a href="https://docs.github.com/en/enterprise-server@3.2/admin/installation/setting-up-a-github-enterprise-server-instance/installing-github-enterprise-server-on-aws#determining-the-instance-type">GitHub Enterprise Server 공식문서</a>에서는 EC2 인스턴스 타입으로 <a href="https://aws.amazon.com/ko/ec2/instance-types/#Memory_Optimized">메모리 최적화 타입</a> 사용을 권장합니다.</p>
+<p>당근페이는 Github Enterprise EC2의 타입으로 <code>m5.4xlarge</code>를 사용했으며, EC2 2대로 구성하여 <a href="https://docs.github.com/en/enterprise-server@3.6/admin/enterprise-management/configuring-high-availability">Primary - Secondary</a> 구조로 운영했습니다.</p>
+<p> </p>
+<p><strong>메모리 부족 현상</strong><br>
+제 경우 Github Enterprise를 초기에 <code>m5.4xlarge</code> 타입을 선정했습니다. 이후 메모리 부족으로 서버에 구동중인 도커 컨테이너 일부가 메모리 부족으로 재시작되는 증상이 발생했고, 이로 인해 개발자분들이 순간적으로 짧은 시간동안 깃허브 서버에 접속하지 못하는 증상이 하루에 2~3회 정도 반복되었습니다.</p>
+<p><img src="./2.png" alt="OOM 현상"></p>
+<p>이 문제를 해결하는 방법은 메모리 증설입니다. 제 경우 인스턴스의 메모리 용량을 늘리기 위해 EC2 인스턴스 타입을 <code>m5.4xlarge</code> → <code>r6i.2xlarge</code>로 변경한 후 증상은 완전히 사라졌습니다.</p>
+<p> </p>
+<h4 id="ami">AMI</h4>
+<p>Github Enterprise AMI는 Amazon Linux와 달리 SSM Agent가 기본적으로 설치되어 있지 않기 때문에, Session Manager를 통한 원격 접속이 필요할 경우, 서버에 별도 에이전트 설치 과정이 필요합니다.</p>
+<p>Github Enterprise 3.6의 경우 Debian 10 베이스이며 아래 Userdata를 통해 EC2 생성시 SSM Agent를 자동 설치할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/bash
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>mkdir /tmp/ssm
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> /tmp/ssm
+</span></span><span class="line"><span class="cl">wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
+</span></span><span class="line"><span class="cl">sudo dpkg -i amazon-ssm-agent.deb
+</span></span><span class="line"><span class="cl">sudo systemctl <span class="nb">enable</span> amazon-ssm-agent
+</span></span></code></pre></div><p>운영체제별 SSM Agent 설치 스크립트는 <a href="https://aws.amazon.com/ko/premiumsupport/knowledge-center/install-ssm-agent-ec2-linux/">AWS 공식문서</a>에서 확인할 수 있습니다.</p>
+<p> </p>
+<hr>
+<p> </p>
+<h3 id="github-actions">Github Actions</h3>
+<p>Github Enterprise 서버는 기본적으로 Github Actions가 활성화되어 있지 않습니다.</p>
+<ul>
+<li>Github Enterprise Server에서 Github Actions 기능 활성화</li>
+<li>Github Actions Runners EC2 인스턴스 생성
+<ul>
+<li>Github Actions 자체가 실행시간이 짧고 빈번히 발생하는 작업들이 많기 때문에 비용절약 측면에서 On-demand 보다는 Spot Instance로 사용하는 걸 권장합니다.</li>
+</ul>
+</li>
+<li>Github Enterprise Server와 Github Action Runners 연동 작업</li>
+</ul>
+<p> </p>
+<h4 id="아티팩트-저장소">아티팩트 저장소</h4>
+<ul>
+<li>Github Actions를 사용하려면 S3와 연동이 필요합니다.</li>
+<li>S3에는 Actions로 생성되는 아티펙트, 캐시, 로그 등이 보관됩니다.</li>
+<li>github.com의 Actions를 사용하려면 Github Enterprise EC2에서 Github Connect와 연동이 필요합니다.</li>
+</ul>
+<p> </p>
+<h3 id="actions-sync">actions-sync</h3>
+<p><img src="./3.png" alt="actions-sync 동작 방식"></p>
+<ul>
+<li>Github Actions의 경우 금융 컴플라이언스 유지를 위해 직접 Github Cloud에 있는 Actions 레포들을 Github Enterprise 서버 내부로 가져왔습니다.</li>
+<li>외부 깃허브에 있는 Action을 내부 서버로 가져올 때는 <a href="https://docs.github.com/ko/enterprise-server@3.6/admin/github-actions/managing-access-to-actions-from-githubcom/manually-syncing-actions-from-githubcom#about-the-actions-sync-tool">actions-sync</a>라는 CLI 툴을 사용합니다.</li>
+</ul>
+<p> </p>
+<h4 id="actions-sync-설치">actions-sync 설치</h4>
+<p>Github Enterprise Primary 서버에서 <code>actions-sync</code>를 설치합니다.<br>
+인터넷 아웃바운드가 가능한 네트워크 구성이어야 설치파일을 다운로드 할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ wget https://github.com/actions/actions-sync/releases/download/v202211070205/gh_202211070205_linux_386.tar.gz
+</span></span><span class="line"><span class="cl">$ tar -zxvf gh_202211070205_linux_386.tar.gz
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># actions-sync 명령어 동작 확인</span>
+</span></span><span class="line"><span class="cl">$ actions-sync version
+</span></span><span class="line"><span class="cl">GHES Actions Sync v0.2
+</span></span></code></pre></div><p> </p>
+<p><code>actions-sync</code>로 Actions을 동기화하려면 Personal Access Token을 발급한 유저가 <code>actions</code> Organization에 오너로 소속되어 있어야 합니다.</p>
+<p>사이트 관리자는 SSH로 GHE Primary 서버에 접속해서 <code>ghe-org-admin-promote</code> 명령어로 지정한 사용자를 Actions 조직의 Owner로 승격할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ghe-org-admin-promote <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -u &lt;PAT_OWNER_USERNAME&gt; <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -o actions
+</span></span></code></pre></div><p> </p>
+<h4 id="actions-sync-사용법">actions-sync 사용법</h4>
+<p>Github Cloud에서 Actions <strong>여러 개</strong>를 한 번에 받아옵니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ actions-sync sync <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --cache-dir <span class="s2">&#34;/tmp/cache&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --destination-token <span class="s2">&#34;ghp_YOUR_GITHUB_ENTERPRISE_PAT&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --destination-url <span class="s2">&#34;https://your.ghedomain.com&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --repo-name-list-file <span class="s2">&#34;./sync-actions-list-2.txt&#34;</span>
+</span></span></code></pre></div><p> </p>
+<p>Github Cloud에서 <strong>특정 Actions 하나</strong>만 받아옵니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ actions-sync sync <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --cache-dir <span class="s2">&#34;/tmp/cache&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --destination-token <span class="s2">&#34;ghp_GITHUB_ENTERPRISE_PAT_HERE&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --destination-url <span class="s2">&#34;https://your.ghedomain.com&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --repo-name wzieba/Firebase-Distribution-Github-Action:synced-actions/Firebase-Distribution-Github-Action
+</span></span></code></pre></div><p> </p>
+<h4 id="트러블슈팅-가이드">트러블슈팅 가이드</h4>
+<details>
+<summary>Personal Access Token 권한 에러</summary>
+<p>actions-sync에 사용할 Personal Access Token에는 <code>workflow</code> 스코프 권한이 부여되어 있어야 합니다.</p>
+<p>PAT에 <code>workflow</code> 스코프 권한이 없는 경우, <code>actions-sync</code> 명령어를 실행하면 다음과 같은 에러가 발생합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">error syncing repository <span class="sb">`</span>actions/action-slack<span class="sb">`</span>: failed to push to repo: https://github.company.com/actions/action-slack.git: <span class="nb">command</span> error on refs/heads/master: refusing to allow a Personal Access Token to create or update workflow <span class="sb">`</span>.github/workflows/release.yml<span class="sb">`</span> without <span class="sb">`</span>workflow<span class="sb">`</span> scope
+</span></span></code></pre></div><p> </p>
+<p><code>actions-sync</code> 명령어에 사용하는 Personal Access Token에 다음 2개 권한<sup>Scope</sup>이 부여되어 있는지 확인하세요.</p>
+<ul>
+<li><code>repo:*</code> : Full control of private repositories</li>
+<li><code>workflow</code> : Update GitHub Action workflows</li>
+</ul>
+<p> </p>
+<p>참고로 Github Enterprise Server v3.10 부터는 Github Cloud와 동일하게 <a href="https://docs.github.com/en/enterprise-server@3.10/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token">Fine-grained Personal Access Token</a>을 정식 지원합니다.</p>
+</details>
+<p> </p>
+<details>
+<summary>403 You need admin access to the organization before 에러 해결방법 </summary>
+<h4 id="증상">증상</h4>
+<p>actions-sync를 사용해서 Github Cloud에 있는 <code>action-slack</code> Actions을 가져옵니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ./actions-sync sync <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --cache-dir <span class="s2">&#34;/tmp/cache&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --destination-token <span class="s2">&#34;ghp_YOUR_GITHUB_ENTERPRISE_PAT&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --destination-url <span class="s2">&#34;https://github.company.com&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --repo-name 8398a7/action-slack:actions/action-slack
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">fetching * refs <span class="k">for</span> 8398a7/action-slack ...
+</span></span><span class="line"><span class="cl">not using impersonation <span class="k">for</span> the requests
+</span></span><span class="line"><span class="cl">syncing <span class="sb">`</span>actions/action-slack<span class="sb">`</span>
+</span></span><span class="line"><span class="cl">error creating github repository <span class="sb">`</span>actions/action-slack<span class="sb">`</span>: error creating organization actions: POST https://github.company.com/api/v3/admin/organizations: <span class="m">404</span> Not Found <span class="o">[]</span>
+</span></span></code></pre></div><p>하지만 <code>404 Not Found []</code> 에러가 발생합니다.</p>
+<p> </p>
+<h4 id="원인">원인</h4>
+<p>Primary 서버의 CPU 아키텍처와 actions-sync CLI의 아키텍처가 달라서 발생한 원인이었습니다.</p>
+<p>제 경우 x86_64 (64bit) 기반의 EC2 인스턴스에서 386 (32bit) actions-sync 명령어를 실행하는 환경이었습니다.</p>
+<p> </p>
+<h4 id="해결방법">해결방법</h4>
+<p>서버 CPU 아키텍처와 동일한 <code>actions-sync</code>를 다운로드 받아서 다시 실행하면 됩니다.</p>
+<p> </p>
+<h4 id="상세-해결기록">상세 해결기록</h4>
+<p>Primary Github Enterprise 서버의 CPU 아키텍처를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Run this command on the primary server.</span>
+</span></span><span class="line"><span class="cl">$ arch
+</span></span><span class="line"><span class="cl">x86_64
+</span></span></code></pre></div><p>CPU 아키텍처가 <code>x86_64</code>로 확인됩니다.</p>
+<p>Github Cloud에 업로드된 <a href="https://github.com/actions/actions-sync/releases">actions-sync</a>를 다운로드 받습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ wget https://github.com/actions/actions-sync/releases/download/v202303192358/gh_202303192358_linux_amd64.tar.gz
+</span></span><span class="line"><span class="cl">--2023-06-29 12:38:25--  https://github.com/actions/actions-sync/releases/download/v202303192358/gh_202303192358_linux_amd64.tar.gz
+</span></span></code></pre></div><p>압축을 해제한 후 <code>actions-sync</code> 명령어 파일이 있는 <code>bin</code> 디렉토리로 이동합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ tar -zxvf gh_202303192358_linux_amd64.tar.gz
+</span></span><span class="line"><span class="cl">$ <span class="nb">cd</span> bin
+</span></span></code></pre></div><p> </p>
+<p><code>actions-sync</code> 명령어를 다시 실행합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ./actions-sync sync <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --cache-dir <span class="s2">&#34;/tmp/cache&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --destination-token <span class="s2">&#34;ghp_YOUR_GITHUB_ENTERPRISE_PAT&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --destination-url <span class="s2">&#34;https://github.company.com&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --repo-name 8398a7/action-slack:actions/action-slack
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">fetching * refs <span class="k">for</span> 8398a7/action-slack ...
+</span></span><span class="line"><span class="cl">not using impersonation <span class="k">for</span> the requests
+</span></span><span class="line"><span class="cl">syncing <span class="sb">`</span>actions/action-slack<span class="sb">`</span>
+</span></span><span class="line"><span class="cl">Existing repo <span class="sb">`</span>actions/action-slack<span class="sb">`</span>
+</span></span><span class="line"><span class="cl">successfully synced <span class="sb">`</span>actions/action-slack<span class="sb">`</span>
+</span></span></code></pre></div><p>Github Cloud에 업로드된 actions/actions-slack을 받은 후 로컬 Actions Organization에 업로드했습니다.</p>
+</details>
+<p> </p>
+<hr>
+<p> </p>
+<h3 id="tls-인증서-설치">TLS 인증서 설치</h3>
+<p>Management Console에서 Request TLS Certificate 버튼을 눌러서 웹 인증서를 설치한 후 적용하려고 하면 아래와 같이 에러가 발생함.</p>
+<p><img src="./4.png" alt="SSL 인증서 에러 화면" title="Save settings 버튼을 누르면 발생하는 Management Console 에러 화면"></p>
+<p><strong>관련 문서</strong><br>
+<a href="https://docs.github.com/en/enterprise-server@3.3/admin/configuration/configuring-network-settings/configuring-tls#about-lets-encrypt-support">About Let&rsquo;s Encrypt support</a></p>
+<p> </p>
+<p>깃허브 본사로부터 티켓 답변 받은 해결방법입니다.<br>
+제 경우 업무 환경에서 실제로 아래 방법으로 SSL 인증서 문제를 해결할 수 있었습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ghe-ssl-acme -x     <span class="c1"># 기존 SSL 인증서 설정 초기화</span>
+</span></span><span class="line"><span class="cl">$ ghe-ssl-acme -e -v  <span class="c1"># Let&#39;s Encrypt에게 SSL 인증서 요청/발급</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Show status of whether ACME certificates are enabled, and additional details</span>
+</span></span><span class="line"><span class="cl">$ ghe-ssl-acme -s
+</span></span><span class="line"><span class="cl">SSL enabled:           <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">Active certificate CA: Let<span class="err">&#39;</span>s Encrypt
+</span></span><span class="line"><span class="cl">ACME enabled:          <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">ACME provider:         letsencrypt
+</span></span><span class="line"><span class="cl">ACME ToS accepted:     <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">ACME Contact E-mail:
+</span></span><span class="line"><span class="cl">ACME Account Key:      <span class="o">(</span>key is set<span class="p">;</span> retrieve with <span class="sb">`</span>ghe-config <span class="s2">&#34;secrets.acme.account-key&#34;</span><span class="sb">`</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">ACME CA conf string:   <span class="o">(</span>CA conf is set<span class="p">;</span> retrieve with <span class="sb">`</span>ghe-config <span class="s2">&#34;github-ssl.acme.ca-conf&#34;</span><span class="sb">`</span><span class="o">)</span>
+</span></span></code></pre></div><p><code>ghe-ssl-acme -e -v</code> 명령어를 실행하면 Let&rsquo;s Encrypt로부터 SSL 인증서를 발급받습니다.</p>
+<p> </p>
+<h4 id="인증서-발급-시-네트워크-구성-체크리스트">인증서 발급 시 네트워크 구성 체크리스트</h4>
+<ul>
+<li>이 때, Github Enterprise 서버가 squid와 같은 Proxy 서버를 사용하는 환경일 경우 Proxy 서버에서 <code>.letsencrypt.org</code> 도메인을 아웃바운드 허용해야 인증서를 발급받을 수 있습니다.</li>
+<li>Github Enterprise EC2 보안그룹에 <strong>인바운드</strong> 80 포트가 열려있어야 Let&rsquo;s Encrypt 인증서를 정상적으로 받아올 수 있습니다.</li>
+</ul>
+<p> </p>
+<p>위 명령어 절차를 실행하고도 SSL 인증서 문제가 해결되지 않을 경우, 아래 명령어 결과를 깃허브 티켓 담당자에게 공유하도록 합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ openssl s_client -connect &lt;hostname&gt;:&lt;port&gt; -servername &lt;hostname&gt; <span class="p">|</span> openssl x509 -text -noout
+</span></span></code></pre></div><p> </p>
+<hr>
+<p> </p>
+<h3 id="smtp">SMTP</h3>
+<p>Github Enterprise EC2가 Amazon SES의 SMTP를 사용해 메일을 보낼 수 있습니다.<br>
+그러나 AWS에서는 기본적으로 SMTP 25번 포트를 사용한 SMTP 아웃바운드를 허용하지 않습니다.<br>
+따라서 EC2 인스턴스가 메일을 보내려면 SMTP 포트(TCP/25)를 사용하기 위해 AWS에 별도 신청해야 합니다.</p>
+<p><a href="https://aws.amazon.com/ko/premiumsupport/knowledge-center/ec2-port-25-throttle/">관련 AWS 문서</a><br>
+<a href="https://docs.github.com/en/enterprise-server@3.6/admin/configuration/configuring-your-enterprise/configuring-email-for-notifications">GHE v3.6 Email Notification</a></p>
+<p> </p>
+<hr>
+<p> </p>
+<h3 id="이중화-구성">이중화 구성</h3>
+<p>Github Enterprise의 이중화는 Primary - Replica 구조로 구성할 수 있습니다.</p>
+<p><img src="./5.png" alt="Github Enterprise의 이중화 구성"></p>
+<p>자세한 이중화 구성 방법은 제가 작성한 <a href="/blog/ghe-replication/">Github Enterprise EC2 이중화 설정</a>을 참조하세요.</p>
+<p>Github Enterprise의 서버 이중화 구성은 <a href="https://docs.github.com/en/enterprise-server@3.6/admin/enterprise-management/configuring-high-availability/about-high-availability-configuration#ghe-repl-status">Github Enterprise 공식문서</a>에도 상세하게 나와있습니다.</p>
+<h4 id="이중화-상태-체크-명령어">이중화 상태 체크 명령어</h4>
+<p>Replica 서버에서 이중화 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Run on REPLICA instance.</span>
+</span></span><span class="line"><span class="cl">$ ghe-repl-status
+</span></span></code></pre></div><p> </p>
+<p>Primary 서버에서도 <code>--replica</code> 옵션을 사용하면 이중화 상태를 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Run on PRIMARY instance.</span>
+</span></span><span class="line"><span class="cl">$ ghe-cluster-each --replica <span class="s1">&#39;ghe-repl-status&#39;</span>
+</span></span></code></pre></div><p> </p>
+<h4 id="failover-조치하기">Failover 조치하기</h4>
+<p>장애 조치에 필요한 시간은 수동으로 복제본을 승격하고 트래픽을 리디렉션하는 데 걸리는 시간에 따라 다릅니다.<br>
+평균 시간은 20~30분 걸립니다.</p>
+<p><a href="https://docs.github.com/en/enterprise-server@3.6/admin/enterprise-management/configuring-high-availability/initiating-a-failover-to-your-replica-appliance">Github Enterprise 공식문서</a></p>
+<p> </p>
+<hr>
+<p> </p>
+<h3 id="github-for-jira-연동">Github for Jira 연동</h3>
+<p>퍼블릭 서브넷에 ALB 또는 NLB 등을 배치해서 퍼블릭 경로를 통한 HTTPS 인바운드 경로를 만들어줘야 Jira Cloud가 Github Enterprise Server와 API 통신이 가능하므로, Github for Jira 앱을 등록할 수 있습니다.</p>
+<p><img src="./6.png" alt="Github for Jira 연동시 아키텍처"></p>
+<p> </p>
+<p>아래와 같이 Internet-facing ALB, NLB를 연결하지 않을 경우 Github for Jira에 Github Enterprise Server 등록시 (Jira에서 권장하는 연동 방식인) 자동세팅 방식을 사용할 수 없습니다.</p>
+<p><img src="./7.png" alt="NAT Gateway가 연결된 구성"></p>
+<p> </p>
+<p>모두의 예상과 다르게도 Jira Cloud 관리자 페이지에서 Github for Jira를 최초 설정하는 상황에서 Github Enterprise 서버로 HTTPS 들어오는 경로가 구성되어야만 정상 등록됩니다.</p>
+<p><img src="./8.png" alt="Internet-facing한 ELB가 없을 경우 등록 실패"></p>
+<p> </p>
+<p>Github for Jira를 사용해서 App을 등록하려면, 아래 Jira Cloud의 Public IP 대역을 모두 추가해야 합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">13.52.5.96/28
+</span></span><span class="line"><span class="cl">13.236.8.224/28
+</span></span><span class="line"><span class="cl">18.136.214.96/28
+</span></span><span class="line"><span class="cl">18.184.99.224/28
+</span></span><span class="line"><span class="cl">18.234.32.224/28
+</span></span><span class="line"><span class="cl">18.246.31.224/28
+</span></span><span class="line"><span class="cl">52.215.192.224/28
+</span></span><span class="line"><span class="cl">104.192.136.240/28
+</span></span><span class="line"><span class="cl">104.192.137.240/28
+</span></span><span class="line"><span class="cl">104.192.138.240/28
+</span></span><span class="line"><span class="cl">104.192.140.240/28
+</span></span><span class="line"><span class="cl">104.192.142.240/28
+</span></span><span class="line"><span class="cl">104.192.143.240/28
+</span></span><span class="line"><span class="cl">185.166.143.240/28
+</span></span><span class="line"><span class="cl">185.166.142.240/28
+</span></span></code></pre></div><p>위 IPv4 네트워크 대역은 <a href="https://support.atlassian.com/organization-administration/docs/ip-addresses-and-domains-for-atlassian-cloud-products/">Jira 공식문서</a>에 나와있습니다.</p>
+<p> </p>
+<h4 id="연동-시-장점">연동 시 장점</h4>
+<p>Github for Jira 앱을 등록해서 Github Enterprise Server와 Jira Cloud를 연동할 경우, 다음과 같은 장점이 있습니다.</p>
+<p>먼저 Github for Jira 앱을 등록하게 되면 지정된 Github 레포지터리(혹은 전체 레포지터리)의 Commit, PR, Branch, Comment 등이 Jira Cloud의 칸반보드에 자동으로 연계됩니다.</p>
+<ul>
+<li><strong>시너지 효과</strong>: GitHub Enterprise는 기업 내부의 소스 코드 관리와 협업을 지원하는 플랫폼입니다. Jira는 이슈 추적과 프로젝트 관리에 강점을 가지고 있습니다. 두 플랫폼을 통합하면 개발자와 비기술 직군 간의 협업을 원활하게 할 수 있습니다.</li>
+<li><strong>연계된 이슈 추적</strong>: GitHub의 이슈와 Jira의 이슈를 연결할 수 있습니다. 이로써 개발자는 GitHub에서 작업을 진행하면서, 이에 관련된 Jira 이슈의 상태나 진행 상황을 실시간으로 확인할 수 있습니다.</li>
+<li><strong>일관된 워크플로우</strong>: GitHub와 Jira 간의 연계를 통해 소프트웨어 개발 워크플로우를 일관성 있게 유지할 수 있습니다. 이를 통해 코드 변경 사항이나 이슈의 상태 변화에 따른 작업 과정을 효과적으로 관리할 수 있습니다.</li>
+<li><strong>정확한 정보 동기화</strong>: GitHub에서의 코드 변경 사항이나 머지 요청(Merge Request)의 상태 변화 등이 Jira에 자동으로 반영됩니다. 이로써 개발 진행 상황이나 이슈의 상태를 정확하게 보다 빠르게 파악할 수 있습니다.</li>
+<li><strong>보다 나은 보고서와 분석</strong>: GitHub과 Jira 간의 연동을 통해 프로젝트의 진행 상황, 이슈 추적, 작업 분배 등에 대한 다양한 보고서와 분석을 생성할 수 있습니다. 이를 통해 팀 내에서의 의사 결정에 도움을 줄 수 있습니다.</li>
+<li><strong>시간 절약과 효율성 증대</strong>: 개발자는 GitHub에서 작업을 하면서 Jira로 이동하지 않고도 이슈를 처리하거나 상태를 업데이트할 수 있습니다. 이로써 작업 흐름이 더욱 효율적이고 빠르게 이뤄질 수 있습니다.</li>
+<li><strong>통합된 알림</strong>: GitHub과 Jira 간의 연동을 통해 통합된 알림을 설정할 수 있습니다. 이로써 개발자와 팀은 중요한 변경 사항이나 이슈 업데이트에 대한 정보를 실시간으로 받아볼 수 있습니다.</li>
+</ul>
+<p>요약하면, GitHub for Jira를 GitHub Enterprise App에 등록해서 사용하면 개발과 이슈 관리 간의 시너지를 높이고, 작업 효율성을 증대시키며, 일관성 있는 워크플로우를 유지하며, 정확한 정보 동기화와 보고서 생성을 가능하게 하여 개발 프로젝트의 효율성을 크게 향상시킬 수 있습니다.</p>
+<p> </p>
+<hr>
+<p> </p>
+<h3 id="릴리즈-노트">릴리즈 노트</h3>
+<p><a href="https://enterprise.github.com/releases">Github Enterprise 릴리즈 노트</a></p>
+<p> </p>
+<hr>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

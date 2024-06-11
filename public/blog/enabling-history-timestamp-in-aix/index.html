@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/enabling-history-timestamp-in-aix/" />
+    <title>AIX History 시간 설정</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>AIX History 시간 설정</h1>
+        <div>
+                <time>Updated October 23, 2021</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#환경">환경</a></li>
+    <li><a href="#문제점">문제점</a>
+      <ul>
+        <li><a href="#명령어-실행-시간의-중요성">명령어 실행 시간의 중요성</a></li>
+      </ul>
+    </li>
+    <li><a href="#설정방법">설정방법</a>
+      <ul>
+        <li><a href="#1-작업전-environment-파일-확인">1. 작업전 environment 파일 확인</a></li>
+        <li><a href="#2-environment-파일-수정">2. environment 파일 수정</a></li>
+        <li><a href="#3-로그아웃-후-재로그인">3. 로그아웃 후 재로그인</a></li>
+        <li><a href="#4-명령어-실행기록-확인">4. 명령어 실행기록 확인</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>IBM AIX의 ksh에서 명령어 실행기록(history)에 실행시간을 표시하도록 설정합니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<ul>
+<li><strong>OS</strong> : IBM AIX 7.2.0.0</li>
+<li><strong>Shell</strong> : ksh</li>
+</ul>
+<p> </p>
+<h2 id="문제점">문제점</h2>
+<p>명령어 실행기록에 실행시간(Timestamp)가 표시되지 않아 불편합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ <span class="nb">fc</span> -t
+</span></span><span class="line"><span class="cl"><span class="o">[</span>...<span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="m">641</span>     ? :: su - oracle
+</span></span><span class="line"><span class="cl"><span class="m">642</span>     ? :: vi /etc/environments
+</span></span><span class="line"><span class="cl"><span class="m">643</span>     ? :: <span class="nb">fc</span> -t
+</span></span></code></pre></div><p><code>fc</code>는 명령어 실행 기록을 보여주는 명령어입니다.<br>
+<code>-t</code>는 실행시간을 같이 표시하는 옵션입니다.</p>
+<p>더 자세한 사용법은 <a href="https://www.ibm.com/docs/en/aix/7.2?topic=f-fc-command">IBM 공식문서</a>를 참고하세요.</p>
+<p> </p>
+<h3 id="명령어-실행-시간의-중요성">명령어 실행 시간의 중요성</h3>
+<p>시스템 엔지니어가 장애처리(Troubleshooting) 시 명령어 실행시간을 통해 장애 원인을 발견하는 경우가 종종 있다.<br>
+서버 환경에서는 사람에 의해 유발되는 장애(Human Fault)가 생각보다 많이 발생하기 때문이다.</p>
+<p>무엇보다 명령어 실행 시간을 체크하는 일은 장애처리 시 간단하면서도 관리자에게 많은 정보를 제공해주기 때문에, 실행한 명령어에 실행시간까지 기록하도록 설정해놓는다면 장기적인 관점에서 서버 관리가 더 편해진다.</p>
+<p> </p>
+<h2 id="설정방법">설정방법</h2>
+<p>IBM AIX 5.3 버전 이후부터 ksh에서 timestamp 기능을 지원한다.
+환경설정(<code>/etc/environment</code>) 파일에 새 값을 추가해 명령어 기록에 시간을 표기할 수 있다.</p>
+<h3 id="1-작업전-environment-파일-확인">1. 작업전 environment 파일 확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ cat /etc/environment
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl"><span class="nv">PATH</span><span class="o">=</span>/usr/bin:/etc:/usr/sbin:/usr/ucb:/usr/bin/X11:/sbin:/usr/java7_64/jre/bin:/usr/java7_64/bin
+</span></span><span class="line"><span class="cl"><span class="nv">TZ</span><span class="o">=</span>Asia/Seoul
+</span></span><span class="line"><span class="cl"><span class="nv">LANG</span><span class="o">=</span>en_US
+</span></span><span class="line"><span class="cl"><span class="nv">LOCPATH</span><span class="o">=</span>/usr/lib/nls/loc
+</span></span></code></pre></div><p>기존에는 <code>EXTENDED_HISTORY</code> 파라미터가 없다.</p>
+<p> </p>
+<h3 id="2-environment-파일-수정">2. environment 파일 수정</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ cat /etc/environment
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl"><span class="nv">PATH</span><span class="o">=</span>/usr/bin:/etc:/usr/sbin:/usr/ucb:/usr/bin/X11:/sbin:/usr/java7_64/jre/bin:/usr/java7_64/bin
+</span></span><span class="line"><span class="cl"><span class="nv">TZ</span><span class="o">=</span>Asia/Seoul
+</span></span><span class="line"><span class="cl"><span class="nv">LANG</span><span class="o">=</span>en_US
+</span></span><span class="line"><span class="cl"><span class="nv">LOCPATH</span><span class="o">=</span>/usr/lib/nls/loc
+</span></span><span class="line"><span class="cl"><span class="nv">EXTENDED_HISTORY</span><span class="o">=</span>ON
+</span></span></code></pre></div><p>vi 편집기로 <code>/etc/environment</code> 파일을 열고 맨 아랫줄에 <code>EXTENDED_HISTORY</code> 파라미터에 <code>ON</code> 값을 추가한다.<br>
+<code>/etc/environment</code> 파일에 <code>EXTENDED_HISTORY</code> 파라미터를 추가하면 전체 계정에 해당 설정이 적용된다.</p>
+<p> </p>
+<h3 id="3-로그아웃-후-재로그인">3. 로그아웃 후 재로그인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ <span class="nb">exit</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="4-명령어-실행기록-확인">4. 명령어 실행기록 확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ <span class="nb">fc</span> -t
+</span></span><span class="line"><span class="cl"><span class="m">672</span>     2021/10/23 10:24:13 :: clear
+</span></span><span class="line"><span class="cl"><span class="m">673</span>     2021/10/23 10:24:15 :: <span class="nb">fc</span> -t
+</span></span><span class="line"><span class="cl"><span class="m">674</span>     2021/10/23 10:24:18 :: clear
+</span></span><span class="line"><span class="cl"><span class="m">675</span>     2021/10/23 10:24:21 :: ping 127.0.0.1
+</span></span><span class="line"><span class="cl"><span class="m">676</span>     2021/10/23 10:24:24 :: clear
+</span></span><span class="line"><span class="cl"><span class="m">677</span>     2021/10/23 10:24:28 :: <span class="nb">fc</span> -t
+</span></span></code></pre></div><p>이제 명령어 실행시간이 표시되는 걸 확인할 수 있습니다.</p>
+<p> </p>
+<p><code>history -t</code> 명령어도 <code>fc -t</code> 명령어와 완전 동일한 기능을 합니다.<br>
+자신에게 더 익숙한 명령어를 사용하면 됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ <span class="nb">history</span> -t
+</span></span><span class="line"><span class="cl"><span class="m">690</span>     2021/10/23 10:32:03 :: id
+</span></span><span class="line"><span class="cl"><span class="m">691</span>     2021/10/23 10:32:03 :: ls
+</span></span><span class="line"><span class="cl"><span class="m">692</span>     2021/10/23 10:32:04 :: <span class="nb">pwd</span>
+</span></span><span class="line"><span class="cl"><span class="m">693</span>     2021/10/23 10:32:05 :: <span class="nb">pwd</span>
+</span></span><span class="line"><span class="cl"><span class="m">694</span>     2021/10/23 10:32:06 :: ls
+</span></span><span class="line"><span class="cl"><span class="m">695</span>     2021/10/23 10:32:07 :: clear
+</span></span><span class="line"><span class="cl"><span class="m">696</span>     2021/10/23 10:32:08 :: clear
+</span></span><span class="line"><span class="cl"><span class="m">697</span>     2021/10/23 10:32:09 :: id
+</span></span><span class="line"><span class="cl"><span class="m">698</span>     2021/10/23 10:32:11 :: date
+</span></span><span class="line"><span class="cl"><span class="m">699</span>     2021/10/23 10:32:15 :: cat /etc/passwd
+</span></span><span class="line"><span class="cl"><span class="m">700</span>     2021/10/23 10:32:16 :: clear
+</span></span><span class="line"><span class="cl"><span class="m">701</span>     2021/10/23 10:32:17 :: clear
+</span></span><span class="line"><span class="cl"><span class="m">702</span>     2021/10/23 10:32:18 :: id
+</span></span><span class="line"><span class="cl"><span class="m">703</span>     2021/10/23 10:32:19 :: id
+</span></span><span class="line"><span class="cl"><span class="m">704</span>     2021/10/23 10:32:20 :: <span class="nb">pwd</span>
+</span></span><span class="line"><span class="cl"><span class="m">705</span>     2021/10/23 10:32:24 :: <span class="nb">history</span> -t
+</span></span></code></pre></div><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

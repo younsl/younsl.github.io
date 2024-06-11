@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/terraform-moved-block/" />
+    <title>Terraform moved Block</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Terraform moved Block</h1>
+        <div>
+                <time>Updated August 19, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#배경지식">배경지식</a>
+      <ul>
+        <li><a href="#moved--블록"><code>moved {}</code> 블록</a></li>
+        <li><a href="#moved-블록의-등장배경과-장점"><code>moved</code> 블록의 등장배경과 장점</a></li>
+      </ul>
+    </li>
+    <li><a href="#제약사항">제약사항</a></li>
+    <li><a href="#환경">환경</a>
+      <ul>
+        <li><a href="#로컬-환경">로컬 환경</a></li>
+      </ul>
+    </li>
+    <li><a href="#사용방법">사용방법</a>
+      <ul>
+        <li><a href="#module-이름-변경">module 이름 변경</a></li>
+        <li><a href="#moved-블록-선언">moved 블록 선언</a></li>
+        <li><a href="#plan">plan</a></li>
+        <li><a href="#apply">apply</a></li>
+      </ul>
+    </li>
+    <li><a href="#참고자료">참고자료</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>기존에 테라폼을 사용해서 생성한 <code>module</code> 혹은 <code>resource</code>의 이름(Resource ID)을 리소스 재생성<sup>recreate</sup> 없이 변경하는 방법을 가이드하는 문서입니다.</p>
+<p>이 글에서는 <code>terraform state mv</code> 명령어가 아닌 <code>moved {}</code> 블록을 사용해서 문제를 해결합니다.</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="moved--블록"><code>moved {}</code> 블록</h3>
+<p>terraform의 <code>moved</code> 블록은 Terraform v1.1 이상에서 사용 가능한 기능으로, 리소스 혹은 모듈을 이동하거나 이름을 변경할 때 사용됩니다.</p>
+<p> </p>
+<p>Terraform으로 이미 생성한 리소스에 대해 다른 이름으로 변경하고 싶을 경우, 리소스 블록에서 <code>a</code>에서 <code>b</code>로 이름을 변경하고, <code>moved {}</code> 블록 내에 변경할 이름을 기록할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-terraform" data-lang="terraform"><span class="line"><span class="cl"><span class="kr">resource</span> <span class="s2">&#34;aws_instance&#34;</span> <span class="s2">&#34;b&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="na">count</span> = <span class="m">2</span><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">  # (resource-type-specific configuration)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">moved</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="na">from</span> = <span class="nx">aws_instance</span><span class="p">.</span><span class="nx">a</span>
+</span></span><span class="line"><span class="cl">  <span class="na">to</span>   = <span class="nx">aws_instance</span><span class="p">.</span><span class="nx">b</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>이 기능을 사용하면 Terraform 구성 파일 내에서 리소스를 새 위치로 이동시키거나 구성을 변경할 수 있습니다.</p>
+<p> </p>
+<h3 id="moved-블록의-등장배경과-장점"><code>moved</code> 블록의 등장배경과 장점</h3>
+<p>기존 리소스 이름, 상태를 바꾸는 명령 조차도 CLI 대신 HCL<sup>Hashicorp Configuration Language</sup> 코드로 선언하여, 상태를 바꾸는 행위 자체도 코드화할 수 있다는 것이 <code>moved {}</code> 블록이 가진 장점입니다.</p>
+<p> </p>
+<p>테라폼 공식 발표 <a href="https://www.youtube.com/watch?v=bDgoGBusX0k&amp;t=178s">Announcing Terraform 1.1 with Improved Refactoring Capabilities and Enhanced Cloud Experience</a>에서는 <code>moved {}</code> 블록이 등장한 배경에 대해 크게 3가지를 언급했습니다.</p>
+<h4 id="terraform-state-mv가-가진-3가지-문제점"><code>terraform state mv</code>가 가진 3가지 문제점</h4>
+<ul>
+<li>Risky and error prone</li>
+<li>Terraform Cloud users couldn’t refactor within core workflows</li>
+<li>Module authors couldn’t coordinate changes themselves</li>
+</ul>
+<p> </p>
+<h2 id="제약사항">제약사항</h2>
+<p><code>moved {}</code> 블록은 Terraform v1.1 이상부터만 지원합니다.</p>
+<p>Terraform 버전이 v1.1 이하이거나 복잡한 리팩토링 작업이 필요한 경우는 <code>moved {}</code> 블록 대신 <code>terraform state mv</code> 명령어을 사용하도록 합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">terrafrom state mv SOURCE DESTINATION
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Example: rename a resource</span>
+</span></span><span class="line"><span class="cl">terraform state mv packet_device.worker packet_device.helper
+</span></span></code></pre></div><p><a href="https://developer.hashicorp.com/terraform/cli/commands/state/mv#usage">terraform state mv 공식문서</a></p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<h3 id="로컬-환경">로컬 환경</h3>
+<ul>
+<li><strong>OS</strong> : macOS 13.5 (M1 Max)</li>
+<li><strong>Shell</strong> : zsh + oh-my-zsh</li>
+<li><strong>Terraform</strong> : v1.5.4</li>
+<li><strong>Provider</strong> : AWS Provider 4.59.0</li>
+</ul>
+<p> </p>
+<h2 id="사용방법">사용방법</h2>
+<p>현재 시나리오에서 테라폼 모듈의 디렉토리 구조는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ tree nlb/
+</span></span><span class="line"><span class="cl">nlb/
+</span></span><span class="line"><span class="cl">└── internet-facing
+</span></span><span class="line"><span class="cl">    ├── backend.tf
+</span></span><span class="line"><span class="cl">    ├── main.tf
+</span></span><span class="line"><span class="cl">    ├── output.tf
+</span></span><span class="line"><span class="cl">    ├── variables.tf
+</span></span><span class="line"><span class="cl">    └── versions.tf
+</span></span></code></pre></div><p>위 5개의 <code>.tf</code> 코드가 모여 하나의 NLB를 생성하고 있습니다.</p>
+<p>해당 NLB는 테라폼의 <code>resource</code>가 아닌 AWS에서 제공하는 <a href="https://registry.terraform.io/modules/terraform-aws-modules/alb/aws/latest">공식 ALB 모듈</a>을 사용해서 생성했습니다.</p>
+<p> </p>
+<p>NLB main 디렉토리 안으로 이동한 후, 사용중인 terraform providers 정보를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> /nlb/internet-facing/
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform providers
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Providers required by configuration:
+</span></span><span class="line"><span class="cl">.
+</span></span><span class="line"><span class="cl">├── provider<span class="o">[</span>registry.terraform.io/hashicorp/aws<span class="o">]</span> &gt;<span class="o">=</span> 4.59.0
+</span></span><span class="line"><span class="cl">├── provider<span class="o">[</span>registry.terraform.io/hashicorp/null<span class="o">]</span> &gt;<span class="o">=</span> 2.0.0
+</span></span><span class="line"><span class="cl">└── module.nlb
+</span></span><span class="line"><span class="cl">    └── provider<span class="o">[</span>registry.terraform.io/hashicorp/aws<span class="o">]</span> &gt;<span class="o">=</span> 4.59.0
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Providers required by state:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    provider<span class="o">[</span>registry.terraform.io/hashicorp/aws<span class="o">]</span>
+</span></span></code></pre></div><p>기존에 AWS Provider v4.59.0를 사용해서 생성한 걸 알 수 있습니다.</p>
+<p> </p>
+<p>NLB 모듈의 이름이 선언된 <code>main.tf</code> 파일의 일부 내용입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-terraform" data-lang="terraform"><span class="line"><span class="cl"><span class="c1"># main.tf
+</span></span></span><span class="line"><span class="cl"><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1"># We need to change module &#34;alb&#34; to module &#34;nlb&#34;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">module</span> <span class="s2">&#34;alb&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="na">source</span>  = <span class="s2">&#34;git::https://github.doge.com/doge-company/terraform-modules.git//aws/alb&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="na">name</span>               = <span class="nx">local</span><span class="p">.</span><span class="nx">name</span>
+</span></span><span class="line"><span class="cl">  <span class="na">load_balancer_type</span> = <span class="s2">&#34;network&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="na">internal</span>           = <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="na">vpc_id</span>          = <span class="nx">local</span><span class="p">.</span><span class="nx">vpc_id</span>
+</span></span><span class="line"><span class="cl">  <span class="na">subnets</span>         = <span class="p">[</span>
+</span></span><span class="line"><span class="cl"><span class="kr">    data</span><span class="p">.</span><span class="nx">aws_subnet</span><span class="p">.</span><span class="nx">public_a</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="kr">    data</span><span class="p">.</span><span class="nx">aws_subnet</span><span class="p">.</span><span class="nx">public_c</span><span class="p">.</span><span class="nx">id</span>
+</span></span><span class="line"><span class="cl">  <span class="p">]</span><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">  # ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>제 경우 실제로는 NLB 리소스를 생성하는 코드인데 module 이름이 <code>&quot;alb&quot;</code>로 되어 있는 게 문제였습니다.</p>
+<p> </p>
+<p>기존에 테라폼으로 생성한 리소스를 삭제하고 다시 만들 필요 없이, module 이름만 <code>alb</code>를 <code>nlb</code>로 변경하고 싶었습니다.</p>
+<p><img src="./1.png" alt="현재 시나리오의 테라폼 요구사항"></p>
+<p> </p>
+<h3 id="module-이름-변경">module 이름 변경</h3>
+<p>가장 먼저 NLB를 생성하는 메인코드 <code>main.tf</code>에서 module 이름을 원하는 이름으로 변경합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-diff" data-lang="diff"><span class="line"><span class="cl"><span class="gd">- module &#34;alb&#34; {
+</span></span></span><span class="line"><span class="cl"><span class="gd"></span><span class="gi">+ module &#34;nlb&#34; {
+</span></span></span><span class="line"><span class="cl"><span class="gi"></span>    # ...
+</span></span><span class="line"><span class="cl">  }
+</span></span></code></pre></div><p> </p>
+<p>참고로 기존에 생성한 NLB에 대한 Terraform 상태파일은 모두 S3 백엔드 버킷에 저장되어 있습니다.</p>
+<p><img src="./2.png" alt="Terraform 명령어 실행 시 플로우"></p>
+<p> </p>
+<p>상태파일의 백엔드에 대한 설정은 <code>backend.tf</code> 코드에 아래와 같이 선언되어 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-terraform" data-lang="terraform"><span class="line"><span class="cl"><span class="c1"># backend.tf
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">terraform</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">backend</span> <span class="s2">&#34;s3&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="na">encrypt</span> = <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">    <span class="na">region</span>  = <span class="s2">&#34;ap-northeast-2&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="na">bucket</span>  = <span class="s2">&#34;dogecompany-terraform-state-devops&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="na">key</span>     = <span class="s2">&#34;doge/apne2/doge-server/nlb/internet-facing/terraform.tfstate&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform state list
+</span></span><span class="line"><span class="cl">data.aws_ec2_managed_prefix_list.jira_cloud
+</span></span><span class="line"><span class="cl">data.aws_subnet.public_a
+</span></span><span class="line"><span class="cl">data.aws_subnet.public_c
+</span></span><span class="line"><span class="cl">module.alb.aws_lb.this<span class="o">[</span>0<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.alb.aws_lb_listener.frontend_http_tcp<span class="o">[</span>0<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.alb.aws_lb_listener.frontend_http_tcp<span class="o">[</span>1<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.alb.aws_lb_listener.frontend_http_tcp<span class="o">[</span>2<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.alb.aws_lb_target_group.main<span class="o">[</span>0<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.alb.aws_lb_target_group.main<span class="o">[</span>1<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.alb.aws_lb_target_group.main<span class="o">[</span>2<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.alb.aws_lb_target_group_attachment.this<span class="o">[</span><span class="s2">&#34;0.ghe_primary&#34;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.alb.aws_lb_target_group_attachment.this<span class="o">[</span><span class="s2">&#34;1.ghe_primary&#34;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.alb.aws_lb_target_group_attachment.this<span class="o">[</span><span class="s2">&#34;2.ghe_primary&#34;</span><span class="o">]</span>
+</span></span></code></pre></div><p><code>module.alb.*</code>를 <code>module.nlb.*</code>로 변경해야 하는 것이 제 현재 목표입니다.</p>
+<p> </p>
+<p>기존 <code>main.tf</code> 코드에서 모듈이름 <code>module &quot;alb&quot;</code>를 <code>module &quot;nlb&quot;</code>로 변경했습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-terraform" data-lang="terraform"><span class="line"><span class="cl"><span class="c1"># main.tf
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">module</span> <span class="s2">&#34;nlb&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="na">source</span>  = <span class="s2">&#34;git::https://github.doge.com/doge-company/terraform-modules.git//aws/alb&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="na">name</span>               = <span class="nx">local</span><span class="p">.</span><span class="nx">name</span>
+</span></span><span class="line"><span class="cl">  <span class="na">load_balancer_type</span> = <span class="s2">&#34;network&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="na">internal</span>           = <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="na">vpc_id</span>          = <span class="nx">local</span><span class="p">.</span><span class="nx">vpc_id</span>
+</span></span><span class="line"><span class="cl">  <span class="na">subnets</span>         = <span class="p">[</span>
+</span></span><span class="line"><span class="cl"><span class="kr">    data</span><span class="p">.</span><span class="nx">aws_subnet</span><span class="p">.</span><span class="nx">public_a</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="kr">    data</span><span class="p">.</span><span class="nx">aws_subnet</span><span class="p">.</span><span class="nx">public_c</span><span class="p">.</span><span class="nx">id</span>
+</span></span><span class="line"><span class="cl">  <span class="p">]</span><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">  # ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="moved-블록-선언">moved 블록 선언</h3>
+<p>그 다음 <code>moved {}</code> 블럭을 <code>main.tf</code> 코드에 새롭게 추가합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-diff" data-lang="diff"><span class="line"><span class="cl">  # main.tf
+</span></span><span class="line"><span class="cl">  module &#34;nlb&#34; {
+</span></span><span class="line"><span class="cl">    source  = &#34;git::https://github.doge.com/doge-company/terraform-modules.git//aws/alb&#34;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    name               = local.name
+</span></span><span class="line"><span class="cl">    load_balancer_type = &#34;network&#34;
+</span></span><span class="line"><span class="cl">    internal           = false
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    vpc_id          = local.vpc_id
+</span></span><span class="line"><span class="cl">    subnets         = [
+</span></span><span class="line"><span class="cl">      data.aws_subnet.public_a.id,
+</span></span><span class="line"><span class="cl">      data.aws_subnet.public_c.id
+</span></span><span class="line"><span class="cl">    ]
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    # ...
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gi">+ moved {
+</span></span></span><span class="line"><span class="cl"><span class="gi">+   from = module.alb  # 기존 module 이름
+</span></span></span><span class="line"><span class="cl"><span class="gi">+   to   = module.nlb  # 변경할 module 이름
+</span></span></span><span class="line"><span class="cl"><span class="gi">+ }
+</span></span></span></code></pre></div><p> </p>
+<p><code>main.tf</code> 코드에 <code>moved {}</code> 블럭을 추가한 결과입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-terraform" data-lang="terraform"><span class="line"><span class="cl"><span class="c1"># main.tf
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">module</span> <span class="s2">&#34;nlb&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="na">source</span>  = <span class="s2">&#34;git::https://github.doge.com/doge-company/terraform-modules.git//aws/alb&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="na">name</span>               = <span class="nx">local</span><span class="p">.</span><span class="nx">name</span>
+</span></span><span class="line"><span class="cl">  <span class="na">load_balancer_type</span> = <span class="s2">&#34;network&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="na">internal</span>           = <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="na">vpc_id</span>          = <span class="nx">local</span><span class="p">.</span><span class="nx">vpc_id</span>
+</span></span><span class="line"><span class="cl">  <span class="na">subnets</span>         = <span class="p">[</span>
+</span></span><span class="line"><span class="cl"><span class="kr">    data</span><span class="p">.</span><span class="nx">aws_subnet</span><span class="p">.</span><span class="nx">public_a</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="kr">    data</span><span class="p">.</span><span class="nx">aws_subnet</span><span class="p">.</span><span class="nx">public_c</span><span class="p">.</span><span class="nx">id</span>
+</span></span><span class="line"><span class="cl">  <span class="p">]</span><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">  # ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1"># 새로 추가한 moved 블럭
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">moved</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="na">from</span> = <span class="nb">module</span><span class="p">.</span><span class="nx">alb</span><span class="c1">  # 기존 module 이름
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="na">to</span>   = <span class="nb">module</span><span class="p">.</span><span class="nx">nlb</span><span class="c1">  # 변경할 module 이름
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p><code>terraform apply</code>를 하면 <code>moved {}</code> 블록은 이미 생성되어 있는 module의 기존 이름 <code>alb</code>를 <code>nlb</code>로 변경하는 작업을 수행하게 됩니다.</p>
+<p> </p>
+<h3 id="plan">plan</h3>
+<p>이후 <code>terraform plan</code>을 돌려서 리소스의 변경사항을 미리 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform plan
+</span></span><span class="line"><span class="cl">data.aws_subnet.public_c: Reading...
+</span></span><span class="line"><span class="cl">data.aws_ec2_managed_prefix_list.jira_cloud: Reading...
+</span></span><span class="line"><span class="cl">data.aws_subnet.public_a: Reading...
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group.main<span class="o">[</span>1<span class="o">]</span>: Refreshing state... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000002/469c12d66ae53716<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group.main<span class="o">[</span>0<span class="o">]</span>: Refreshing state... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000001/a85e7b6195c0e180<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group.main<span class="o">[</span>2<span class="o">]</span>: Refreshing state... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/user-20230809061330863200000001/52641bd2a68b265a<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group_attachment.this<span class="o">[</span><span class="s2">&#34;0.ghe_primary&#34;</span><span class="o">]</span>: Refreshing state... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000001/a85e7b6195c0e180-20230809060358861800000001<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group_attachment.this<span class="o">[</span><span class="s2">&#34;2.ghe_primary&#34;</span><span class="o">]</span>: Refreshing state... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/user-20230809061330863200000001/52641bd2a68b265a-20230809061358959300000001<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group_attachment.this<span class="o">[</span><span class="s2">&#34;1.ghe_primary&#34;</span><span class="o">]</span>: Refreshing state... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000002/469c12d66ae53716-20230809060358952300000002<span class="o">]</span>
+</span></span><span class="line"><span class="cl">data.aws_subnet.public_c: Read <span class="nb">complete</span> after 1s <span class="o">[</span><span class="nv">id</span><span class="o">=</span>subnet-xxxxxsubnetxxxxxx<span class="o">]</span>
+</span></span><span class="line"><span class="cl">data.aws_subnet.public_a: Read <span class="nb">complete</span> after 1s <span class="o">[</span><span class="nv">id</span><span class="o">=</span>subnet-yyyyysubnetyyyyyy<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb.this<span class="o">[</span>0<span class="o">]</span>: Refreshing state... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:loadbalancer/net/doge-api-public-nlb/1fbec21ba0f60c88<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_listener.frontend_http_tcp<span class="o">[</span>0<span class="o">]</span>: Refreshing state... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:listener/net/doge-api-public-nlb/1fbec21ba0f60c88/dfac473dc3c9a126<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_listener.frontend_http_tcp<span class="o">[</span>2<span class="o">]</span>: Refreshing state... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:listener/net/doge-api-public-nlb/1fbec21ba0f60c88/fe50ecca7ff4e974<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_listener.frontend_http_tcp<span class="o">[</span>1<span class="o">]</span>: Refreshing state... <span class="o">[</span><span class="nv">id</span><span class="o">=</span>arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:listener/net/doge-api-public-nlb/1fbec21ba0f60c88/0c8b7068a8658810<span class="o">]</span>
+</span></span><span class="line"><span class="cl">data.aws_ec2_managed_prefix_list.jira_cloud: Read <span class="nb">complete</span> after 1s <span class="o">[</span><span class="nv">id</span><span class="o">=</span>pl-0badad04d863107b3<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Terraform will perform the following actions:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb.this[0] has moved to module.nlb.aws_lb.this[0]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb&#34;</span> <span class="s2">&#34;this&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>                               <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:loadbalancer/net/doge-api-public-nlb/1fbec21ba0f60c88&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">name</span>                             <span class="o">=</span> <span class="s2">&#34;doge-api-public-nlb&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">tags</span>                             <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;ManagedBy&#34;</span>   <span class="o">=</span> <span class="s2">&#34;terraform&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (13 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># (4 unchanged blocks hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_listener.frontend_http_tcp[0] has moved to module.nlb.aws_lb_listener.frontend_http_tcp[0]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_listener&#34;</span> <span class="s2">&#34;frontend_http_tcp&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>                <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:listener/net/doge-api-public-nlb/1fbec21ba0f60c88/dfac473dc3c9a126&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">tags</span>              <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;ManagedBy&#34;</span>   <span class="o">=</span> <span class="s2">&#34;terraform&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (5 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># (1 unchanged block hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_listener.frontend_http_tcp[1] has moved to module.nlb.aws_lb_listener.frontend_http_tcp[1]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_listener&#34;</span> <span class="s2">&#34;frontend_http_tcp&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>                <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:listener/net/doge-api-public-nlb/1fbec21ba0f60c88/0c8b7068a8658810&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">tags</span>              <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;ManagedBy&#34;</span>   <span class="o">=</span> <span class="s2">&#34;terraform&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (5 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># (1 unchanged block hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_listener.frontend_http_tcp[2] has moved to module.nlb.aws_lb_listener.frontend_http_tcp[2]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_listener&#34;</span> <span class="s2">&#34;frontend_http_tcp&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>                <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:listener/net/doge-api-public-nlb/1fbec21ba0f60c88/fe50ecca7ff4e974&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">tags</span>              <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;ManagedBy&#34;</span>   <span class="o">=</span> <span class="s2">&#34;terraform&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (5 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># (1 unchanged block hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group.main[0] has moved to module.nlb.aws_lb_target_group.main[0]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group&#34;</span> <span class="s2">&#34;main&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>                                 <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000001/a85e7b6195c0e180&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">name</span>                               <span class="o">=</span> <span class="s2">&#34;https-20230809060305165300000001&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">tags</span>                               <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;ManagedBy&#34;</span>   <span class="o">=</span> <span class="s2">&#34;terraform&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (16 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged blocks hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group.main[1] has moved to module.nlb.aws_lb_target_group.main[1]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group&#34;</span> <span class="s2">&#34;main&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>                                 <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000002/469c12d66ae53716&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">name</span>                               <span class="o">=</span> <span class="s2">&#34;https-20230809060305165300000002&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">tags</span>                               <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;ManagedBy&#34;</span>   <span class="o">=</span> <span class="s2">&#34;terraform&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (16 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged blocks hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group.main[2] has moved to module.nlb.aws_lb_target_group.main[2]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group&#34;</span> <span class="s2">&#34;main&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>                                 <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/user-20230809061330863200000001/52641bd2a68b265a&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">name</span>                               <span class="o">=</span> <span class="s2">&#34;user-20230809061330863200000001&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">tags</span>                               <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;ManagedBy&#34;</span>   <span class="o">=</span> <span class="s2">&#34;terraform&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (16 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged blocks hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group_attachment.this[&#34;0.ghe_primary&#34;] has moved to module.nlb.aws_lb_target_group_attachment.this[&#34;0.ghe_primary&#34;]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group_attachment&#34;</span> <span class="s2">&#34;this&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>               <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000001/a85e7b6195c0e180-20230809060358861800000001&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group_attachment.this[&#34;1.ghe_primary&#34;] has moved to module.nlb.aws_lb_target_group_attachment.this[&#34;1.ghe_primary&#34;]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group_attachment&#34;</span> <span class="s2">&#34;this&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>               <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000002/469c12d66ae53716-20230809060358952300000002&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group_attachment.this[&#34;2.ghe_primary&#34;] has moved to module.nlb.aws_lb_target_group_attachment.this[&#34;2.ghe_primary&#34;]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group_attachment&#34;</span> <span class="s2">&#34;this&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>               <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/user-20230809061330863200000001/52641bd2a68b265a-20230809061358959300000001&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Plan: <span class="m">0</span> to add, <span class="m">0</span> to change, <span class="m">0</span> to destroy.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Note: You didn<span class="s1">&#39;t use the -out option to save this plan, so Terraform can&#39;</span>t guarantee to take exactly these actions <span class="k">if</span> you run <span class="s2">&#34;terraform apply&#34;</span> now.
+</span></span></code></pre></div><p> </p>
+<h3 id="apply">apply</h3>
+<p><code>terraform apply</code>로 모듈 이름만 바뀌는 변경사항을 적용합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform apply
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  ...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group_attachment.this[&#34;0.ghe_primary&#34;] has moved to module.nlb.aws_lb_target_group_attachment.this[&#34;0.ghe_primary&#34;]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group_attachment&#34;</span> <span class="s2">&#34;this&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>               <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000001/a85e7b6195c0e180-20230809060358861800000001&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group_attachment.this[&#34;1.ghe_primary&#34;] has moved to module.nlb.aws_lb_target_group_attachment.this[&#34;1.ghe_primary&#34;]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group_attachment&#34;</span> <span class="s2">&#34;this&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>               <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000002/469c12d66ae53716-20230809060358952300000002&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group_attachment.this[&#34;2.ghe_primary&#34;] has moved to module.nlb.aws_lb_target_group_attachment.this[&#34;2.ghe_primary&#34;]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group_attachment&#34;</span> <span class="s2">&#34;this&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>               <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/user-20230809061330863200000001/52641bd2a68b265a-20230809061358959300000001&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Plan: <span class="m">0</span> to add, <span class="m">0</span> to change, <span class="m">0</span> to destroy.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Do you want to perform these actions?
+</span></span><span class="line"><span class="cl">  Terraform will perform the actions described above.
+</span></span><span class="line"><span class="cl">  Only <span class="s1">&#39;yes&#39;</span> will be accepted to approve.
+</span></span></code></pre></div><p> </p>
+<p><code>apply</code> 실행 전 결과를 확인해보니 생성, 변경, 삭제되는 리소스가 하나도 없습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Plan: <span class="m">0</span> to add, <span class="m">0</span> to change, <span class="m">0</span> to destroy.
+</span></span></code></pre></div><p>module의 이름만 <code>alb</code>에서 <code>nlb</code>로 그대로 변경될 뿐 리소스의 변동사항은 전혀 없다는 점을 확인했습니다.</p>
+<p> </p>
+<p>실행 여부를 묻는 프롬프트에서 <code>yes</code>를 입력해 실제 리소스에 변경사항을 반영합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform apply
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group_attachment.this[&#34;0.ghe_primary&#34;] has moved to module.nlb.aws_lb_target_group_attachment.this[&#34;0.ghe_primary&#34;]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group_attachment&#34;</span> <span class="s2">&#34;this&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>               <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000001/a85e7b6195c0e180-20230809060358861800000001&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group_attachment.this[&#34;1.ghe_primary&#34;] has moved to module.nlb.aws_lb_target_group_attachment.this[&#34;1.ghe_primary&#34;]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group_attachment&#34;</span> <span class="s2">&#34;this&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>               <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/https-20230809060305165300000002/469c12d66ae53716-20230809060358952300000002&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># module.alb.aws_lb_target_group_attachment.this[&#34;2.ghe_primary&#34;] has moved to module.nlb.aws_lb_target_group_attachment.this[&#34;2.ghe_primary&#34;]</span>
+</span></span><span class="line"><span class="cl">    resource <span class="s2">&#34;aws_lb_target_group_attachment&#34;</span> <span class="s2">&#34;this&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">id</span>               <span class="o">=</span> <span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/user-20230809061330863200000001/52641bd2a68b265a-20230809061358959300000001&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># (3 unchanged attributes hidden)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Plan: <span class="m">0</span> to add, <span class="m">0</span> to change, <span class="m">0</span> to destroy.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Do you want to perform these actions?
+</span></span><span class="line"><span class="cl">  Terraform will perform the actions described above.
+</span></span><span class="line"><span class="cl">  Only <span class="s1">&#39;yes&#39;</span> will be accepted to approve.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  Enter a value: yes
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Apply complete! Resources: <span class="m">0</span> added, <span class="m">0</span> changed, <span class="m">0</span> destroyed.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Outputs:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p><code>Apply complete!</code>가 되었고 생성, 변경, 삭제된 리소스는 하나도 없다는 걸 확인할 수 있습니다.</p>
+<p> </p>
+<p>이제 다시 Terraform 상태파일의 목록을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terraform state list
+</span></span><span class="line"><span class="cl">data.aws_ec2_managed_prefix_list.jira_cloud
+</span></span><span class="line"><span class="cl">data.aws_subnet.public_a
+</span></span><span class="line"><span class="cl">data.aws_subnet.public_c
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb.this<span class="o">[</span>0<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_listener.frontend_http_tcp<span class="o">[</span>0<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_listener.frontend_http_tcp<span class="o">[</span>1<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_listener.frontend_http_tcp<span class="o">[</span>2<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group.main<span class="o">[</span>0<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group.main<span class="o">[</span>1<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group.main<span class="o">[</span>2<span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group_attachment.this<span class="o">[</span><span class="s2">&#34;0.ghe_primary&#34;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group_attachment.this<span class="o">[</span><span class="s2">&#34;1.ghe_primary&#34;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">module.nlb.aws_lb_target_group_attachment.this<span class="o">[</span><span class="s2">&#34;2.ghe_primary&#34;</span><span class="o">]</span>
+</span></span></code></pre></div><p>저희가 의도한대로 <code>module.alb</code> 이름이 <code>module.nlb</code>로 정상 변경되었습니다.</p>
+<p>작업 종료.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://developer.hashicorp.com/terraform/language/modules/develop/refactoring#renaming-a-resource">Renaming a Resource</a><br>
+<a href="https://developer.hashicorp.com/terraform/cli/commands/state/mv#usage">Command: state mv</a></p>
+<p><a href="https://heuristicwave.github.io/TerraformTips4">Terraform Tips 4 - Move (Refactoring)</a></p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

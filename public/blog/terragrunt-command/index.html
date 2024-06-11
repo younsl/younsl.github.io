@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/terragrunt-command/" />
+    <title>Terragrunt run all</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Terragrunt run all</h1>
+        <div>
+                <time>Updated December 20, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p><code>terragrunt</code>에서 한 번에 여러 모듈에서 Terraform 명령 실행하는 방법을 소개합니다.</p>
+<p><img src="./1.png" alt="Terragrunt 동작방식"></p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<ul>
+<li>Terragrunt version v0.42.3</li>
+<li>Terraform v1.3.6 on linux_arm64</li>
+</ul>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="terragrunt의-모듈-구조">terragrunt의 모듈 구조</h3>
+<p>Terragrunt를 사용하게 되면 디렉토리 구조가 여러 계층 구조로 나눠지면서 디렉토리 구조 뎁스가 크게는 7~8단계까지 늘어나게 됩니다.<br>
+이런 경우, 각 뎁스마다 들어가서 <code>terragrunt.hcl</code>을 <code>terragrunt plan</code>, <code>terragrunt apply</code>를 계속 반복하는 상황이 발생합니다.</p>
+<p> </p>
+<p>이 때 하나씩 <code>terragrunt</code> 명령어를 실행하는 게 매우 번거롭고 고된 작업입니다.<br>
+이에 대한 해결책으로 <code>terragrunt</code>는 <code>terragrunt run-all</code> 명령어를 지원하고 있습니다.<br>
+<code>terragrunt run-all</code>은 여러 개 모듈에 대해 한번의 커맨드로 실행 할 수 있도록 만들어 주는 기능입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> your-root-dir
+</span></span><span class="line"><span class="cl">$ terragrunt run-all &lt;한 번에 사용할 명령어&gt;
+</span></span></code></pre></div><p> </p>
+<h2 id="사용법">사용법</h2>
+<p><code>terragrunt run-all</code>의 사용 예시를 들어보겠습니다.</p>
+<p><code>terragrunt</code> 파일 구조는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ tree
+</span></span><span class="line"><span class="cl">.
+</span></span><span class="line"><span class="cl"><span class="p">|</span>-- subnets
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="p">|</span>-- private
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="p">|</span>   <span class="p">|</span>-- dmz
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="p">|</span>   <span class="p">|</span>   <span class="p">|</span>-- a
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="p">|</span>   <span class="p">|</span>   <span class="p">|</span>   <span class="sb">`</span>-- terragrunt.hcl
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="p">|</span>   <span class="p">|</span>   <span class="sb">`</span>-- c
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="p">|</span>   <span class="p">|</span>       <span class="sb">`</span>-- terragrunt.hcl
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="p">|</span>   <span class="sb">`</span>-- private
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="p">|</span>       <span class="p">|</span>-- a
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="p">|</span>       <span class="p">|</span>   <span class="sb">`</span>-- terragrunt.hcl
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="p">|</span>       <span class="sb">`</span>-- c
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="p">|</span>           <span class="sb">`</span>-- terragrunt.hcl
+</span></span><span class="line"><span class="cl"><span class="p">|</span>   <span class="sb">`</span>-- public
+</span></span><span class="line"><span class="cl"><span class="p">|</span>       <span class="p">|</span>-- firewall
+</span></span><span class="line"><span class="cl"><span class="p">|</span>       <span class="p">|</span>   <span class="p">|</span>-- a
+</span></span><span class="line"><span class="cl"><span class="p">|</span>       <span class="p">|</span>   <span class="p">|</span>   <span class="sb">`</span>-- terragrunt.hcl
+</span></span><span class="line"><span class="cl"><span class="p">|</span>       <span class="p">|</span>   <span class="sb">`</span>-- c
+</span></span><span class="line"><span class="cl"><span class="p">|</span>       <span class="p">|</span>       <span class="sb">`</span>-- terragrunt.hcl
+</span></span><span class="line"><span class="cl"><span class="p">|</span>       <span class="sb">`</span>-- public
+</span></span><span class="line"><span class="cl"><span class="p">|</span>           <span class="p">|</span>-- a
+</span></span><span class="line"><span class="cl"><span class="p">|</span>           <span class="p">|</span>   <span class="sb">`</span>-- terragrunt.hcl
+</span></span><span class="line"><span class="cl"><span class="p">|</span>           <span class="sb">`</span>-- c
+</span></span><span class="line"><span class="cl"><span class="p">|</span>               <span class="sb">`</span>-- terragrunt.hcl
+</span></span><span class="line"><span class="cl"><span class="sb">`</span>-- vpc
+</span></span><span class="line"><span class="cl">    <span class="sb">`</span>-- terragrunt.hcl
+</span></span></code></pre></div><p> </p>
+<p>이 때 현재 경로에서 다음 명령어를 실행해서 한 번에 <code>apply</code>를 할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> your-root-dir
+</span></span><span class="line"><span class="cl">$ terragrunt run-all apply
+</span></span></code></pre></div><p><code>terragrunt run-all apply</code> 명령을 실행하면 Terragrunt는 현재 작업 디렉토리의 모든 하위 폴더를 재귀적으로 살펴보고 <code>terragrunt.hcl</code> 파일이 있는 모든 폴더를 찾은 다음, 각 폴더에서 <code>terragrunt apply</code>를 동시에 실행합니다.</p>
+<p> </p>
+<p>한 번에 리소스 삭제도 가능합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> your-root-dir
+</span></span><span class="line"><span class="cl">$ terragrunt run-all destroy
+</span></span></code></pre></div><p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://terragrunt.gruntwork.io/docs/features/execute-terraform-commands-on-multiple-modules-at-once/">Execute Terraform commands on multiple modules at once</a><br>
+테라그런트 공식문서</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

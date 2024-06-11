@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/k8s/install-metrics-server-using-helm/" />
+    <title>metrics-server helm</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>metrics-server helm</h1>
+        <div>
+                <time>Updated March 26, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>EKS 클러스터에 metrics-server를 설치 및 업그레이드 가이드입니다.<br>
+이 가이드에서는 Helm v3를 사용해 metrics-server를 설치합니다.</p>
+<p> </p>
+<p>이 가이드에서는 크게 2가지 주제를 다루고 있습니다.</p>
+<ol>
+<li>Helm 차트를 사용해서 metrics-server 설치하기</li>
+<li>Helm 차트를 사용해서 metrics-server 버전 업그레이드하기</li>
+</ol>
+<p> </p>
+<h2 id="환경">환경</h2>
+<p><code>metrics-server</code>를 배포할 환경은 2대의 EC2 워커노드로 구성된 EKS 클러스터입니다.</p>
+<p><img src="./1.png" alt="클러스터 환경"></p>
+<p> </p>
+<h3 id="로컬-환경">로컬 환경</h3>
+<ul>
+<li><strong>OS</strong> : macOS Ventura 13.2 (M1 Max)</li>
+<li><strong>helm</strong> v3.11.0 : brew로 설치</li>
+<li><strong>kubectl</strong> v1.26.1 : brew로 설치</li>
+</ul>
+<p> </p>
+<h3 id="클러스터-환경">클러스터 환경</h3>
+<p><code>metrics-server</code>를 설치할 쿠버네티스 클러스터 환경은 2대의 워커노드로 구성된 EKS 클러스터입니다.</p>
+<ul>
+<li>EC2 기반의 워커노드</li>
+<li>2 nodes</li>
+<li>x86_64</li>
+<li>Kubernetes v1.24 (v1.24.9-eks-49d8fe8)</li>
+</ul>
+<p> </p>
+<h3 id="설치-에드온-정보">설치 에드온 정보</h3>
+<ul>
+<li><a href="https://github.com/kubernetes-sigs/metrics-server/releases/tag/v0.6.2">metrics-server v0.6.2</a>
+<ul>
+<li>차트 버전 : v3.8.3 (2022년 12월 8일 릴리즈됨)</li>
+</ul>
+</li>
+</ul>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="metrics-server의-필요성">metrics-server의 필요성</h3>
+<p>EKS 클러스터에서 <code>kubectl top</code> 명령어 실행시 아래와 같은 오류가 발생합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl top node
+</span></span><span class="line"><span class="cl">error: Metrics API not available
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl top pod
+</span></span><span class="line"><span class="cl">error: Metrics API not available
+</span></span></code></pre></div><p>이 경우, EKS 클러스터에 <code>metrics-server</code> 가 미설치된 상태라 메트릭을 수집할 수 없어서 발생하는 문제입니다.</p>
+<p> </p>
+<p>metrics-server는 크게 2가지 역할을 합니다.</p>
+<ul>
+<li>Horizontal Pod Autoscaler(HPA)가 파드를 스케일 인, 아웃 처리하기 위한 판단 기준인 파드 메트릭 수집</li>
+<li><code>kubectl top</code> 명령어를 사용하기 위한 노드 메트릭 수집</li>
+</ul>
+<p> </p>
+<h3 id="버전-호환성">버전 호환성</h3>
+<p>사용중인 Kubernetes 버전에 따라 metrics-server 버전에도 제약사항이 있습니다.<br>
+예를 들어 Kubernetes v1.19 이상 버전은 반드시 metrics-server v0.6.x를 사용해야 합니다.</p>
+<p>자세한 사항은 metrics-server <a href="https://github.com/kubernetes-sigs/metrics-server#compatibility-matrix">공식문서</a>에서 확인할 수 있습니다.</p>
+<p> </p>
+<h3 id="메트릭-에드온-비교">메트릭 에드온 비교</h3>
+<p>쿠버네티스 클러스터 내부의 메트릭 수집을 위한 에드온으로는 크게 2가지가 있습니다.</p>
+<ul>
+<li>kube-state-metrics</li>
+<li>metrics-server</li>
+</ul>
+<p>이 2개의 메트릭 에드온의 차이점은 다음과 같습니다.</p>
+<p> </p>
+<h4 id="kube-state-metrics">kube-state-metrics</h4>
+<p><strong>kube-state-metrics</strong>는 Kubernetes API 서버를 수신하고 개체의 상태에 대한 메트릭을 생성하는 간단한 서비스입니다.<br>
+개별 Kubernetes 컴포넌트의 상태가 아니라 Deployment, Node 및 Pod와 같은 내부의 다양한 개체 상태에 중점을 둡니다.<br>
+kube-state-metrics를 사용하면 오픈소스 모니터링 툴킷인 Prometheus를 이용하여 매트릭 데이터를 수집할 수 있습니다.</p>
+<p> </p>
+<h4 id="metrics-server">metrics-server</h4>
+<p>반면에 metrics-server는 Resource Metrics API를 구현합니다.<br>
+한 문장으로 요약하면 kube-state-metrics는 모든 종류의 Kubernetes 개체에 대한 메트릭을 노출합니다. metrics-server는 노드 및 포드 사용률과 같이 Kubernetes 자체에 매우 적은 메트릭만 노출합니다. 또한, Prometheus에서 metrics-server를 직접 스크랩할 수 없습니다.</p>
+<p> </p>
+<p>이미 다른 유저가 이에 대해 질문한 깃허브 이슈가 있습니다.<br>
+자세한 설명은 <a href="https://github.com/kubernetes-sigs/metrics-server/issues/55">Differences between metrics-server repo and kube-state-metrics repo #55</a> 이슈를 참고 부탁드립니다.</p>
+<p> </p>
+<h2 id="metrics-server-설치">metrics-server 설치</h2>
+<h3 id="helm-세팅">helm 세팅</h3>
+<p>클러스터 안에 metrics-server 파드가 존재하는 지 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get pod -n kube-system
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME                                            READY   STATUS    RESTARTS   AGE
+</span></span><span class="line"><span class="cl">aws-load-balancer-controller-77fffd87bc-79mwd   1/1     Running   <span class="m">0</span>          7h53m
+</span></span><span class="line"><span class="cl">aws-load-balancer-controller-77fffd87bc-hxtfq   1/1     Running   <span class="m">0</span>          7h53m
+</span></span><span class="line"><span class="cl">aws-node-bllwq                                  1/1     Running   <span class="m">0</span>          9h
+</span></span><span class="line"><span class="cl">aws-node-zhlxf                                  1/1     Running   <span class="m">0</span>          9h
+</span></span><span class="line"><span class="cl">coredns-dc4979556-bps74                         1/1     Running   <span class="m">0</span>          7h53m
+</span></span><span class="line"><span class="cl">coredns-dc4979556-w58mt                         1/1     Running   <span class="m">0</span>          7h53m
+</span></span><span class="line"><span class="cl">ebs-csi-controller-84b55655df-2pr5r             6/6     Running   <span class="m">0</span>          7h52m
+</span></span><span class="line"><span class="cl">ebs-csi-controller-84b55655df-n8pj4             6/6     Running   <span class="m">0</span>          7h53m
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p>위와 같은 경우 설치되지 않았다고 판단할 수 있습니다.</p>
+<p> </p>
+<p>헬름 레포를 추가합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="s2">&#34;metrics-server&#34;</span> has been added to your repositories
+</span></span></code></pre></div><p> </p>
+<p>등록된 헬름 레포 목록을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm repo list
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME            URL
+</span></span><span class="line"><span class="cl">metrics-server  https://kubernetes-sigs.github.io/metrics-server/
+</span></span></code></pre></div><p><code>metrics-server</code> 레포가 새롭게 추가된 걸 확인할 수 있습니다.</p>
+<p> </p>
+<h3 id="valuesyaml-작성">values.yaml 작성</h3>
+<p>metrics-server의 원본 <a href="https://github.com/kubernetes-sigs/metrics-server/blob/master/charts/metrics-server/values.yaml">values.yaml</a>을 자신의 환경에 맞게 수정합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># Default values for metrics-server.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># This is a YAML-formatted file.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># Declare variables to be passed into your templates.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">image</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="l">registry.k8s.io/metrics-server/metrics-server</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Overrides the image tag whose default is v{{ .Chart.AppVersion }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">IfNotPresent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">imagePullSecrets</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># - name: registrySecretName</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">nameOverride</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">fullnameOverride</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">serviceAccount</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Specifies whether a service account should be created</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">create</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Annotations to add to the service account</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># The name of the service account to use.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># If not set and create is true, a name is generated using the fullname template</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># The list of secrets mountable by this service account.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># See https://kubernetes.io/docs/reference/labels-annotations-taints/#enforce-mountable-secrets</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">rbac</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Specifies whether RBAC resources should be created</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">create</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pspEnabled</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apiService</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Specifies if the v1beta1.metrics.k8s.io API service should be created.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># You typically want this enabled! If you disable API service creation you have to</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># manage it outside of this chart for e.g horizontal pod autoscaling to</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># work with this release.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">create</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Annotations to add to the API service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Specifies whether to skip TLS verification</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">insecureSkipTLSVerify</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># The PEM encoded CA bundle for TLS verification</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">caBundle</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">commonLabels</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">podLabels</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">podAnnotations</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">podSecurityContext</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">securityContext</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">allowPrivilegeEscalation</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">readOnlyRootFilesystem</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">runAsNonRoot</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">runAsUser</span><span class="p">:</span><span class="w"> </span><span class="m">1000</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">priorityClassName</span><span class="p">:</span><span class="w"> </span><span class="l">system-cluster-critical</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="m">10250</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">hostNetwork</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Specifies if metrics-server should be started in hostNetwork mode.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># You would require this enabled if you use alternate overlay networking for pods and</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># API server unable to communicate with metrics-server. As an example, this is required</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># if you use Weave network on EKS</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#   type: RollingUpdate</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#   rollingUpdate:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#     maxSurge: 0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#     maxUnavailable: 1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">podDisruptionBudget</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># https://kubernetes.io/docs/tasks/run-application/configure-pdb/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">minAvailable</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">maxUnavailable</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">defaultArgs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- --<span class="l">cert-dir=/tmp</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- --<span class="l">kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- --<span class="l">kubelet-use-node-status-port</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- --<span class="l">metric-resolution=15s</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">livenessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/livez</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l">https</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">scheme</span><span class="p">:</span><span class="w"> </span><span class="l">HTTPS</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="m">0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">readinessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/readyz</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l">https</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">scheme</span><span class="p">:</span><span class="w"> </span><span class="l">HTTPS</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="m">20</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">service</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">ClusterIP</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">443</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#  Add these labels to have metrics-server show up in `kubectl cluster-info`</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#  kubernetes.io/cluster-service: &#34;true&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#  kubernetes.io/name: &#34;Metrics-server&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">addonResizer</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="l">registry.k8s.io/autoscaling/addon-resizer</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="m">1.8.14</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">resources</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">limits</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l">40m</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l">25Mi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">requests</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l">40m</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l">25Mi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">nanny</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l">20m</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">extraCpu</span><span class="p">:</span><span class="w"> </span><span class="l">1m</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">extraMemory</span><span class="p">:</span><span class="w"> </span><span class="l">2Mi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l">15Mi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">minClusterSize</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">pollPeriod</span><span class="p">:</span><span class="w"> </span><span class="m">300000</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="m">5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metrics</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">serviceMonitor</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">additionalLabels</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l">1m</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">scrapeTimeout</span><span class="p">:</span><span class="w"> </span><span class="l">10s</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">metricRelabelings</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">relabelings</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># See https://github.com/kubernetes-sigs/metrics-server#scaling</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">extraVolumeMounts</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">extraVolumes</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">nodeSelector</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">tolerations</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">affinity</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">topologySpreadConstraints</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># Annotations to add to the deployment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">deploymentAnnotations</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">schedulerName</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<p>기본적으로 metrics-server 컨테이너 이미지를 외부에서 받아오도록 설정되어 있습니다.<br>
+아래는 <code>metric-server</code> 헬름 차트에서 이미지 받아오는 경로에 대한 설정 부분입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># values.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">image</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="l">registry.k8s.io/metrics-server/metrics-server</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Overrides the image tag whose default is v{{ .Chart.AppVersion }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">IfNotPresent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span></code></pre></div><p>위와 같이 기본값을 사용해서 <code>metrics-server</code> 헬름 차트를 설치하는 경우 워커 노드들이 NAT Gateway, Internet Gateway를 통해 도커 허브에 액세스 가능한 상태여야 정상적으로 파드 배포가 완료됩니다.</p>
+<p>일반적으로 도커 허브에 업로드된 <code>metrics-server</code> 컨테이너 이미지를 받아오는 대신 Private ECR에 업로드해서 운영하는 걸 권장합니다.</p>
+<p> </p>
+<p>제 경우 기본 차트의 values.yaml 파일에서 고가용성을 위해 아래와 같이 <code>replicas</code> 값만 1에서 2로 변경했습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># values.yaml</span>
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">replicas: <span class="m">2</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p> </p>
+<h3 id="metrics-server-설치-1">metrics-server 설치</h3>
+<p><code>values.yaml</code> 파일과 같은 경로로 이동합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ tree
+</span></span><span class="line"><span class="cl">.
+</span></span><span class="line"><span class="cl">└── values.yaml
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="m">1</span> directory, <span class="m">1</span> files
+</span></span></code></pre></div><p> </p>
+<p>최신 버전의 헬름 차트를 사용해서 <code>metrics-server</code>를 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm upgrade <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --install metrics-server metrics-server/metrics-server <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --namespace kube-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --values values.yaml <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --wait
+</span></span></code></pre></div><p><code>metrics-server</code> 관련 쿠버네티스 리소스는 <code>kube-system</code> 네임스페이스에 설치되어야 합니다.</p>
+<p> </p>
+<p>헬름 설치 후 차트의 배포 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm status metrics-server -n kube-system
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME: metrics-server
+</span></span><span class="line"><span class="cl">LAST DEPLOYED: Wed Feb  <span class="m">8</span> 23:49:39 <span class="m">2023</span>
+</span></span><span class="line"><span class="cl">NAMESPACE: kube-system
+</span></span><span class="line"><span class="cl">STATUS: deployed
+</span></span><span class="line"><span class="cl">REVISION: <span class="m">1</span>
+</span></span><span class="line"><span class="cl">TEST SUITE: None
+</span></span><span class="line"><span class="cl">NOTES:
+</span></span><span class="line"><span class="cl">***********************************************************************
+</span></span><span class="line"><span class="cl">* Metrics Server                                                      *
+</span></span><span class="line"><span class="cl">***********************************************************************
+</span></span><span class="line"><span class="cl">  Chart version: 3.8.3
+</span></span><span class="line"><span class="cl">  App version:   0.6.2
+</span></span><span class="line"><span class="cl">  Image tag:     registry.k8s.io/metrics-server/metrics-server:v0.6.2
+</span></span><span class="line"><span class="cl">***********************************************************************
+</span></span></code></pre></div><p> </p>
+<p>클러스터에 배포된 metrics-server 관련 Deployment, Pod 등의 전반적인 상태도 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get all <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -l app.kubernetes.io/instance<span class="o">=</span>metrics-server <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n kube-system
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME                                  READY   STATUS    RESTARTS   AGE
+</span></span><span class="line"><span class="cl">pod/metrics-server-6c968cf978-hgfx4   1/1     Running   <span class="m">0</span>          38m
+</span></span><span class="line"><span class="cl">pod/metrics-server-6c968cf978-qks6l   1/1     Running   <span class="m">0</span>          38m
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT<span class="o">(</span>S<span class="o">)</span>   AGE
+</span></span><span class="line"><span class="cl">service/metrics-server   ClusterIP   172.20.142.97   &lt;none&gt;        443/TCP   38m
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
+</span></span><span class="line"><span class="cl">deployment.apps/metrics-server   2/2     <span class="m">2</span>            <span class="m">2</span>           38m
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">NAME                                        DESIRED   CURRENT   READY   AGE
+</span></span><span class="line"><span class="cl">replicaset.apps/metrics-server-6c968cf978   <span class="m">2</span>         <span class="m">2</span>         <span class="m">2</span>       38m
+</span></span></code></pre></div><p>위와 같은 경우 정상적이라고 판단할 수 있습니다.</p>
+<p> </p>
+<p>metrics-server 파드는 Deployment에 의해 항상 동일한 개수를 유지됩니다.<br>
+위의 경우는 2개의 metrics-server 파드를 항상 유지합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"> ┌───────────────────────────────────────────────────┐
+</span></span><span class="line"><span class="cl"> │                                                   │
+</span></span><span class="line"><span class="cl"> │                                        ┌───────┐  │
+</span></span><span class="line"><span class="cl"> │    Example of Deployment and Pod       │       │  │
+</span></span><span class="line"><span class="cl"> │    ─────────────────────────────    ┌─►│ Pod <span class="m">1</span> │  │
+</span></span><span class="line"><span class="cl"> │                                     │  │       │  │
+</span></span><span class="line"><span class="cl"> │                                     │  └───────┘  │
+</span></span><span class="line"><span class="cl"> │                                     │             │
+</span></span><span class="line"><span class="cl"> │  ┌────────────┐     ┌────────────┐  │  ┌───────┐  │
+</span></span><span class="line"><span class="cl"> │  │            │     │            │  │  │       │  │
+</span></span><span class="line"><span class="cl"> │  │ Deployment ├────►│ ReplicaSet ├──┼─►│ Pod <span class="m">2</span> │  │
+</span></span><span class="line"><span class="cl"> │  │            │     │            │  │  │       │  │
+</span></span><span class="line"><span class="cl"> │  └────────────┘     └────────────┘  │  └───────┘  │
+</span></span><span class="line"><span class="cl"> │                                     │             │
+</span></span><span class="line"><span class="cl"> │                                     │  ┌───────┐  │
+</span></span><span class="line"><span class="cl"> │                                     │  │       │  │
+</span></span><span class="line"><span class="cl"> │                                     └─►│ Pod <span class="m">3</span> │  │
+</span></span><span class="line"><span class="cl"> │                                        │       │  │
+</span></span><span class="line"><span class="cl"> │                                        └───────┘  │
+</span></span><span class="line"><span class="cl"> │                                                   │
+</span></span><span class="line"><span class="cl"> └───────────────────────────────────────────────────┘
+</span></span></code></pre></div><p> </p>
+<h3 id="결과-확인">결과 확인</h3>
+<p>metrics-server를 설치한 후 <code>kubectl top node</code>, <code>kubectl top pod</code> 명령어가 정상적으로 실행되는 지 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl top node
+</span></span><span class="line"><span class="cl">NAME                                                CPU<span class="o">(</span>cores<span class="o">)</span>   CPU%   MEMORY<span class="o">(</span>bytes<span class="o">)</span>   MEMORY%
+</span></span><span class="line"><span class="cl">ip-10-xxx-xxx-xxx.ap-northeast-2.compute.internal   54m          2%     835Mi           25%
+</span></span><span class="line"><span class="cl">ip-10-xxx-xxx-xxx.ap-northeast-2.compute.internal   69m          3%     2248Mi          67%
+</span></span></code></pre></div><p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl top pod
+</span></span><span class="line"><span class="cl">NAME                       CPU<span class="o">(</span>cores<span class="o">)</span>   MEMORY<span class="o">(</span>bytes<span class="o">)</span>
+</span></span><span class="line"><span class="cl">httpbin-648cd984f8-8ttfz   1m           36Mi
+</span></span></code></pre></div><p>이제 metrics-server를 통해 받아온 워커노드와 파드의 리소스 메트릭이 출력됩니다.</p>
+<p> </p>
+<p>이것으로 설치 가이드를 마칩니다.</p>
+<p> </p>
+<h2 id="metrics-server-업그레이드">metrics-server 업그레이드</h2>
+<p>이 시나리오는 Helm v3를 사용해서 기존에 설치된 metrics-server를 버전 업그레이드합니다.</p>
+<ul>
+<li><strong>헬름 차트</strong> : 3.8.3 → 3.9.0</li>
+<li><strong>metrics-server 앱</strong> : v0.6.2 → v0.6.3</li>
+</ul>
+<p> </p>
+<p>metrics-server의 <a href="https://artifacthub.io/packages/helm/metrics-server/metrics-server">ArtifactHUB</a>를 확인한 후 업그레이드할 차트 버전을 지정합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nv">CHART_VERSION</span><span class="o">=</span><span class="s1">&#39;3.9.0&#39;</span>
+</span></span></code></pre></div><p><strong>중요</strong><br>
+헬름 차트의 릴리즈 노트를 통해 변경사항을 체크하고 <a href="https://github.com/kubernetes-sigs/metrics-server/blob/master/charts/metrics-server/values.yaml">values.yaml</a>을 업데이트한 후 저장합니다.</p>
+<p> </p>
+<p>헬름 차트로 metrics-server를 버전 업그레이드합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># metrics-server 공식 헬름 차트 추가</span>
+</span></span><span class="line"><span class="cl">$ helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># metrics-server 버전 업그레이드</span>
+</span></span><span class="line"><span class="cl">$ helm upgrade <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --install metrics-server metrics-server/metrics-server <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -f values.yaml <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n kube-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --version <span class="nv">$CHART_VERSION</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --wait
+</span></span></code></pre></div><p> </p>
+<p>metrics-server 파드가 교체되는 데 시간이 걸리므로 잠시 기다립니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Release <span class="s2">&#34;metrics-server&#34;</span> has been upgraded. Happy Helming!
+</span></span><span class="line"><span class="cl">NAME: metrics-server
+</span></span><span class="line"><span class="cl">LAST DEPLOYED: Sun Apr  <span class="m">2</span> 22:14:38 <span class="m">2023</span>
+</span></span><span class="line"><span class="cl">NAMESPACE: kube-system
+</span></span><span class="line"><span class="cl">STATUS: deployed
+</span></span><span class="line"><span class="cl">REVISION: <span class="m">7</span>
+</span></span><span class="line"><span class="cl">TEST SUITE: None
+</span></span><span class="line"><span class="cl">NOTES:
+</span></span><span class="line"><span class="cl">***********************************************************************
+</span></span><span class="line"><span class="cl">* Metrics Server                                                      *
+</span></span><span class="line"><span class="cl">***********************************************************************
+</span></span><span class="line"><span class="cl">  Chart version: 3.9.0
+</span></span><span class="line"><span class="cl">  App version:   0.6.3
+</span></span><span class="line"><span class="cl">  Image tag:     registry.k8s.io/metrics-server/metrics-server:v0.6.3
+</span></span><span class="line"><span class="cl">***********************************************************************
+</span></span></code></pre></div><p><code>helm upgrade</code> 명령어의 실행 결과에서 새로운 버전의 <code>Chart version</code>, <code>App version</code> 정보가 출력되는 지 확인합니다.</p>
+<p> </p>
+<p><code>metrics-server</code> 파드가 사용할 이미지 태그 값은 기본적으로 차트의 App version 값으로 오버라이딩되어 적용됩니다.</p>
+<p>아래는 metrics-server의 <a href="https://github.com/kubernetes-sigs/metrics-server/blob/master/charts/metrics-server/values.yaml">values.yaml</a> 파일 내용입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># Default values for metrics-server.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># This is a YAML-formatted file.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># Declare variables to be passed into your templates.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">image</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="l">registry.k8s.io/metrics-server/metrics-server</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Overrides the image tag whose default is v{{ .Chart.AppVersion }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">IfNotPresent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">...</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<p>헬름 차트 배포 상태와 metrics-server 관련 리소스의 전반적인 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm status metrics-server <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n kube-system <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --show-resources
+</span></span></code></pre></div><p> </p>
+<h2 id="관련자료">관련자료</h2>
+<p><a href="https://github.com/kubernetes-sigs/metrics-server">metrics-server</a><br>
+공식 깃허브</p>
+<p><a href="https://github.com/kubernetes-sigs/metrics-server/blob/master/charts/metrics-server/values.yaml">metrics-server values.yaml</a><br>
+metrics-server 헬름차트에서 사용하는 <code>values.yaml</code> 파일</p>
+<p><a href="https://artifacthub.io/packages/helm/metrics-server/metrics-server">ArtifactHUB - metrics-server</a><br>
+공식 차트가 업로드된 ArtifactHub</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

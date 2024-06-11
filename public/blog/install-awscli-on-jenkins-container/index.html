@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/install-awscli-on-jenkins-container/" />
+    <title>Jenkins Container with awscli</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Jenkins Container with awscli</h1>
+        <div>
+                <time>Updated April 26, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#환경">환경</a>
+      <ul>
+        <li><a href="#ec2-인스턴스">EC2 인스턴스</a></li>
+        <li><a href="#docker-이미지">Docker 이미지</a></li>
+      </ul>
+    </li>
+    <li><a href="#jenkins-구성">Jenkins 구성</a>
+      <ul>
+        <li><a href="#컨테이너-실행-방법">컨테이너 실행 방법</a></li>
+        <li><a href="#jenkins-사용-포트">Jenkins 사용 포트</a></li>
+      </ul>
+    </li>
+    <li><a href="#aws-cli-설치방법">AWS CLI 설치방법</a>
+      <ul>
+        <li><a href="#jenkins-컨테이너-상태-확인">Jenkins 컨테이너 상태 확인</a></li>
+        <li><a href="#컨테이너-접속">컨테이너 접속</a></li>
+        <li><a href="#aws-cli-설치">AWS CLI 설치</a></li>
+      </ul>
+    </li>
+    <li><a href="#참고자료">참고자료</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>Jenkins 도커 컨테이너에 AWS CLI를 설치하는 방법을 소개합니다.</p>
+<p><img src="./1.png" alt="전체 작업순서"></p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<h3 id="ec2-인스턴스">EC2 인스턴스</h3>
+<ul>
+<li><strong>CPU 아키텍처</strong> : ARM64 (aarch64)</li>
+<li><strong>Subnet</strong> : Jenkins 컨테이너가 구동되고 있는 EC2 인스턴스는 현재 NAT Gateway를 타고 인터넷으로 아웃바운드가 가능한 Private Subnet에 위치합니다.</li>
+</ul>
+<h3 id="docker-이미지">Docker 이미지</h3>
+<ul>
+<li><strong>컨테이너 이미지</strong> : <a href="https://hub.docker.com/r/jenkins/jenkins/tags?page=1&amp;name=2.402-jdk11">jenkins/jenkins:2.402-jdk11</a></li>
+<li><strong>컨테이너 OS</strong> : Debian 11.6</li>
+</ul>
+<p> </p>
+<h2 id="jenkins-구성">Jenkins 구성</h2>
+<h3 id="컨테이너-실행-방법">컨테이너 실행 방법</h3>
+<p>로컬 환경에서 Jenkins 컨테이너를 실행하는 명령어는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nv">JENKINS_VERSION</span><span class="o">=</span><span class="s2">&#34;2.402-jdk11&#34;</span>
+</span></span><span class="line"><span class="cl">docker run -d <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -p 8080:8080 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -p 50000:50000 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --name jenkins <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    jenkins/jenkins:<span class="si">${</span><span class="nv">JENKINS_VERSION</span><span class="si">}</span>
+</span></span></code></pre></div><p> </p>
+<h3 id="jenkins-사용-포트">Jenkins 사용 포트</h3>
+<p>Jenkins 컨테이너가 기본적으로 사용하는 중요 포트는 다음과 같습니다.</p>
+<table>
+<thead>
+<tr>
+<th>Proto</th>
+<th>Port</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TCP</td>
+<td><code>8080</code></td>
+<td><a href="https://www.jenkins.io/doc/book/security/services/#web-ui"><strong>Web UI</strong></a>: Jenkins Console port</td>
+</tr>
+<tr>
+<td>TCP</td>
+<td><code>50000</code></td>
+<td><a href="https://www.jenkins.io/doc/book/security/services/#tcp-agent-listener-port"><strong>TCP Agent Listener Port</strong></a>: default JNLP agent port</td>
+</tr>
+</tbody>
+</table>
+<p><img src="./2.png" alt="Jenkins controller and agent architecture"></p>
+<p>Jenkins는 에이전트(Agent)라고 불리는 원격 빌드 머신을 사용하여 빌드 작업을 수행합니다. 이러한 에이전트는 Jenkins 컨트롤러와 통신해야 합니다. <a href="https://docs.oracle.com/javase/tutorial/deployment/deploymentInDepth/jnlp.html">Java Network Launch Protocol</a><sup>JNLP</sup>의 기본 포트인 TCP/50000은 이러한 에이전트와 Jenkins 컨트롤러 간의 통신을 위한 포트입니다.</p>
+<p> </p>
+<h2 id="aws-cli-설치방법">AWS CLI 설치방법</h2>
+<p>EC2 로컬에 SSM Session Manager 또는 SSH로 접속한 이후 시점으로 가정하겠습니다.</p>
+<p> </p>
+<h3 id="jenkins-컨테이너-상태-확인">Jenkins 컨테이너 상태 확인</h3>
+<p>먼저 EC2의 로컬에서 Jenkins 컨테이너가 실행중인지 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ docker ps
+</span></span><span class="line"><span class="cl">CONTAINER ID   IMAGE                         COMMAND                  CREATED         STATUS             PORTS                                              NAMES
+</span></span><span class="line"><span class="cl">85f0af1f40e4   jenkins/jenkins:2.402-jdk11   <span class="s2">&#34;/usr/bin/tini -- /u…&#34;</span>   <span class="m">2</span> minutes ago   Up <span class="m">2</span> minutes       0.0.0.0:8080-&gt;8080/tcp, 0.0.0.0:50000-&gt;50000/tcp   jenkins
+</span></span></code></pre></div><p><code>STATUS</code>를 확인해보니 <code>jenkins</code> 컨테이너가 정상적으로 실행되고 있습니다.</p>
+<p> </p>
+<h3 id="컨테이너-접속">컨테이너 접속</h3>
+<p><code>docker exec</code> 명령어를 사용해서 Jenkins 컨테이너에 접속합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">docker <span class="nb">exec</span> -u <span class="m">0</span> -it 85f0af1f40e4 /bin/bash
+</span></span></code></pre></div><ul>
+<li><code>-u 0</code> : UID 0인 root로 컨테이너에 접근하는 걸 의미합니다.</li>
+<li><code>85f0af1f40e4</code> : 컨테이너 ID입니다. 자신의 환경에 맞게 변경합니다.</li>
+</ul>
+<p> </p>
+<h3 id="aws-cli-설치">AWS CLI 설치</h3>
+<p><code>apt-get</code> 명령어를 사용해 AWS CLI를 다운로드 받고 설치 스크립트를 실행합니다.</p>
+<blockquote>
+<p><strong>패키지 관리자</strong><br>
+<code>jenkins:2.402-jdk11</code> 이미지 기준으로 Debian GNU/Linux 11 (bullseye) 배포판을 사용하고 있으므로 패키지 관리자로 <code>apt-get</code>을 사용하면 됩니다. Debian 배포판의 상세 버전은 <code>cat /etc/debian_version</code> 명령어로 확인할 수 있습니다.</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Next, update the packages list:</span>
+</span></span><span class="line"><span class="cl">apt-get update
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Download AWS CLI zip file from AWS.</span>
+</span></span><span class="line"><span class="cl">curl <span class="s2">&#34;https://awscli.amazonaws.com/awscli-exe-linux-</span><span class="k">$(</span>arch<span class="k">)</span><span class="s2">.zip&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -o <span class="s2">&#34;awscliv2.zip&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Unzip the package</span>
+</span></span><span class="line"><span class="cl">unzip awscliv2.zip
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Install the AWS CLI by running the script</span>
+</span></span><span class="line"><span class="cl">./aws/install
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Check if the AWS CLI has been installed properly.</span>
+</span></span><span class="line"><span class="cl">aws –version
+</span></span></code></pre></div><p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://securitywing.com/how-to-install-aws-cli-in-jenkins-docker-container/">How to Install AWS CLI and Terraform in Jenkins Docker Container</a><br>
+<a href="https://docs.aws.amazon.com/ko_kr/cli/latest/userguide/getting-started-install.html#getting-started-install-instructions">AWS 공식문서 - 최신 버전의 AWS CLI 설치 또는 업데이트</a><br>
+<a href="https://www.jenkins.io/doc/book/security/services/#exposed-services-and-ports">Jenkins Docs - Exposed Services and Ports</a></p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/terragrunt-s3-ts-guide/" />
+    <title>terragrunt 백엔드 S3 생성 실패</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>terragrunt 백엔드 S3 생성 실패</h1>
+        <div>
+                <time>Updated January 10, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p><code>terragrunt</code>에서 초기 AWS 계정 셋업 과정에서 백엔드 S3 버킷 생성에 실패하는 상황에 대한 해결 가이드입니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<ul>
+<li>Terragrunt version v0.42.3</li>
+<li>Terraform v1.3.6 on linux_arm64</li>
+</ul>
+<p> </p>
+<h2 id="증상">증상</h2>
+<p>처음에 A 계정에 잘못 만들어서 백엔드 버킷을 삭제한 후, 다시 B 계정에 S3 버킷을 생성하려고 시도했습니다.</p>
+<p>아래는 <code>terraform apply</code> 명령어를 실행하면 적용되는 <code>terragrunt.hcl</code> 파일입니다.<br>
+아래 코드가 테라폼 백엔드 상태 파일을 관리하는 S3 버킷과 DynamoDB를 생성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-terraform" data-lang="terraform"><span class="line"><span class="cl"><span class="nx">terraform</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">extra_arguments</span> <span class="s2">&#34;-var-file&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="na">commands</span> = <span class="nx">get_terraform_commands_that_need_vars</span><span class="p">()</span><span class="c1">
+</span></span></span><span class="line"><span class="cl"><span class="c1">    # Note that this function searches relative to the child terragrunt.hcl file when called from a parent config.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="na">optional_var_files</span> = <span class="p">[</span>
+</span></span><span class="line"><span class="cl">      <span class="s2">&#34;</span><span class="si">${</span><span class="nx">find_in_parent_folders</span><span class="p">(</span><span class="s2">&#34;globals.tfvars&#34;</span><span class="p">,</span> <span class="s2">&#34;ignore&#34;</span><span class="p">)</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="s2">&#34;</span><span class="si">${</span><span class="nx">find_in_parent_folders</span><span class="p">(</span><span class="s2">&#34;locals.tfvars&#34;</span><span class="p">,</span> <span class="s2">&#34;ignore&#34;</span><span class="p">)</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">remote_state</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="na">backend</span> = <span class="s2">&#34;s3&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="na">config</span> = <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="na">bucket</span>         = <span class="s2">&#34;xxxx-apne2-xxxx-terraform-backend-s3&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="na">key</span>            = <span class="s2">&#34;xxxx/</span><span class="si">${</span><span class="nx">path_relative_to_include</span><span class="p">()</span><span class="si">}</span><span class="s2">/terraform.tfstate&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="na">region</span>         = <span class="s2">&#34;ap-northeast-2&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="na">encrypt</span>        = <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">    <span class="na">dynamodb_table</span> = <span class="s2">&#34;xxxx-apne2-terraform-backend-dynamodb&#34;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="na">s3_bucket_tags</span> = <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="s2">&#34;ManagedBy&#34;</span>   <span class="o">=</span> <span class="s2">&#34;Terraform&#34;</span>
+</span></span><span class="line"><span class="cl">      <span class="s2">&#34;Description&#34;</span> <span class="o">=</span> <span class="s2">&#34;Terraform backend resource&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p> </p>
+<p>Terragrunt 코드가 백엔드를 생성하는 플로우를 구성도로 표현하면 다음과 같습니다.</p>
+<p><img src="./1.png" alt="백엔드 생성 구성도"></p>
+<p> </p>
+<p>B 계정에 버킷을 새로 만들기 위한 <code>terragrunt apply</code> 명령어 실행 과정에서 Backend S3 버킷 생성 시 다음과 같은 에러가 발생했습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terragrunt apply
+</span></span><span class="line"><span class="cl">Remote state S3 bucket xxxx-apne2-xxxx-terraform-backend-s3 does not exist or you don<span class="err">&#39;</span>t have permissions to access it. Would you like Terragrunt to create it? <span class="o">(</span>y/n<span class="o">)</span> y
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ERRO<span class="o">[</span>0059<span class="o">]</span> Create S3 bucket with retry xxxx-apne2-xxxx-terraform-backend-s3 returned an error: Exceeded max retries <span class="o">(</span>12<span class="o">)</span> waiting <span class="k">for</span> bucket S3 bucket xxxx-apne2-xxxx-terraform-backend-s3. Sleeping <span class="k">for</span> 10s and will try again.  <span class="nv">prefix</span><span class="o">=[</span>/mnt/git/tf/prd-terragrunt/xxxx-data/global/iam-policy/permission-set/xxxx-data-security-engineer/readonly-base-access<span class="o">]</span>
+</span></span></code></pre></div><p> </p>
+<p>AWS 콘솔에서 S3 버킷을 직접 생성 시에도 다음과 같은 에러가 발생합니다.</p>
+<p><code>A conflicting conditional operation is currently in progress against this resource. Please try again.</code></p>
+<p><img src="./2.png" alt="S3 생성 시 에러 화면"></p>
+<p> </p>
+<h2 id="원인">원인</h2>
+<p><strong>기존에 삭제한 S3 버킷이 완전히 삭제되지 않았는데 계속 생성을 시도</strong>해서 발생한 문제입니다.</p>
+<blockquote>
+<p>AWS 콘솔에서 S3 버킷 삭제를 완료한 것처럼 보여도 실제로 AWS 뒷단에서는 S3 버킷을 바로 삭제하지 않습니다.<br>
+AWS 사용자가 버킷 삭제 요청을 전송하면 Amazon S3는 해당 버킷 이름을 삭제 대기열에 넣고 순차적으로 진행됩니다.</p>
+</blockquote>
+<p> </p>
+<h2 id="해결방안">해결방안</h2>
+<p>문제를 해결하기 위한 방법은 간단합니다.<br>
+버킷이 완전히 삭제되기까지 잠시 기다린 후 다시 S3 버킷을 생성하면 됩니다.</p>
+<p>제 경우 약 20분의 시간이 지난 후 다시 시도하니 해결되었습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ terragrunt apply
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 이후 백엔드 리소스가 성공적으로 생성되었고</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># terraform 코드도 정상 실행됨</span>
+</span></span></code></pre></div><p> </p>
+<h2 id="개선-포인트">개선 포인트</h2>
+<p>이 문제는 인적실수로 발생했습니다.<br>
+문제를 해결하려면 기다리는 것 외에 특별한 조치방법도 없습니다.</p>
+<p>최초에 테라폼 백엔드 리소스를 생성할 때 올바른 AWS 계정에 생성하도록 설정했는지를 더블체크하고 <code>terragrunt apply</code> 명령어를 실행하도록 합니다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://repost.aws/ko/knowledge-center/s3-conflicting-conditional-operation">Amazon S3에서 버킷을 다시 생성하려고 할 때 &ldquo;A conflicting conditional operation is currently in progress against this resource&quot;라는 오류가 발생하는 이유는 무엇입니까?</a><br>
+<code>conflicting conditional operation is currently in progress against this resource</code> 에러에 대한 원인과 해결방법.</p>
+<p><a href="https://terragrunt.gruntwork.io/docs/features/keep-your-remote-state-configuration-dry/#motivation">Terragrunt - Keep your remote state configuration DRY</a><br>
+S3 백엔드에 대한 terragrunt 설명</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

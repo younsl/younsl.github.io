@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/changing-webtob-license/" />
+    <title>WebtoB 라이센스 교체</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>WebtoB 라이센스 교체</h1>
+        <div>
+                <time>Updated May 8, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#배경지식">배경지식</a>
+      <ul>
+        <li><a href="#webtob">WebtoB</a></li>
+      </ul>
+    </li>
+    <li><a href="#작업절차">작업절차</a>
+      <ul>
+        <li><a href="#1-라이센스-다운로드">1. 라이센스 다운로드</a></li>
+        <li><a href="#2-기존-라이센스-상태-확인">2. 기존 라이센스 상태 확인</a></li>
+        <li><a href="#3-라이센스-파일-업로드">3. 라이센스 파일 업로드</a></li>
+        <li><a href="#4-라이센스-파일-권한설정">4. 라이센스 파일 권한설정</a></li>
+        <li><a href="#5-웹서버-환경설정-컴파일">5. 웹서버 환경설정 컴파일</a></li>
+        <li><a href="#6-webtob-재시작">6. WebtoB 재시작</a></li>
+        <li><a href="#7-라이센스--프로세스-상태-확인">7. 라이센스 &amp; 프로세스 상태 확인</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>WebtoB 라이센스를 교체하는 절차이다.</p>
+<p>어느날 개발팀으로부터 WebtoB 라이센스 교체 요청이 들어온 것이 발단이다.</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="webtob">WebtoB</h3>
+<p>한국의 티맥스소프트에서 개발한 웹서버 소프트웨어.<br>
+기존 웹서버가 가지고 있는 구조적인 문제를 혁신적으로 개선해 성능 및 안정성에 탁월한 기능을 제공하는 차세대 웹서버 제품이다.<br>
+주로 WAS 프로그램인 Jeus와 함께 사용한다.</p>
+<p> </p>
+<h2 id="작업절차">작업절차</h2>
+<h3 id="1-라이센스-다운로드">1. 라이센스 다운로드</h3>
+<p>WebtoB 라이센스는 티맥스소프트에서 운영하는 기술지원 페이지인 <a href="https://technet.tmaxsoft.com/ko/front/main/main.do">Technet</a>에서 다운로드 받을 수 있다.</p>
+<p><img src="./1.png" alt="Technet 접속 화면"></p>
+<p> </p>
+<h3 id="2-기존-라이센스-상태-확인">2. 기존 라이센스 상태 확인</h3>
+<p><strong>유저변경</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ su - tmax
+</span></span><span class="line"><span class="cl">$
+</span></span></code></pre></div><p>WebtoB 라이센스 교체 작업은 <strong>tmax</strong> 계정으로 진행해야한다.</p>
+<p> </p>
+<p><strong>WebtoB 홈 디렉토리로 이동</strong></p>
+<p>WebtoB 홈 디렉토리는 서버 환경마다 다를 수 있다.<br>
+WebtoB 홈 디렉토리 환경변수(<code>$WEBTOBDIR</code>) 또한 설정되어 있지 않을 수도 있다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> <span class="nv">$WEBTOBDIR</span>
+</span></span><span class="line"><span class="cl">$ <span class="nb">pwd</span>
+</span></span><span class="line"><span class="cl">/home/tmax/webtob
+</span></span></code></pre></div><p>WebToB 설치 경로로 이동한 후, <code>license</code> 디렉토리로 들어간다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> license
+</span></span></code></pre></div><p> </p>
+<p><strong>기존 라이센스 상태 확인</strong></p>
+<p>license 디렉토리 안에서 <code>wsadmin</code> 명령어를 실행해서 라이센스 상태를 확인할 수 있다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ wsadmin -i license.dat
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">##############################################</span>
+</span></span><span class="line"><span class="cl">          License Information <span class="o">(</span>file: ./license.dat<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">##############################################</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">License seqno: WDE-xxxx-xxx-xxxx
+</span></span><span class="line"><span class="cl">License issue date: 2021/5/14
+</span></span><span class="line"><span class="cl">License type: DEMO
+</span></span><span class="line"><span class="cl">        Expiration date: 2021/7/14
+</span></span><span class="line"><span class="cl">Edition: Enterprise
+</span></span><span class="line"><span class="cl">License check by hostname: testserver
+</span></span><span class="line"><span class="cl">Unlimited license
+</span></span></code></pre></div><p>라이센스 만료일(<code>Expiration date</code>)을 보니 임시로 발급받은 데모 라이센스가 만료하기 직전이다.</p>
+<p> </p>
+<h3 id="3-라이센스-파일-업로드">3. 라이센스 파일 업로드</h3>
+<p><strong>기존 라이센스 파일명 변경</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> /home/tmax/webtob/license
+</span></span><span class="line"><span class="cl">$ mv license.dat license.dat.old
+</span></span></code></pre></div><p>기존 임시 라이센스 파일명은 <code>license.dat</code>이다.<br>
+<code>license.dat</code>을 <code>license.dat.old</code> 로 파일명 변경한다.</p>
+<p> </p>
+<p><strong>신규 라이센스 파일명 변경</strong></p>
+<p>신규 정식 라이센스 파일을 사용하기 위해서 파일명을 <code>license.dat</code> 으로 변경한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ mv license_standard_new.dat license.dat
+</span></span></code></pre></div><p> </p>
+<h3 id="4-라이센스-파일-권한설정">4. 라이센스 파일 권한설정</h3>
+<p>기존 WebtoB 라이센스 파일(<code>license.dat</code>)을 참고하여 소유자와 그룹명을 동일하게 맞춰준다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ chown tmax:web license.dat
+</span></span></code></pre></div><p>라이센스 파일의 소유자는 <code>tmax</code>, 그룹은 <code>web</code>으로 설정한다.</p>
+<p> </p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls -l
+</span></span><span class="line"><span class="cl">�� <span class="m">66</span>
+</span></span><span class="line"><span class="cl"><span class="o">[</span>...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">-rw-r--r--   <span class="m">1</span> tmax     web           <span class="m">80</span>  6�� 23��  13:44 license.dat
+</span></span><span class="line"><span class="cl">-rw-r--r--   <span class="m">1</span> tmax     web           <span class="m">80</span>  6��  1��  14:03 license.dat.old
+</span></span></code></pre></div><p>기존 라이센스 파일(<code>license.dat.old</code>)의 소유자, 그룹과 동일하게 설정되었다.</p>
+<p> </p>
+<h3 id="5-웹서버-환경설정-컴파일">5. 웹서버 환경설정 컴파일</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ wscfl -i http.m
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Current configuration:
+</span></span><span class="line"><span class="cl">        Number of client handler<span class="o">(</span>HTH<span class="o">)</span> <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">        Supported maximum user per <span class="nv">node</span> <span class="o">=</span> <span class="m">8163</span>
+</span></span><span class="line"><span class="cl">        Supported maximum user per <span class="nv">handler</span> <span class="o">=</span> <span class="m">8163</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Successfully created the configuration file <span class="o">(</span>/home/tmax/webtob/config/wsconfig<span class="o">)</span> <span class="k">for</span> node testserver.
+</span></span><span class="line"><span class="cl">The host name of the running machine is testserver.
+</span></span></code></pre></div><p> </p>
+<h3 id="6-webtob-재시작">6. WebtoB 재시작</h3>
+<p>변경된 라이센스 환경설정을 적용하기 위해서는 WebtoB 서버를 내렸다가 올려야 한다.</p>
+<p> </p>
+<p><strong>WebtoB 중지</strong><br>
+<code>wsdown</code> 명령어를 실행후 y 키를 눌러서 WebtoB 서버를 내린다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ wsdown
+</span></span><span class="line"><span class="cl">Do you really want to shut down WebtoB? <span class="o">(</span>y : n<span class="o">)</span>: y
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">WSDOWN <span class="k">for</span> node<span class="o">(</span>testserver<span class="o">)</span> is starting:
+</span></span><span class="line"><span class="cl">        WSDOWN: SERVER<span class="o">(</span>html:0<span class="o">)</span> downed: Wed Jun <span class="m">23</span> 13:50:45 <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">        WSDOWN: SERVER<span class="o">(</span>html:1<span class="o">)</span> downed: Wed Jun <span class="m">23</span> 13:50:45 <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">        WSDOWN: HTL downed: Wed Jun <span class="m">23</span> 13:50:45 <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">        WSDOWN: HTH downed: Wed Jun <span class="m">23</span> 13:50:45 <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">        WSDOWN: WSM downed: Wed Jun <span class="m">23</span> 13:50:45 <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">        WSDOWN: WebtoB is down
+</span></span></code></pre></div><p> </p>
+<p><strong>WebtoB 시작</strong><br>
+WebtoB 서버를 다시 올린다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ wsboot
+</span></span><span class="line"><span class="cl">Booting WebtoB on node <span class="o">(</span>testserver<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Starting WSM at Wed Jun <span class="m">23</span> 13:50:48 <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">Starting HTL at Wed Jun <span class="m">23</span> 13:50:48 <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">Starting HTH at Wed Jun <span class="m">23</span> 13:50:48 <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">         Current WebtoB Configuration:
+</span></span><span class="line"><span class="cl">                Number of client handlers <span class="o">(</span>HTH<span class="o">)</span> <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">                Supported maximum user per <span class="nv">node</span> <span class="o">=</span> <span class="m">8163</span>
+</span></span><span class="line"><span class="cl">                Supported maximum user per <span class="nv">handler</span> <span class="o">=</span> <span class="m">8163</span>
+</span></span><span class="line"><span class="cl">Starting SVR<span class="o">(</span>htmls<span class="o">)</span> at Wed Jun <span class="m">23</span> 13:50:48 <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">Starting SVR<span class="o">(</span>htmls<span class="o">)</span> at Wed Jun <span class="m">23</span> 13:50:48 <span class="m">2021</span>
+</span></span></code></pre></div><p>WebtoB의 주요 프로세스인 wsm, htl, hth, htmls 가 정상적으로 구동된 걸 확인할 수 있다.</p>
+<p> </p>
+<p><strong>WebtoB 주요 프로세스별 역할</strong></p>
+<ul>
+<li>
+<p><strong>WSM(WebtoB System Manager)</strong><br>
+전체적인 WebtoB 시스템의 운용 프로세스로써 시스템의 운영 정보를 관리하고, HTL/HTH 프로세스 및 모든 서버 프로세스들을 관리하는 프로세스이다. WebtoB 시스템을 기동할 때 WSM은 가장 먼저 메모리에 로드되고 시스템이 종료될 때에는 가장 나중에 종료된다.</p>
+</li>
+<li>
+<p><strong>HTL(HTTP Listener)</strong><br>
+HTL은 클라이언트와 WebtoB 간의 연결을 관리하는 Listener 프로세스이다. 클라이언트가 처음 WebtoB에 접속할 때에는 HTL과 연결을 맺어 통신이 이루어진다. 하지만 서비스 요청이 있을 경우 내부적으로 HTH와 연결이 되어 모든 서비스 처리가 이루어진다.</p>
+</li>
+<li>
+<p><strong>HTH(HTTP Handler)</strong><br>
+클라이언트 핸들러라고도 하며 실질적으로 클라이언트와 서버의 업무 처리 프로세스 사이를 중계하는 프로세스이다. HTH는 서버 프로세스들과의 통신을 통해 모든 실제적인 데이터의 흐름을 관리한다. 즉 클라이언트의 서비스 요청을 받아 그에 해당하는 업무를 처리하며 그 결과를 수신하여 다시 클라이언트에게 되돌려준다.</p>
+</li>
+<li>
+<p><strong>HTMLS(HTML Server)</strong><br>
+HTML 요청을 처리하는 HTML 서버 프로세스이다.</p>
+</li>
+</ul>
+<p> </p>
+<h3 id="7-라이센스--프로세스-상태-확인">7. 라이센스 &amp; 프로세스 상태 확인</h3>
+<p><strong>라이센스 적용 상태 확인</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ wsadmin -i license.dat
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">###############################################</span>
+</span></span><span class="line"><span class="cl">          License Information <span class="o">(</span>file: license.dat<span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">###############################################</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">License seqno: WRS-xxxx-xxx-xxxx
+</span></span><span class="line"><span class="cl">License issue date: 2021/6/14
+</span></span><span class="line"><span class="cl">License type: REAL
+</span></span><span class="line"><span class="cl">Edition: Standard
+</span></span><span class="line"><span class="cl">License check by hostname: testserver
+</span></span><span class="line"><span class="cl"><span class="m">32</span> CPU license
+</span></span></code></pre></div><p>Standard Edition, 32 CPU License 로 정상 적용 확인.</p>
+<p> </p>
+<p><strong>WebtoB 프로세스 상태 확인</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ps -ef <span class="p">|</span> egrep <span class="s1">&#39;htm|htl|hth|htmls&#39;</span>
+</span></span><span class="line"><span class="cl">    tmax  <span class="m">1582</span>     <span class="m">1</span>   <span class="m">0</span> 13:50:49 pts/5       0:00 htmls -l 0x2 -I webtob1_1577 -b <span class="m">1577</span> -s html
+</span></span><span class="line"><span class="cl">    tmax  <span class="m">1578</span>     <span class="m">1</span>   <span class="m">0</span> 13:50:49 pts/5       0:00 wsm -l 0x2 -I webtob1_1577 -b <span class="m">1577</span>
+</span></span><span class="line"><span class="cl">    tmax  <span class="m">1581</span>     <span class="m">1</span>   <span class="m">0</span> 13:50:49 pts/5       0:00 htmls -l 0x2 -I webtob1_1577 -b <span class="m">1577</span> -s html
+</span></span><span class="line"><span class="cl">    tmax  <span class="m">1580</span>     <span class="m">1</span>   <span class="m">0</span> 13:50:49 pts/5       0:00 hth -l 0x2 -I webtob1_1577 -b <span class="m">1577</span>
+</span></span><span class="line"><span class="cl">    root  <span class="m">1579</span>     <span class="m">1</span>   <span class="m">0</span> 13:50:49 pts/5       0:00 htl -l 0x2 -I webtob1_1577 -b <span class="m">1577</span>
+</span></span></code></pre></div><p>wsm, hth, htl, htmls 프로세스가 구동중인 걸 확인했다.</p>
+<p> </p>
+<p>작업 끝.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

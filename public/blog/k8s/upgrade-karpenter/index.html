@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/k8s/upgrade-karpenter/" />
+    <title>karpenter 헬름 차트 버전 업그레이드</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>karpenter 헬름 차트 버전 업그레이드</h1>
+        <div>
+                <time>Updated March 6, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#중요사항">중요사항</a></li>
+    <li><a href="#배경지식">배경지식</a>
+      <ul>
+        <li><a href="#karpenter">Karpenter</a></li>
+        <li><a href="#karpenter-관련-차트">Karpenter 관련 차트</a></li>
+      </ul>
+    </li>
+    <li><a href="#환경">환경</a>
+      <ul>
+        <li><a href="#클러스터-환경">클러스터 환경</a></li>
+        <li><a href="#로컬-환경">로컬 환경</a></li>
+      </ul>
+    </li>
+    <li><a href="#karpenter-헬름-차트-업그레이드설치-절차">Karpenter 헬름 차트 업그레이드(설치) 절차</a>
+      <ul>
+        <li><a href="#1-환경변수-설정">1. 환경변수 설정</a></li>
+        <li><a href="#2-karpenter-controller-설치">2. Karpenter Controller 설치</a></li>
+        <li><a href="#3-karpenter-crds-설치">3. Karpenter CRDs 설치</a></li>
+        <li><a href="#4-차트-결과-확인">4. 차트 결과 확인</a></li>
+        <li><a href="#5-crd-생성">5. CRD 생성</a></li>
+        <li><a href="#6-모니터링">6. 모니터링</a></li>
+      </ul>
+    </li>
+    <li><a href="#결과">결과</a></li>
+    <li><a href="#참고자료">참고자료</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>Helm 차트로 EKS 클러스터에 배포한 Karpenter v0.26.0을 v0.26.1로 업그레이드하는 방법을 소개합니다.</p>
+<p> </p>
+<h2 id="중요사항">중요사항</h2>
+<p>이 가이드는 EKS 클러스터에 구 버전 Karpenter 헬름 차트가 이미 배포되어 있는 상황을 가정하에 설명합니다.</p>
+<p>EKS 클러스터에 Karpenter를 최초 설치하는 상황이 아닌, 기존 Karpenter v0.26.0 헬름의 버전을 v0.26.1로 업그레이드하는 상황입니다.</p>
+<p> </p>
+<h2 id="배경지식">배경지식</h2>
+<h3 id="karpenter">Karpenter</h3>
+<p>Karpenter는 예약할 수 없는 파드를 감지하고 새 노드를 자동으로 프로비저닝하는 오픈 소스 클러스터 오토스케일러입니다.</p>
+<p><img src="1.png" alt="Karpenter 동작방식"></p>
+<p> </p>
+<p>ASG<sup>Auto Scaling Group</sup> 기반으로 동작하는 Kubernetes Cluster Autoscaler와 다르게 Karpenter는 Karpenter Controller(Pod)가 다이렉트로 EC2 인스턴스를 생성 또는 삭제합니다.</p>
+<p><img src="./3.png" alt="Karpenter와 Kubernetes Cluster Autoscaler 동작방식 비교"></p>
+<p>Karpenter의 장점은 다음과 같습니다.</p>
+<ul>
+<li>Karpenter는 ASG를 사용하지 않고 Karpenter Controller(Pod)가 직접 인스턴스를 관리하므로 더 빠르게 워커 노드를 생성하고 삭제할 수 있습니다.</li>
+<li>Karpenter는 노드 그룹과 오토 스케일링 그룹을 사용하지 않기 때문에 클러스터 노드 관리가 더 편합니다.</li>
+<li>생성이 필요한 파드들의 CPU, Memory 리소스 값을 자동 계산한 후 적절한 인스턴스 타입을 섞어서 배치하므로 EC2 비용 절감 및 유연한 리소스 확장을 할 수 있습니다.</li>
+</ul>
+<p> </p>
+<h3 id="karpenter-관련-차트">Karpenter 관련 차트</h3>
+<p><img src="./2.png" alt="Karpenter 차트 구성"></p>
+<p>Karpenter는 총 2개의 헬름 차트로 운영됩니다.</p>
+<ul>
+<li><strong>karpenter</strong> : Karpenter Controller. 헬름 차트로 배포됩니다.</li>
+<li><strong>karpenter-crd</strong> : Karpenter CRDs. 헬름 차트로 배포됩니다.</li>
+</ul>
+<p> </p>
+<p><code>karpenter</code>와 <code>karpenter-crd</code> 차트가 배포된 이후에는 실제로 Karpenter Controller가 사용할 <code>provisioners</code>와 <code>awsnodetemplates</code> 리소스를 <code>kubectl apply</code> 명령어로 배포합니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<h3 id="클러스터-환경">클러스터 환경</h3>
+<ul>
+<li><strong>EKS v1.24</strong></li>
+<li><strong>노드의 CPU 아키텍처</strong> : AMD64 (x86_64)</li>
+<li><strong>Karpenter</strong> : v0.26.0 → v0.26.1
+<ul>
+<li>헬름 차트 방식으로 설치, 업그레이드</li>
+<li>Karpenter CRD도 동일하게 v0.26.0 → v0.26.1로 업그레이드</li>
+</ul>
+</li>
+</ul>
+<p> </p>
+<h3 id="로컬-환경">로컬 환경</h3>
+<ul>
+<li><strong>OS</strong> : macOS 13.2.1 (Ventura)</li>
+<li><strong>Helm</strong> : v3.11.1</li>
+</ul>
+<p> </p>
+<h2 id="karpenter-헬름-차트-업그레이드설치-절차">Karpenter 헬름 차트 업그레이드(설치) 절차</h2>
+<h3 id="1-환경변수-설정">1. 환경변수 설정</h3>
+<p>로컬 터미널에서 설치하려고 하는 Karpenter 버전 환경변수를 설정합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nv">KARPENTER_VERSION</span><span class="o">=</span>v0.26.1
+</span></span></code></pre></div><p>사용 가능한 전체 버전 목록은 <a href="https://github.com/aws/karpenter/releases">Karpenter Github Releases</a> 페이지에서 확인 가능합니다.</p>
+<p> </p>
+<h3 id="2-karpenter-controller-설치">2. Karpenter Controller 설치</h3>
+<h4 id="karpenter-controller-values-작성">Karpenter Controller values 작성</h4>
+<ul>
+<li>
+<p>이 글은 쿠버네티스 클러스터에 구 버전 Karpenter 헬름 차트가 이전에 배포되어 있다는 가정하에 설명합니다.</p>
+</li>
+<li>
+<p>Karpenter Controller가 사용하는 IAM Role, Karpenter Controller로 생성된 노드가 사용할 Instance Profile(IAM Role) 등은 <a href="/blog/k8s/karpenter/">Karpenter 초기 설치</a> 시에 생성하는 별도 과정이 필요합니다.</p>
+</li>
+</ul>
+<p><img src="./4.png" alt="Karpenter Controller의 IRSA 구성"></p>
+<ul>
+<li>Karpenter 관련 IAM Role 생성 절차는 이 글의 주제를 벗어나기 때문에 다루지 않습니다.</li>
+</ul>
+<p> </p>
+<h5 id="valuesyaml-예시">values.yaml 예시</h5>
+<p>제 경우 karpenter controller가 사용할 <code>values.yaml</code> 파일을 작성했습니다.<br>
+<code>values.yaml</code>로 배포할 Karpenter 버전은 <code>v0.26.1</code>입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># -- Overrides the chart&#39;s name.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">nameOverride</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Overrides the chart&#39;s computed fullname.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">fullnameOverride</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Additional labels to add into metadata.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">additionalLabels</span><span class="p">:</span><span class="w"> </span>{<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Additional annotations to add into metadata.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">additionalAnnotations</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Image pull policy for Docker images.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">IfNotPresent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Image pull secrets for Docker images.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">imagePullSecrets</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">serviceAccount</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Specifies if a ServiceAccount should be created.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">create</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- The name of the ServiceAccount to use.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># If not set and create is true, a name is generated using the fullname template.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;karpenter&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Additional annotations for the ServiceAccount.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"> </span>{<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">eks.amazonaws.com/role-arn</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;arn:aws:iam::111122223333:role/KarpenterControllerRole-&lt;YOUR_CLUSTER_NAME_HERE&gt;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Specifies additional rules for the core ClusterRole.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">additionalClusterRoleRules</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">serviceMonitor</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Specifies whether a ServiceMonitor should be created.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Additional labels for the ServiceMonitor.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">additionalLabels</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Endpoint configuration for the ServiceMonitor.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">endpointConfig</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Number of replicas.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- The number of old ReplicaSets to retain to allow rollback.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">revisionHistoryLimit</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Strategy for updating the pod.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">strategy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">rollingUpdate</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">maxUnavailable</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Additional labels for the pod.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">podLabels</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Additional annotations for the pod.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">podAnnotations</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">podDisruptionBudget</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">maxUnavailable</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- SecurityContext for the pod.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">podSecurityContext</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">fsGroup</span><span class="p">:</span><span class="w"> </span><span class="m">1000</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- PriorityClass name for the pod.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">priorityClassName</span><span class="p">:</span><span class="w"> </span><span class="l">system-cluster-critical</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Override the default termination grace period for the pod.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">terminationGracePeriodSeconds</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Bind the pod to the host network.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># This is required when using a custom CNI.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">hostNetwork</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Configure the DNS Policy for the pod</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">dnsPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">Default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Configure DNS Config for the pod</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">dnsConfig</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#  options:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#    - name: ndots</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#      value: &#34;1&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Node selectors to schedule the pod to nodes with labels.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">nodeSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">kubernetes.io/os</span><span class="p">:</span><span class="w"> </span><span class="l">linux</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Affinity rules for scheduling the pod.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">affinity</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">nodeAffinity</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">requiredDuringSchedulingIgnoredDuringExecution</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">nodeSelectorTerms</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="nt">matchExpressions</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter.sh/provisioner-name</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l">DoesNotExist</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="nt">matchExpressions</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">eks.amazonaws.com/nodegroup</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l">In</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">values</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="c"># Karpenter Controller(Pod)는 기존 노드그룹에 배포하도록 nodeAffinity 설정</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span>- <span class="l">&lt;YOUR_NODEGROUP_NAME_HERE&gt;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">podAntiAffinity</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">preferredDuringSchedulingIgnoredDuringExecution</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="m">100</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">podAffinityTerm</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">labelSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">matchExpressions</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">app.kubernetes.io/instance</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l">In</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">values</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="l">karpenter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">topologyKey</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;kubernetes.io/hostname&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- topologySpreadConstraints to increase the controller resilience</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">topologySpreadConstraints</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">maxSkew</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">topologyKey</span><span class="p">:</span><span class="w"> </span><span class="l">topology.kubernetes.io/zone</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">whenUnsatisfiable</span><span class="p">:</span><span class="w"> </span><span class="l">ScheduleAnyway</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Tolerations to allow the pod to be scheduled to nodes with taints.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">tolerations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">CriticalAddonsOnly</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l">Exists</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Additional volumes for the pod.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">extraVolumes</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># - name: aws-iam-token</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#   projected:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#     defaultMode: 420</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#     sources:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#     - serviceAccountToken:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#         audience: sts.amazonaws.com</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#         expirationSeconds: 86400</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#         path: token</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Array of extra K8s manifests to deploy </span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">extraObjects</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#- apiVersion: karpenter.k8s.aws/v1alpha1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#  kind: AWSNodeTemplate</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#  metadata:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#    name: default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#  spec:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#    subnetSelector:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#      karpenter.sh/discovery: {CLUSTER_NAME}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#    securityGroupSelector:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#      karpenter.sh/discovery: {CLUSTER_NAME}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">controller</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- Repository path to the controller image.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="l">public.ecr.aws/karpenter/controller</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- Tag of the controller image.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l">v0.26.1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- SHA256 digest of the controller image.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">digest</span><span class="p">:</span><span class="w"> </span><span class="l">sha256:5dfe506624961f386b68556dd1cc850bfe3a42b62d2dd5dcb8b21d1a89ec817c</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- SecurityContext for the controller container.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">securityContext</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Additional environment variables for the controller pod.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - name: AWS_REGION</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#   value: eu-west-1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">envFrom</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Resources for the controller pod.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># We usually recommend not to specify default resources and to leave this as a conscious</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># choice for the user. This also increases chances charts run on environments with little</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># resources, such as Minikube. If you do want to specify resources, uncomment the following</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># lines, adjust them as necessary, and remove the curly braces after &#39;resources:&#39;.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#  requests:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#    cpu: 1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#    memory: 1Gi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#  limits:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#    cpu: 1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#    memory: 1Gi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Controller outputPaths - default to stdout only</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">outputPaths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">stdout</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Controller errorOutputPaths - default to stderr only</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">errorOutputPaths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">stderr</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Controller log level, defaults to the global log level</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">logLevel</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Controller log encoding, defaults to the global log encoding</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">logEncoding</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Additional volumeMounts for the controller pod.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">extraVolumeMounts</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># - name: aws-iam-token</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#   mountPath: /var/run/secrets/eks.amazonaws.com/serviceaccount</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#   readOnly: true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Additional sidecarContainer config</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">sidecarContainer</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- Additional volumeMounts for the sidecar - this will be added to the volume mounts on top of extraVolumeMounts</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">sidecarVolumeMounts</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">metrics</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- The container port to use for metrics.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">healthProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- The container port to use for http health probe.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8081</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">webhook</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">logLevel</span><span class="p">:</span><span class="w"> </span><span class="l">error</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- The container port to use for the webhook.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8443</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Global log level</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">logLevel</span><span class="p">:</span><span class="w"> </span><span class="l">debug</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Gloabl log encoding</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">logEncoding</span><span class="p">:</span><span class="w"> </span><span class="l">console</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># -- Global Settings to configure Karpenter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">settings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- The maximum length of a batch window. The longer this is, the more pods we can consider for provisioning at one</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># time which usually results in fewer but larger nodes.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">batchMaxDuration</span><span class="p">:</span><span class="w"> </span><span class="l">10s</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- The maximum amount of time with no new ending pods that if exceeded ends the current batching window. If pods arrive</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># faster than this time, the batching window will be extended up to the maxDuration. If they arrive slower, the pods</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># will be batched separately.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">batchIdleDuration</span><span class="p">:</span><span class="w"> </span><span class="l">1s</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># -- AWS-specific configuration values</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">aws</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- Cluster name.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&lt;YOUR_CLUSTER_NAME&gt;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- Cluster endpoint. If not set, will be discovered during startup (EKS only)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">clusterEndpoint</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- The default instance profile to use when launching nodes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">defaultInstanceProfile</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;KarpenterNodeInstanceProfile-&lt;YOUR_CLUSTER_NAME_HERE&gt;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- If true then instances that support pod ENI will report a vpc.amazonaws.com/pod-eni resource</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enablePodENI</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- Indicates whether new nodes should use ENI-based pod density</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># DEPRECATED: Use `.spec.kubeletConfiguration.maxPods` to set pod density on a per-provisioner basis</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enableENILimitedPodDensity</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- If true then assume we can&#39;t reach AWS services which don&#39;t have a VPC endpoint</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># This also has the effect of disabling look-ups to the AWS pricing endpoint</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">isolatedVPC</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- The node naming convention (either &#34;ip-name&#34; or &#34;resource-name&#34;)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">nodeNameConvention</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;ip-name&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- The VM memory overhead as a percent that will be subtracted from the total memory for all instance types</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">vmMemoryOverheadPercent</span><span class="p">:</span><span class="w"> </span><span class="m">0.075</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- interruptionQueueName is disabled if not specified. Enabling interruption handling may</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># require additional permissions on the controller service account. Additional permissions are outlined in the docs.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">interruptionQueueName</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># -- The global tags to use on all AWS infrastructure resources (launch templates, instances, etc.) across node templates</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">Creator</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;younsung.lee@company.com&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">ManagedBy</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;Helm&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">Maintainer</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;younsung.lee@company.com&#34;</span><span class="w">
+</span></span></span></code></pre></div><p>제가 사용한 <code>values.yaml</code> 파일은 Karpenter 공식 깃허브에 업로드된 <a href="https://github.com/aws/karpenter/blob/main/charts/karpenter/values.yaml">values.yaml</a>을 기반으로 작성되었습니다.</p>
+<p> </p>
+<h4 id="karpenter-controller-헬름-배포">Karpenter Controller 헬름 배포</h4>
+<p>Karpenter 컨트롤러를 헬름으로 설치합니다.</p>
+<p>아래 명령어는 Karpenter 초기 설치 뿐만 아니라 버전 업그레이드 상황에서도 사용 가능합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm upgrade <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --install <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --namespace karpenter <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --create-namespace <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    karpenter oci://public.ecr.aws/karpenter/karpenter <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --version <span class="si">${</span><span class="nv">KARPENTER_VERSION</span><span class="si">}</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --values values.yaml <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --wait
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Pulled: public.ecr.aws/karpenter/karpenter:v0.26.1
+</span></span><span class="line"><span class="cl">Digest: sha256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+</span></span><span class="line"><span class="cl">Release <span class="s2">&#34;karpenter&#34;</span> has been upgraded. Happy Helming!
+</span></span><span class="line"><span class="cl">NAME: karpenter
+</span></span><span class="line"><span class="cl">LAST DEPLOYED: Mon Mar  <span class="m">6</span> 21:47:08 <span class="m">2023</span>
+</span></span><span class="line"><span class="cl">NAMESPACE: karpenter
+</span></span><span class="line"><span class="cl">STATUS: deployed
+</span></span><span class="line"><span class="cl">REVISION: <span class="m">5</span>
+</span></span><span class="line"><span class="cl">TEST SUITE: None
+</span></span></code></pre></div><p>위와 같이 <code>deployed</code> 상태이면 정상적으로 배포된 것입니다.</p>
+<p> </p>
+<p>Karpenter Controller의 현재 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get pod <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n karpenter <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -o wide
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME                         READY   STATUS    RESTARTS   AGE   IP               NODE                                                NOMINATED NODE   READINESS GATES
+</span></span><span class="line"><span class="cl">karpenter-7b6b6f6bfd-t2zvh   1/1     Running   <span class="m">0</span>          10m   xx.xxx.xxx.14    ip-xx-xxx-xxx-236.ap-northeast-2.compute.internal   &lt;none&gt;           &lt;none&gt;
+</span></span><span class="line"><span class="cl">karpenter-7b6b6f6bfd-xkc9q   1/1     Running   <span class="m">0</span>          10m   xx.xxx.xxx.196   ip-xx-xxx-xxx-176.ap-northeast-2.compute.internal   &lt;none&gt;           &lt;none&gt;
+</span></span></code></pre></div><p>헬름 차트 기본값 기준으로 Karpenter Controller는 2개의 Pod로 배포됩니다.</p>
+<p> </p>
+<p>Karpenter Controller Pod의 최근 로그를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl logs -f <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n karpenter <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -c controller <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -l app.kubernetes.io/name<span class="o">=</span>karpenter
+</span></span></code></pre></div><p> </p>
+<h3 id="3-karpenter-crds-설치">3. Karpenter CRDs 설치</h3>
+<p>Karpenter Controller가 사용할 CRD 차트를 설치합니다.</p>
+<p>아래 명령어는 Karpenter 초기 설치 뿐만 아니라 버전 업그레이드 상황에서도 사용 가능합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm upgrade <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --install <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --namespace karpenter <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --create-namespace <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    karpenter-crd oci://public.ecr.aws/karpenter/karpenter-crd <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --version <span class="si">${</span><span class="nv">KARPENTER_VERSION</span><span class="si">}</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --wait
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Release <span class="s2">&#34;karpenter&#34;</span> has been upgraded. Happy Helming!
+</span></span><span class="line"><span class="cl">Pulled: public.ecr.aws/karpenter/karpenter-crd:v0.26.1
+</span></span><span class="line"><span class="cl">Digest: sha256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+</span></span><span class="line"><span class="cl">NAME: karpenter-crd
+</span></span><span class="line"><span class="cl">LAST DEPLOYED: Mon Mar  <span class="m">6</span> 21:03:51 <span class="m">2023</span>
+</span></span><span class="line"><span class="cl">NAMESPACE: karpenter
+</span></span><span class="line"><span class="cl">STATUS: deployed
+</span></span><span class="line"><span class="cl">REVISION: <span class="m">2</span>
+</span></span><span class="line"><span class="cl">TEST SUITE: None
+</span></span></code></pre></div><p>위와 같이 <code>deployed</code> 상태이면 정상적으로 배포된 것입니다.</p>
+<p> </p>
+<h3 id="4-차트-결과-확인">4. 차트 결과 확인</h3>
+<p><code>karpenter</code>와 <code>karpenter-crd</code> 차트 정보와 현재 배포 상태를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm list -n karpenter
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME            NAMESPACE   REVISION    UPDATED                                 STATUS      CHART                   APP VERSION
+</span></span><span class="line"><span class="cl">karpenter       karpenter   <span class="m">5</span>           2023-03-06 21:47:08.187374 +0900 KST    deployed    karpenter-v0.26.1       0.26.1
+</span></span><span class="line"><span class="cl">karpenter-crd   karpenter   <span class="m">2</span>           2023-03-06 21:03:51.831199 +0900 KST    deployed    karpenter-crd-v0.26.1   0.26.1
+</span></span></code></pre></div><p>Karpenter Controller와 CRD 모두 <code>v0.26.1</code> 버전으로 배포된 상태입니다.</p>
+<p> </p>
+<h3 id="5-crd-생성">5. CRD 생성</h3>
+<p>CRD 생성 결과를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl api-resources <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --categories karpenter <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -o wide
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME               SHORTNAMES   APIVERSION                   NAMESPACED   KIND              VERBS                                                        CATEGORIES
+</span></span><span class="line"><span class="cl">awsnodetemplates                karpenter.k8s.aws/v1alpha1   <span class="nb">false</span>        AWSNodeTemplate   delete,deletecollection,get,list,patch,create,update,watch   karpenter
+</span></span><span class="line"><span class="cl">provisioners                    karpenter.sh/v1alpha5        <span class="nb">false</span>        Provisioner       delete,deletecollection,get,list,patch,create,update,watch   karpenter
+</span></span></code></pre></div><p><code>provisioners</code>와 <code>awsnodetemplates</code> CRD를 사용중인 것을 확인할 수 있습니다.</p>
+<p> </p>
+<p>Karpenter Controller Pod는 다음 2개의 Karpenter CRD를 참조해서 새 EC2 노드를 프로비저닝하게 됩니다.</p>
+<ul>
+<li><strong>provisioners</strong> : 인스턴스 타입, kubelet 파라미터 설정, 불필요 노드 자동정리<sup>Consolidation</sup> 설정 등</li>
+<li><strong>awsnodetemplates</strong> : AMI, 서브넷 지정, 보안그룹 지정 등</li>
+</ul>
+<p> </p>
+<h4 id="crdsyaml-예시">crds.yaml 예시</h4>
+<p>default CRD를 생성하기 위한 <code>crds.yaml</code> 파일을 작성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="l">cat &lt;&lt; EOF &gt; crds.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># Reference:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># https://karpenter.sh/v0.26.1/concepts/provisioners/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter.sh/v1alpha5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Provisioner</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l">v0.26.1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">maintainer</span><span class="p">:</span><span class="w"> </span><span class="l">younsung.lee</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Enables consolidation which attempts to reduce cluster cost by both removing un-needed nodes and down-sizing those</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># that can&#39;t be removed.  Mutually exclusive with the ttlSecondsAfterEmpty parameter.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">consolidation</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># If omitted, the feature is disabled and nodes will never expire.  If set to less time than it requires for a node</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># to become ready, the node may expire before any pods successfully start.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">ttlSecondsUntilExpired</span><span class="p">:</span><span class="w"> </span><span class="m">1209600</span><span class="w"> </span><span class="c"># 14 Days = 60 * 60 * 24 * 14 Seconds;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">requirements</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter.sh/capacity-type</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l">In</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;on-demand&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter.k8s.aws/instance-family</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l">In</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;t3a&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter.k8s.aws/instance-size</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l">In</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;nano&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;micro&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;small&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;medium&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;large&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;xlarge&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">kubernetes.io/os</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l">In</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;linux&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">kubernetes.io/arch</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l">In</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;amd64&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">topology.kubernetes.io/zone</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l">In</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;ap-northeast-2a&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;ap-northeast-2c&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">providerRef</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># Reference:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># https://karpenter.sh/v0.26.1/concepts/node-templates/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter.k8s.aws/v1alpha1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">AWSNodeTemplate</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">karpenter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l">v0.26.1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">maintainer</span><span class="p">:</span><span class="w"> </span><span class="l">younsung.lee</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">amiFamily</span><span class="p">:</span><span class="w"> </span><span class="l">AL2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">subnetSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">karpenter.sh/discovery</span><span class="p">:</span><span class="w"> </span><span class="l">&lt;YOUR_CLUSTER_NAME_HERE&gt;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">securityGroupSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">karpenter.sh/discovery</span><span class="p">:</span><span class="w"> </span><span class="l">&lt;YOUR_CLUSTER_NAME_HERE&gt;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="l">EOF</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<p>EKS 클러스터에 <code>provisioners</code>와 <code>awsnodetemplates</code>를 생성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl apply -f crds.yaml
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">provisioner.karpenter.sh/default created
+</span></span><span class="line"><span class="cl">awsnodetemplate.karpenter.k8s.aws/default created
+</span></span></code></pre></div><p><code>provisioners</code> 리소스와 <code>awsnodetemplates</code> 리소스가 생성되었습니다.<br>
+참고로 <code>provisioners</code>와 <code>awsnodetemplates</code>는 네임스페이스 단위에 속하지 않는 리소스입니다.</p>
+<p> </p>
+<p><code>kubectl get</code> 명령어로 현재 사용중인 Karpenter CRD 목록을 확인할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get provisioners,awsnodetemplates
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME                               AGE
+</span></span><span class="line"><span class="cl">provisioner.karpenter.sh/default   68m
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">NAME                                        AGE
+</span></span><span class="line"><span class="cl">awsnodetemplate.karpenter.k8s.aws/default   68m
+</span></span></code></pre></div><p> </p>
+<h3 id="6-모니터링">6. 모니터링</h3>
+<h4 id="karpenter-controller-로그-모니터링">Karpenter Controller 로그 모니터링</h4>
+<p>이후 약 10분 이상 Karpenter 컨트롤러의 로그를 모니터링합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl logs -f <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -n karpenter <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -c controller <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -l app.kubernetes.io/name<span class="o">=</span>karpenter
+</span></span></code></pre></div><p>정상적인 상황의 경우, <code>DEBUG</code>, <code>INFO</code> 레벨의 로그만 출력됩니다.</p>
+<p>IAM 권한 문제, 설정 오류 등으로 인한 <code>ERROR</code> 레벨의 로그가 지속적으로 출력되는 경우 해당 원인을 찾아서 해결해야 Karpenter Controller가 제대로 동작합니다.</p>
+<p> </p>
+<h4 id="노드-상태-모니터링">노드 상태 모니터링</h4>
+<p>전체 워커노드 운영 현황도 같이 모니터링합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ kubectl get node -L beta.kubernetes.io/instance-type
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME                                                STATUS   ROLES    AGE    VERSION                INSTANCE-TYPE
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-132.ap-northeast-2.compute.internal   Ready    &lt;none&gt;   13m    v1.24.10-eks-48e63af   t3a.medium
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-176.ap-northeast-2.compute.internal   Ready    &lt;none&gt;   4d4h   v1.24.9-eks-49d8fe8    t3a.medium
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-171.ap-northeast-2.compute.internal   Ready    &lt;none&gt;   13m    v1.24.10-eks-48e63af   t3a.xlarge
+</span></span><span class="line"><span class="cl">ip-xx-xxx-xxx-236.ap-northeast-2.compute.internal   Ready    &lt;none&gt;   4d4h   v1.24.9-eks-49d8fe8    t3a.medium
+</span></span></code></pre></div><p> </p>
+<h2 id="결과">결과</h2>
+<p>기존에 헬름 차트로 배포해서 사용중이던 Karpenter <code>v0.26.0</code>를 <code>v0.26.1</code>로 버전 업그레이드 완료했습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ helm list -n karpenter
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">NAME            NAMESPACE   REVISION    UPDATED                                 STATUS      CHART                   APP VERSION
+</span></span><span class="line"><span class="cl">karpenter       karpenter   <span class="m">5</span>           2023-03-06 21:47:08.187374 +0900 KST    deployed    karpenter-v0.26.1       0.26.1
+</span></span><span class="line"><span class="cl">karpenter-crd   karpenter   <span class="m">2</span>           2023-03-06 21:03:51.831199 +0900 KST    deployed    karpenter-crd-v0.26.1   0.26.1
+</span></span></code></pre></div><p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://karpenter.sh/v0.26.1/upgrade-guide/">Karpenter v0.26.1 버전 업그레이드 가이드</a><br>
+Karpenter 공식문서</p>
+<p><a href="https://github.com/aws/karpenter/tree/main/charts/karpenter">Github - Karpenter</a><br>
+<code>karpenter</code> 차트</p>
+<p><a href="https://github.com/aws/karpenter/tree/main/charts/karpenter-crd">Github - Karpenter CRD</a><br>
+<code>karpenter-crd</code> 차트</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

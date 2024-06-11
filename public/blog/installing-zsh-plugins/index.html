@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/installing-zsh-plugins/" />
+    <title>zsh 플러그인 설치</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>zsh 플러그인 설치</h1>
+        <div>
+                <time>Updated July 10, 2023</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><aside id="toc">
+    <h4>Table of Contents</h4>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#환경">환경</a></li>
+    <li><a href="#준비사항">준비사항</a>
+      <ul>
+        <li><a href="#로컬-환경">로컬 환경</a></li>
+      </ul>
+    </li>
+    <li><a href="#유용한-터미널-플러그인들">유용한 터미널 플러그인들</a>
+      <ul>
+        <li><a href="#autojump">autojump</a></li>
+        <li><a href="#neofetch">neofetch</a></li>
+      </ul>
+    </li>
+    <li><a href="#더-나아가서">더 나아가서</a>
+      <ul>
+        <li><a href="#neofetch-커스텀-이미지">neofetch 커스텀 이미지</a></li>
+        <li><a href="#랜덤-명언-조합하기">랜덤 명언 조합하기</a></li>
+      </ul>
+    </li>
+    <li><a href="#마치며">마치며</a></li>
+  </ul>
+</nav>
+</aside>
+
+<p> </p>
+<h2 id="개요">개요</h2>
+<p>패키지 관리자인 Homebrew를 이용해 autojump 플러그인과 neofetch를 설치하고 적용하는 방법을 설명합니다.</p>
+<p><img src="./1.png" alt="neofetch 실행 화면"></p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<ul>
+<li><strong>Hardware</strong> : MacBook Pro (13&quot;, M1, 2020)</li>
+<li><strong>OS</strong> : macOS Monterey 12.0.1</li>
+<li><strong>Terminal</strong> : iTerm2 + zsh with oh-my-zsh</li>
+<li><strong>패키지 관리자</strong> : Homebrew 3.3.2</li>
+<li><strong>설치대상</strong>
+<ul>
+<li><strong>autojump 22.5.3</strong></li>
+<li><strong>neofetch 7.1.0</strong></li>
+</ul>
+</li>
+</ul>
+<p> </p>
+<h2 id="준비사항">준비사항</h2>
+<h3 id="로컬-환경">로컬 환경</h3>
+<ul>
+<li>로컬 환경에 macOS 패키지 관리자인 <a href="https://brew.sh/">Homebrew</a>가 설치되어 있어야 합니다.</li>
+<li>로컬 환경에 터미널 프로그램인 iTerm2 가 설치되어 있어야 합니다.</li>
+</ul>
+<p> </p>
+<h2 id="유용한-터미널-플러그인들">유용한 터미널 플러그인들</h2>
+<h3 id="autojump">autojump</h3>
+<p><a href="https://github.com/wting/autojump">autojump</a>는 내가 이전에 이동했던 경로를 기억해놓았다가 해당 경로로 단번에 이동(Jump) 할 수 있게 해주는 기능의 플러그인입니다.</p>
+<p> </p>
+<h4 id="1-brew-설치-목록-확인">(1) brew 설치 목록 확인</h4>
+<p>brew로 설치한 모든 패키지 목록을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ brew <span class="nv">list</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Formulae
+</span></span><span class="line"><span class="cl">bat			libevent		neovim
+</span></span><span class="line"><span class="cl">bdw-gc			libffi			nettle
+</span></span><span class="line"><span class="cl">ca-certificates		libidn2			openssl@1.1
+</span></span><span class="line"><span class="cl">cask			libnghttp2		p11-kit
+</span></span><span class="line"><span class="cl">coreutils		libtasn1		pcre
+</span></span><span class="line"><span class="cl">emacs			libtermkey		pkg-config
+</span></span><span class="line"><span class="cl">fzf			libtool			readline
+</span></span><span class="line"><span class="cl">gettext			libunistring		tree-sitter
+</span></span><span class="line"><span class="cl">gmp			libuv			unbound
+</span></span><span class="line"><span class="cl">gnutls			luajit-openresty	unibilium
+</span></span><span class="line"><span class="cl">guile			luv			zsh
+</span></span><span class="line"><span class="cl">hugo			m4			zsh-completions
+</span></span><span class="line"><span class="cl">jansson			msgpack
+</span></span><span class="line"><span class="cl">kubernetes-cli		<span class="nv">ncurses</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Casks
+</span></span><span class="line"><span class="cl">docker	iterm2
+</span></span></code></pre></div><p><code>autojump</code>라는 이름의 소프트웨어는 확인되지 않습니다.</p>
+<p> </p>
+<h4 id="2-설치">(2) 설치</h4>
+<p><code>brew</code>를 사용해서 <code>autojump</code> 패키지를 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ brew install autojump
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; /opt/homebrew/Cellar/python@3.10/3.10.0_2/bin/python3 -m pip install -v --no-deps --no-index --upgrade --isolated --target<span class="o">=</span>/opt/homebrew/lib/python3.10/site-packages /opt/hom
+</span></span><span class="line"><span class="cl">🍺  /opt/homebrew/Cellar/python@3.10/3.10.0_2: 3,135 files, 57.6MB
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Installing <span class="nv">autojump</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Pouring autojump--22.5.3_3.arm64_monterey.bottle.tar.gz
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Caveats
+</span></span><span class="line"><span class="cl">Add the following line to your ~/.bash_profile or ~/.zshrc file:
+</span></span><span class="line"><span class="cl">  <span class="o">[</span> -f /opt/homebrew/etc/profile.d/autojump.sh <span class="o">]</span> <span class="o">&amp;&amp;</span> . /opt/homebrew/etc/profile.d/autojump.sh
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">If you use the Fish shell <span class="k">then</span> add the following line to your ~/.config/fish/config.fish:
+</span></span><span class="line"><span class="cl">  <span class="o">[</span> -f /opt/homebrew/share/autojump/autojump.fish <span class="o">]</span><span class="p">;</span> and <span class="nb">source</span> /opt/homebrew/share/autojump/autojump.fish
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Restart your terminal <span class="k">for</span> the settings to take effect.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">zsh completions have been installed to:
+</span></span><span class="line"><span class="cl">  /opt/homebrew/share/zsh/site-functions
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Summary
+</span></span><span class="line"><span class="cl">🍺  /opt/homebrew/Cellar/autojump/22.5.3_3: <span class="m">20</span> files, 170.7KB
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; <span class="nv">Caveats</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; autojump
+</span></span><span class="line"><span class="cl">Add the following line to your ~/.bash_profile or ~/.zshrc file:
+</span></span><span class="line"><span class="cl">  <span class="o">[</span> -f /opt/homebrew/etc/profile.d/autojump.sh <span class="o">]</span> <span class="o">&amp;&amp;</span> . /opt/homebrew/etc/profile.d/autojump.sh
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">If you use the Fish shell <span class="k">then</span> add the following line to your ~/.config/fish/config.fish:
+</span></span><span class="line"><span class="cl">  <span class="o">[</span> -f /opt/homebrew/share/autojump/autojump.fish <span class="o">]</span><span class="p">;</span> and <span class="nb">source</span> /opt/homebrew/share/autojump/autojump.fish
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Restart your terminal <span class="k">for</span> the settings to take effect.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">zsh completions have been installed to:
+</span></span><span class="line"><span class="cl">  /opt/homebrew/share/zsh/site-functions
+</span></span></code></pre></div><p> </p>
+<p>현재 <code>brew</code>로 설치한 패키지 목록을 다시 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ brew list                                                                                                                                                            23:12:50
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Formulae
+</span></span><span class="line"><span class="cl">autojump    fzf     jansson     libtermkey    mpdecimal   p11-kit     tree-sitter
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p>설치목록에 <code>autojump</code>가 추가된 걸 확인할 수 있습니다.</p>
+<p> </p>
+<h4 id="3-플러그인-추가">(3) 플러그인 추가</h4>
+<p>현재 zsh 설정파일을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat ~/.zshrc
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">plugins</span><span class="o">=(</span>
+</span></span><span class="line"><span class="cl">  git
+</span></span><span class="line"><span class="cl">  zsh-syntax-highlighting
+</span></span><span class="line"><span class="cl">  zsh-autosuggestions
+</span></span><span class="line"><span class="cl"><span class="o">)</span>
+</span></span></code></pre></div><p>사용할 플러그인 목록은 <code>plugins=()</code> 안에 선언하면 됩니다.</p>
+<p> </p>
+<p><code>plugins</code> 아래에 <code>autojump</code> 플러그인을 사용하도록 추가합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ vi ~/.zshrc
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">plugins</span><span class="o">=(</span>
+</span></span><span class="line"><span class="cl">  git
+</span></span><span class="line"><span class="cl">  zsh-syntax-highlighting
+</span></span><span class="line"><span class="cl">  zsh-autosuggestions
+</span></span><span class="line"><span class="cl">  autojump  <span class="c1"># add this line</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span>
+</span></span></code></pre></div><p>vi 에디터에서 변경사항을 저장합니다.</p>
+<p> </p>
+<h4 id="4-적용">(4) 적용</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">source</span> ~/.zshrc
+</span></span></code></pre></div><p>zsh 설정파일의 변경사항을 즉시 적용한다.</p>
+<p> </p>
+<h4 id="5-동작-테스트">(5) 동작 테스트</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> /Users/ive/githubrepos/blog/content/blog
+</span></span><span class="line"><span class="cl">$ <span class="nb">cd</span> /
+</span></span></code></pre></div><p><code>autojump</code> 테스트를 위해 각자 환경에서 깊숙한 경로까지 한번 방문한 후 최상단 디렉토리인 root directory(<code>/</code>)로 이동합니다.</p>
+<p> </p>
+<p><code>j &lt;점프할 디렉토리명&gt;</code> 명령어를 입력해서 autojump를 사용할 수 있습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">pwd</span>  <span class="c1"># before run `j` command</span>
+</span></span><span class="line"><span class="cl">/
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ j blog
+</span></span><span class="line"><span class="cl">/Users/ive/githubrepos/blog/content/blog
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">pwd</span>  <span class="c1"># jumped</span>
+</span></span><span class="line"><span class="cl">/Users/ive/githubrepos/blog/content/blog
+</span></span></code></pre></div><p>여러 디렉토리 진입을 건너뛰고 root directory(<code>/</code>)에서 <code>blog</code> 레포지터리로 바로 이동했습니다.</p>
+<p> </p>
+<h3 id="neofetch">neofetch</h3>
+<p>neofetch는 터미널 창에서 컴퓨터와 OS에 대한 유용한 정보를 제공해주는 툴입니다.</p>
+<p> </p>
+<h4 id="1-brew-설치-목록-확인-1">(1) brew 설치 목록 확인</h4>
+<p>brew로 설치한 모든 패키지 목록을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ brew <span class="nv">list</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Formulae
+</span></span><span class="line"><span class="cl">bat			libevent		neovim
+</span></span><span class="line"><span class="cl">bdw-gc			libffi			nettle
+</span></span><span class="line"><span class="cl">ca-certificates		libidn2			openssl@1.1
+</span></span><span class="line"><span class="cl">cask			libnghttp2		p11-kit
+</span></span><span class="line"><span class="cl">coreutils		libtasn1		pcre
+</span></span><span class="line"><span class="cl">emacs			libtermkey		pkg-config
+</span></span><span class="line"><span class="cl">fzf			libtool			readline
+</span></span><span class="line"><span class="cl">gettext			libunistring		tree-sitter
+</span></span><span class="line"><span class="cl">gmp			libuv			unbound
+</span></span><span class="line"><span class="cl">gnutls			luajit-openresty	unibilium
+</span></span><span class="line"><span class="cl">guile			luv			zsh
+</span></span><span class="line"><span class="cl">hugo			m4			zsh-completions
+</span></span><span class="line"><span class="cl">jansson			msgpack
+</span></span><span class="line"><span class="cl">kubernetes-cli		<span class="nv">ncurses</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Casks
+</span></span><span class="line"><span class="cl">docker	iterm2
+</span></span></code></pre></div><p>목록을 보면 <code>neofetch</code>는 아직 없으므로 설치가 필요합니다.</p>
+<p> </p>
+<h4 id="2-brew-검색">(2) brew 검색</h4>
+<p>brew에서 제공하는 패키지 목록에서 <code>neofetch</code>를 검색합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ brew search <span class="nv">neofetch</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Formulae
+</span></span><span class="line"><span class="cl">neofetch                                 onefetch
+</span></span></code></pre></div><p>검색 결과에 <code>neofetch</code>가 있습니다.</p>
+<p> </p>
+<h4 id="3-neofetch-설치">(3) neofetch 설치</h4>
+<p>brew를 사용해서 neofetch를 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ brew install <span class="nv">neofetch</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading https://ghcr.io/v2/homebrew/core/screenresolution/manifests/1.6
+</span></span><span class="line"><span class="cl"><span class="c1">######################################################################## 100.0%</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading https://ghcr.io/v2/homebrew/core/screenresolution/blobs/sha256:3
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading from https://pkg-containers.githubusercontent.com/ghcr1/blobs/sh
+</span></span><span class="line"><span class="cl"><span class="c1">######################################################################## 100.0%</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading https://ghcr.io/v2/homebrew/core/neofetch/manifests/7.1.0-2
+</span></span><span class="line"><span class="cl"><span class="c1">######################################################################## 100.0%</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading https://ghcr.io/v2/homebrew/core/neofetch/blobs/sha256:78eb3e99d
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Downloading from https://pkg-containers.githubusercontent.com/ghcr1/blobs/sh
+</span></span><span class="line"><span class="cl"><span class="c1">######################################################################## 100.0%</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Installing dependencies <span class="k">for</span> neofetch: <span class="nv">screenresolution</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Installing neofetch dependency: <span class="nv">screenresolution</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Pouring screenresolution--1.6.arm64_monterey.bottle.tar.gz
+</span></span><span class="line"><span class="cl">🍺  /opt/homebrew/Cellar/screenresolution/1.6: <span class="m">5</span> files, 57.7KB
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Installing <span class="nv">neofetch</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; Pouring neofetch--7.1.0.all.bottle.2.tar.gz
+</span></span><span class="line"><span class="cl">🍺  /opt/homebrew/Cellar/neofetch/7.1.0: <span class="m">6</span> files, 350.6KB
+</span></span></code></pre></div><p>최신버전의 <code>neofetch</code> <code>v7.1.0</code>이 설치 완료되었습니다.</p>
+<p> </p>
+<h4 id="4-적용-1">(4) 적용</h4>
+<p>zsh 설정파일을 엽니다.</p>
+<p>zsh이 실행될 때 마지막에 <code>neofetch</code> 명령어를 실행하도록 마지막 라인에 <code>neofetch</code>를 추가합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ vi ~/.zshrc
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span>/opt/homebrew/bin:/Library/Frameworks/Python.framework/Versions/3.9/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">neofetch  <span class="c1"># add this line</span>
+</span></span></code></pre></div><p>이제 iTerm2를 실행시키면 zsh 설정파일을 읽고, 마지막 라인에서 <code>neofetch</code>가 실행된다.</p>
+<p> </p>
+<h4 id="5-결과확인">(5) 결과확인</h4>
+<p>새 터미널창이 열릴 때마다 <code>neofetch</code> 명령어가 실행되어 디테일한 하드웨어 스펙, OS 정보를 표출해준다.</p>
+<p><img src="./1.png" alt="neofetch 실행화면"></p>
+<p> </p>
+<p>좌측에 나오는 ASCII 그림은 원하는 이미지로 설정이 가능하다.</p>
+<p>기본값은 각 운영체제의 로고이다. MacBook의 경우 기본 값으로 Apple 로고가 출력됩니다.</p>
+<p> </p>
+<h2 id="더-나아가서">더 나아가서</h2>
+<h3 id="neofetch-커스텀-이미지">neofetch 커스텀 이미지</h3>
+<p>neofetch에서 자신이 원하는 이미지를 넣고 싶다면 <a href="/blog/setup-neofetch-on-iterm2/">neofetch로 터미널 꾸미기</a> 페이지를 참고해서 설정할 수 있습니다.</p>
+<p> </p>
+<h3 id="랜덤-명언-조합하기">랜덤 명언 조합하기</h3>
+<p>제 경우 neofetch 하단에 명언이 나오도록 <a href="https://formulae.brew.sh/formula/fortune">fortune</a> 패키지를 조합해서 사용하고 있습니다.</p>
+<p><img src="./2.png" alt="fortune 예시"></p>
+<p> </p>
+<p>macOS 패키지 관리자인 <a href="https://brew.sh">brew</a>를 사용해서 fortune을 설치합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">brew install fortune
+</span></span></code></pre></div><p> </p>
+<p>로컬 환경에 <code>fortune</code> 명령어가 추가됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ which fortune <span class="o">&amp;&amp;</span> fortune -v
+</span></span><span class="line"><span class="cl">/opt/homebrew/bin/fortune
+</span></span><span class="line"><span class="cl">fortune-mod version <span class="m">9708</span>
+</span></span></code></pre></div><p> </p>
+<p>neofetch와 fortune을 조합한 zsh 설정파일 예시입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ vi ~/.zshrc
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">neofetch
+</span></span><span class="line"><span class="cl">fortune ~/.config/fortune/
+</span></span></code></pre></div><p>zsh에 설정한 것과 동일하게, <code>~/.config/fortune</code> 디렉토리 안에 출력할 명언 파일들을 작성해서 미리 한 곳에 모아 놓습니다.</p>
+<p> </p>
+<p>제 사용 사례로는 책이나 미디어에서 인상깊게 본 구절과 유명 개발자들의 명언을 <code>.fortune</code> 파일에 모두 기록해두고, 터미널을 열 때마다 습관적으로 읽을 수 있게 계속 노출시키고 있습니다.</p>
+<p>아래와 같이 각 카테고리별로 <code>.fortune</code> 파일을 분류합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls
+</span></span><span class="line"><span class="cl">bootstrap.sh        crypto.fortune      general.fortune     programming.fortune security.fortune    strfile.sh
+</span></span><span class="line"><span class="cl">carrer.fortune      devops.fortune      philosophy.fortune  science.fortune     sre.fortune
+</span></span></code></pre></div><p> </p>
+<p>명언을 모아놓은 텍스트 파일을 작성했으면 이제 <code>~/.config/fortune/</code> 디렉토리 안에 <code>strfile.sh</code> 스크립트를 생성합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat <span class="s">&lt;&lt; EOF &gt; ~/.config/fortune/strfile.sh
+</span></span></span><span class="line"><span class="cl"><span class="s">#!/bin/bash
+</span></span></span><span class="line"><span class="cl"><span class="s">
+</span></span></span><span class="line"><span class="cl"><span class="s"># 현재 디렉토리에서 .fortune 파일 목록을 가져옴
+</span></span></span><span class="line"><span class="cl"><span class="s">fortune_files=$(find . -maxdepth 1 -type f -name &#34;*.fortune&#34;)
+</span></span></span><span class="line"><span class="cl"><span class="s">
+</span></span></span><span class="line"><span class="cl"><span class="s"># 각 .fortune 파일에 대해 strfile 실행
+</span></span></span><span class="line"><span class="cl"><span class="s">for fortune_file in $fortune_files; do
+</span></span></span><span class="line"><span class="cl"><span class="s">  strfile &#34;$fortune_file&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">done
+</span></span></span><span class="line"><span class="cl"><span class="s">EOF</span>
+</span></span></code></pre></div><p><code>fortune</code>은 일반 텍스트 파일만은 읽지 못하므로, 인덱스 정보가 담긴 데이터 파일 <code>.dat</code>로 변환 처리해주는 스크립트입니다.</p>
+<p>이 때 사용되는 <code>strfile</code> 명령어는 <code>fortune</code>과 같이 사용되며, 텍스트 파일을 더 쉽게 검색하고 무작위로 텍스트를 선택하는 데 도움을 줍니다. <code>strfile</code>을 실행하면 텍스트 파일을 읽어 들이고 인덱스가 담긴 데이터 파일 <code>.dat</code>을 생성합니다. 이 인덱스 데이터 파일은 <code>fortune</code>이 출력할 명언을 검색할 때 빠른 액세스를 가능하게 합니다.</p>
+<p> </p>
+<p>명언이 있는 경로에서 <code>strfile.sh</code>을 실행합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sh strfile.sh
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="s2">&#34;./programming.fortune.dat&#34;</span> created
+</span></span><span class="line"><span class="cl">There were <span class="m">26</span> strings
+</span></span><span class="line"><span class="cl">Longest string: <span class="m">366</span> bytes
+</span></span><span class="line"><span class="cl">Shortest string: <span class="m">59</span> bytes
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s2">&#34;./science.fortune.dat&#34;</span> created
+</span></span><span class="line"><span class="cl">There were <span class="m">4</span> strings
+</span></span><span class="line"><span class="cl">Longest string: <span class="m">169</span> bytes
+</span></span><span class="line"><span class="cl">Shortest string: <span class="m">80</span> bytes
+</span></span></code></pre></div><p>스크립트는 각각의 <code>.fortune</code> 파일을 읽어서 인덱스 정보가 담긴 데이터 파일인 <code>.dat</code>를 생성합니다.</p>
+<p> </p>
+<p>스크립트를 실행한 후 결과는 다음과 같습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls ~/.config/fortune/
+</span></span><span class="line"><span class="cl">bootstrap.sh            crypto.fortune.dat      general.fortune.dat     programming.fortune.dat security.fortune.dat
+</span></span><span class="line"><span class="cl">carrer.fortune          devops.fortune          philosophy.fortune      science.fortune         sre.fortune
+</span></span><span class="line"><span class="cl">carrer.fortune.dat      devops.fortune.dat      philosophy.fortune.dat  science.fortune.dat     sre.fortune.dat
+</span></span><span class="line"><span class="cl">crypto.fortune          general.fortune         programming.fortune     security.fortune        strfile.sh
+</span></span></code></pre></div><p>각 분야별로 모아놓은 <code>.fortune</code> 파일에 매핑되는 <code>.dat</code>가 생성된 걸 확인할 수 있습니다.</p>
+<blockquote>
+<p><strong>주의사항</strong><br>
+<code>fortune</code> 명령어는 <code>.dat</code> 파일 그 자체로는 명언 내용에 대한 완전한 정보를 읽지 못합니다. 디렉토리 안에 <code>.fortune</code>과 <code>.dat</code> 파일 <strong>둘다</strong> 존재해야 <code>fortune</code>이 정상적으로 명언 데이터를 읽을 수 있습니다.</p>
+</blockquote>
+<p> </p>
+<p>이제 iTerm2를 재실행하거나 <code>zsh</code> 명령어로 쉘을 재시작하면, <code>fortune</code>은 <code>~/.config/fortune/</code>에 위치한 모든 명언들 중 하나를 랜덤하게 출력합니다.</p>
+<p> </p>
+<h2 id="마치며">마치며</h2>
+<p>개발하는 대부분의 시간은 끝없는 고민으로 이어진 시간과 정신의 방입니다.</p>
+<p>이런 식으로 아기자기한 터미널 환경을 만들면 고된 프로그래밍도 그나마 덜 힘들게 느껴지고 종종 재밌게 다가올 때가 있으므로 공들여서 구축해놓도록 합니다.</p>
+<p>이렇게 개발환경 세팅 하다보면 현재 환경을 개선하는 일에 빠져들 때가 있습니다. 마치 <a href="https://www.lesstif.com/software-engineering/yak-shaving-29590364.html">야크 털 깎기</a><sup>Yak Shaving</sup>처럼요. 하지만 야크 털 깎기는 재밌습니다.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

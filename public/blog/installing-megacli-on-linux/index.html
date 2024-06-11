@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/installing-megacli-on-linux/" />
+    <title>MegaCLI 설치 및 사용법</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>MegaCLI 설치 및 사용법</h1>
+        <div>
+                <time>Updated November 18, 2021</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="개요">개요</h1>
+<p>LSI 사의 RAID Controller가 장착된 리눅스 서버에서 MegaCLI 명령어를 이용해 RAID 관련 정보를 확인할 수 있다.</p>
+<p>megacli는 MegaRaid를 CLI 환경에서 조작할 수 있도록 지원하는 관리 소프트웨어이다.<br>
+<br></p>
+<h1 id="환경">환경</h1>
+<ul>
+<li><strong>OS</strong> : Red Hat Enterprise Linux Server release 6.2 (Santiago)</li>
+<li><strong>Architecture</strong> : x86_64</li>
+<li><strong>Shell</strong> : bash</li>
+<li><strong>설치할 패키지</strong> : MegaCLI v8.07.14 (<code>MegaCli-8.07.14-1.noarch.rpm</code>)</li>
+</ul>
+<br>
+<h1 id="본문">본문</h1>
+<h2 id="megacli-패키지-설치">MegaCLI 패키지 설치</h2>
+<h3 id="1-raid-controller-제원-확인">1. RAID Controller 제원 확인</h3>
+<p>우선 해당 서버의 RAID Controller가 LSI Logic에서 만든 MegaRAID 제품이어야 MegaCli 패키지를 설치후 명령어를 이용 가능하다. 그러니 우선 RAID Controller의 제조사와 모델명부터 확인한다.</p>
+<br>
+<h4 id="확인방법-1-lspci">확인방법 1. <code>lspci</code></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ rpm -qa pciutils
+</span></span><span class="line"><span class="cl">pciutils-3.1.4-11.el6.x86_64
+</span></span></code></pre></div><p><code>lspci</code> 명령어를 사용하기 위해서는 lspci 패키지 설치가 선행되어야 한다.<br>
+<br></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ lspci <span class="p">|</span> grep -i raid
+</span></span><span class="line"><span class="cl">06:00.0 RAID bus controller: LSI Logic / Symbios Logic MegaRAID SAS <span class="m">2208</span> <span class="o">[</span>Thunderbolt<span class="o">]</span> <span class="o">(</span>rev 03<span class="o">)</span>
+</span></span></code></pre></div><p>RAID Controller 제조사(Vendor)는 <code>LSI Logic</code>, 모델명은 <code>MegaRAID SAS 2208 [Thunderbolt]</code> 라는 정보를 얻을 수 있다.<br>
+<br></p>
+<h4 id="확인방법-2-lshw">확인방법 2. <code>lshw</code></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ rpm -qa lshw
+</span></span><span class="line"><span class="cl">lshw-2.17-1.el6.rf.x86_64
+</span></span></code></pre></div><p><code>lshw</code> 명령어를 사용하기 위해서는 lshw 패키지 설치가 선행되어야 한다.
+<br></p>
+<p>해당 서버는 <code>LSI Logic</code>사에서 만든 RAID Controller 모델 <code>MegaRAID SAS 2208 [Thunderbolt]</code>를 사용하고 있다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ lshw -c storage
+</span></span><span class="line"><span class="cl">  *-storage               
+</span></span><span class="line"><span class="cl">       description: RAID bus controller
+</span></span><span class="line"><span class="cl">       product: MegaRAID SAS <span class="m">2208</span> <span class="o">[</span>Thunderbolt<span class="o">]</span>
+</span></span><span class="line"><span class="cl">       vendor: LSI Logic / Symbios Logic
+</span></span><span class="line"><span class="cl">       physical id: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">       bus info: pci@0000:06:00.0
+</span></span><span class="line"><span class="cl">       logical name: scsi0
+</span></span><span class="line"><span class="cl">       version: <span class="m">03</span>
+</span></span><span class="line"><span class="cl">       width: <span class="m">64</span> bits
+</span></span><span class="line"><span class="cl">       clock: 33MHz
+</span></span><span class="line"><span class="cl">       capabilities: storage pm pciexpress vpd msi msix bus_master cap_list rom
+</span></span><span class="line"><span class="cl">       configuration: <span class="nv">driver</span><span class="o">=</span>megaraid_sas <span class="nv">latency</span><span class="o">=</span><span class="m">0</span>
+</span></span><span class="line"><span class="cl">       resources: irq:40 ioport:d000<span class="o">(</span><span class="nv">size</span><span class="o">=</span>256<span class="o">)</span> memory:fbd60000-fbd63fff memory:fbd00000-fbd3ffff memory:fbd40000-fbd5ffff<span class="o">(</span>prefetchable<span class="o">)</span>
+</span></span></code></pre></div><p><strong><code>lshw</code> 명령어 설명</strong><br>
+<code>-c &lt;class&gt;</code> : 특정 파트에 대한 상세 정보를 출력한다.<br>
+<br></p>
+<h3 id="2-설치파일-다운로드">2. 설치파일 다운로드</h3>
+<p><strong>Broadcom 다운로드 링크 접속</strong></p>
+<p>Broadcom 사의 공식 다운로드 홈페이지를 접속한다.</p>
+<p><a href="https://www.broadcom.com/support/download-search?dk=megacli">https://www.broadcom.com/support/download-search?dk=megacli</a></p>
+<br>
+<p><strong>Management Software and Tools 클릭</strong><br>
+<img src="./1.png" alt="Management Software and Tools 메뉴 화면">
+<br></p>
+<p><strong>MegaCLI 5.5 P2 (Version 8.07.14) 클릭</strong><br>
+<img src="./2.png" alt="MegaCLI 5.5 P2 선택 화면"></p>
+<p>클릭시 팝업 페이지가 뜨며 zip 확장자의 설치파일 다운로드가 시작된다.</p>
+<br>
+<h3 id="3-megacli-패키지-업로드">3. MegaCLI 패키지 업로드</h3>
+<p>SFTP, FTP를 이용해 서버에 MegaCLI 설치파일(<code>8-07-14_MegaCLI.zip</code>)을 업로드한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls
+</span></span><span class="line"><span class="cl">8-07-14_MegaCLI.zip
+</span></span></code></pre></div><br>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls -lh
+</span></span><span class="line"><span class="cl">total 7.6M
+</span></span><span class="line"><span class="cl">-rw-rw-r-- <span class="m">1</span> devuser1 devuser1 7.6M Nov <span class="m">18</span> 09:15 8-07-14_MegaCLI.zip
+</span></span></code></pre></div><p>MegaCLI 설치파일의 용량은 7.6MB 이다.<br>
+<br></p>
+<p>설치파일 zip을 압축해제한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ unzip 8-07-14_MegaCLI.zip 
+</span></span><span class="line"><span class="cl">Archive:  8-07-14_MegaCLI.zip
+</span></span><span class="line"><span class="cl">  inflating: 8.07.14_MegaCLI.txt     
+</span></span><span class="line"><span class="cl">  inflating: DOS/MegaCLI.exe         
+</span></span><span class="line"><span class="cl"> extracting: FreeBSD/MegaCLI.zip     
+</span></span><span class="line"><span class="cl"> extracting: FreeBSD/MegaCli64.zip   
+</span></span><span class="line"><span class="cl">  inflating: Linux/MegaCli-8.07.14-1.noarch.rpm  
+</span></span><span class="line"><span class="cl">  inflating: Solaris/MegaCli.pkg     
+</span></span><span class="line"><span class="cl">  inflating: Windows/MegaCli.exe     
+</span></span><span class="line"><span class="cl">  inflating: Windows/MegaCli64.exe  
+</span></span></code></pre></div><br>
+<p>압축 해제후 생성된 <code>Linux</code> 디렉토리로 이동한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls
+</span></span><span class="line"><span class="cl">8-07-14_MegaCLI.zip  8.07.14_MegaCLI.txt  DOS  FreeBSD  Linux  Solaris  Windows
+</span></span><span class="line"><span class="cl">$ <span class="nb">cd</span> Linux
+</span></span></code></pre></div><br>
+<p>Linux용 패키지 설치파일 확인</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls  
+</span></span><span class="line"><span class="cl">MegaCli-8.07.14-1.noarch.rpm
+</span></span></code></pre></div><br>
+<h3 id="4-패키지-설치">4. 패키지 설치</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ rpm -ivh MegaCli-8.07.14-1.noarch.rpm 
+</span></span><span class="line"><span class="cl">Preparing...                <span class="c1">########################################### [100%]</span>
+</span></span><span class="line"><span class="cl">   1:MegaCli                <span class="c1">########################################### [100%]</span>
+</span></span></code></pre></div><p>패키지 설치파일명의 <code>noarch</code>는 특정 아키텍쳐를 의미하지 않을 때 붙이는 키워드이다. 아키텍쳐 종류로는 alpha, sparc, sparc64, i386, i586, i686, ppc64 등이 있다. megacli 패키지가 설치되는 절대 경로는 <code>/opt/MegaRAID/MegaCli/</code> 이다.<br>
+<br></p>
+<h3 id="5-명령어-심볼릭-링크-연결">5. 명령어 심볼릭 링크 연결</h3>
+<p>MegaCli64 명령어에는 대소문자와 숫자까지 섞여있다. MegaCLI64 명령어를 편하게 사용하기 위해 <code>MegaCli64</code> 명령어 파일을 <code>megacli</code>로 심볼릭 링크 연결한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ln -s /opt/MegaRAID/MegaCli/MegaCli64 /usr/bin/megacli
+</span></span></code></pre></div><br>
+<p>이제부터는 <code>MegaCli64</code> 명령어가 아닌 <code>megacli</code>로 입력해서 사용하면 된다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ which megacli
+</span></span><span class="line"><span class="cl">/usr/bin/megacli
+</span></span></code></pre></div><br>
+<h3 id="6-명령어-동작-테스트">6. 명령어 동작 테스트</h3>
+<p><code>-v</code> 옵션은 megacli 버전을 출력한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -v
+</span></span><span class="line"><span class="cl">                                     
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      MegaCLI SAS RAID Management Tool  Ver 8.07.14 Dec 16, <span class="m">2013</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">(</span>c<span class="o">)</span>Copyright 2013, LSI Corporation, All Rights Reserved.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><br>
+<h2 id="megacli-명령어">MegaCli 명령어</h2>
+<h3 id="1-megacli-명령어-메뉴얼-확인">1. megacli 명령어 메뉴얼 확인</h3>
+<p>자세한 명령어 메뉴얼은 <code>megacli -h</code> 명령어로 확인 가능하다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -h <span class="p">|</span> more
+</span></span><span class="line"><span class="cl">                                     
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      MegaCLI SAS RAID Management Tool  Ver 8.07.14 Dec 16, <span class="m">2013</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">(</span>c<span class="o">)</span>Copyright 2013, LSI Corporation, All Rights Reserved.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">NOTE: The following options may be given at the end of any <span class="nb">command</span> below: 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="o">[</span>-Silent<span class="o">]</span> <span class="o">[</span>-AppLogFile filename<span class="o">]</span> <span class="o">[</span>-NoLog<span class="o">]</span> <span class="o">[</span>-page<span class="o">[</span>N<span class="o">]]</span> 
+</span></span><span class="line"><span class="cl">                 <span class="o">[</span>-<span class="o">]</span> is optional. 
+</span></span><span class="line"><span class="cl">                  N - Number of lines per page. 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">MegaCli -v 
+</span></span><span class="line"><span class="cl">MegaCli -help<span class="p">|</span>-h<span class="p">|</span>? 
+</span></span><span class="line"><span class="cl">MegaCli -adpCount 
+</span></span><span class="line"><span class="cl">MegaCli -AdpSetProp <span class="o">{</span>CacheFlushInterval -val<span class="o">}</span> <span class="p">|</span> <span class="o">{</span> RebuildRate -val<span class="o">}</span> 
+</span></span><span class="line"><span class="cl">    <span class="p">|</span> <span class="o">{</span>PatrolReadRate -val<span class="o">}</span> <span class="p">|</span> <span class="o">{</span>BgiRate -val<span class="o">}</span> <span class="p">|</span> <span class="o">{</span>CCRate -val<span class="o">}</span> <span class="p">|</span> <span class="o">{</span>ForceSGPIO -val<span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">|</span> <span class="o">{</span>ReconRate -val<span class="o">}</span> <span class="p">|</span> <span class="o">{</span>SpinupDriveCount -val<span class="o">}</span> <span class="p">|</span> <span class="o">{</span>SpinupDelay -val<span class="o">}</span> 
+</span></span><span class="line"><span class="cl">    <span class="p">|</span> <span class="o">{</span>CoercionMode -val<span class="o">}</span> <span class="p">|</span> <span class="o">{</span>ClusterEnable -val<span class="o">}</span> <span class="p">|</span> <span class="o">{</span>PredFailPollInterval -val<span class="o">}</span> 
+</span></span><span class="line"><span class="cl">    <span class="p">|</span> <span class="o">{</span>BatWarnDsbl -val<span class="o">}</span> <span class="p">|</span> <span class="o">{</span>EccBucketSize -val<span class="o">}</span> <span class="p">|</span> <span class="o">{</span>EccBucketLeakRate -val<span class="o">}</span> 
+</span></span><span class="line"><span class="cl">    <span class="p">|</span> <span class="o">{</span>AbortCCOnError -val<span class="o">}</span> <span class="p">|</span> AlarmEnbl <span class="p">|</span> AlarmDsbl <span class="p">|</span> AlarmSilence 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">[</span>...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">MegaCli XD -FetchSafeId -iN <span class="p">|</span> -iALL
+</span></span><span class="line"><span class="cl">MegaCli XD -ApplyActivationKey &lt;key&gt; -iN
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><br>
+<h3 id="2-시스템-요약정보-확인">2. 시스템 요약정보 확인</h3>
+<p><strong>확인 가능한 주요정보</strong></p>
+<ul>
+<li><strong>시스템 기본정보</strong> : 리눅스 커널 버전, 드라이버 버전, megacli 패키지 버전 정보</li>
+<li><strong>RAID Controller</strong> : 제조사, 모델명, 펌웨어 버전, 상태</li>
+<li><strong>RAID 배터리(BBU, Battery Backup Unit)</strong> : BBU는 갑작스러운 전원 중단이 발생하더라도 캐시의 내용이 지워지지 않도록 보존하는 역할을 한다.</li>
+<li><strong>인클로저(Enclosure)</strong></li>
+<li><strong>물리적 디스크(PD, Physical Drive) 구성정보</strong></li>
+<li><strong>논리적 디스크(VD, Virtual Drive) 구성정보</strong> : 논리적 디스크는 RAID를 의미한다.</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -ShowSummary -aALL
+</span></span><span class="line"><span class="cl">                                     
+</span></span><span class="line"><span class="cl">System
+</span></span><span class="line"><span class="cl">        Operating System:  Linux version 2.6.32-220.el6.x86_64 
+</span></span><span class="line"><span class="cl">        Driver Version: 00.00.05.40-rh2
+</span></span><span class="line"><span class="cl">        CLI Version: 8.07.14
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Hardware
+</span></span><span class="line"><span class="cl">        Controller
+</span></span><span class="line"><span class="cl">                 ProductName       : LSI MegaRAID SAS 9266-8i<span class="o">(</span>Bus 0, Dev 0<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                 SAS Address       : 500605b0057b9570
+</span></span><span class="line"><span class="cl">                 FW Package Version: 23.9.0-0023
+</span></span><span class="line"><span class="cl">                 Status            : Optimal
+</span></span><span class="line"><span class="cl">        BBU
+</span></span><span class="line"><span class="cl">                 BBU Type          : 
+</span></span><span class="line"><span class="cl">                 Status            : Healthy
+</span></span><span class="line"><span class="cl">        Enclosure
+</span></span><span class="line"><span class="cl">                 Product Id        : SGPIO           
+</span></span><span class="line"><span class="cl">                 Type              : SGPIO
+</span></span><span class="line"><span class="cl">                 Status            : OK
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        PD 
+</span></span><span class="line"><span class="cl">                Connector          : Port <span class="m">0</span> - 3&lt;Internal&gt;: Slot <span class="m">1</span> 
+</span></span><span class="line"><span class="cl">                Vendor Id          : SEAGATE 
+</span></span><span class="line"><span class="cl">                Product Id         : ST9300653SS     
+</span></span><span class="line"><span class="cl">                State              : Online
+</span></span><span class="line"><span class="cl">                Disk Type          : SAS,Hard Disk Device
+</span></span><span class="line"><span class="cl">                Capacity           : 278.464 GB
+</span></span><span class="line"><span class="cl">                Power State        : Active
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">                Connector          : Port <span class="m">0</span> - 3&lt;Internal&gt;: Slot <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">                Vendor Id          : SEAGATE 
+</span></span><span class="line"><span class="cl">                Product Id         : ST9300653SS     
+</span></span><span class="line"><span class="cl">                State              : Online
+</span></span><span class="line"><span class="cl">                Disk Type          : SAS,Hard Disk Device
+</span></span><span class="line"><span class="cl">                Capacity           : 278.464 GB
+</span></span><span class="line"><span class="cl">                Power State        : Active
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Storage
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">       Virtual Drives
+</span></span><span class="line"><span class="cl">                Virtual drive      : Target Id <span class="m">0</span> ,VD name 
+</span></span><span class="line"><span class="cl">                Size               : 278.464 GB
+</span></span><span class="line"><span class="cl">                State              : Optimal
+</span></span><span class="line"><span class="cl">                RAID Level         : <span class="m">1</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><br>
+<h3 id="3-물리적-디스크-정보-확인">3. 물리적 디스크 정보 확인</h3>
+<p>PD는 물리 디스크(Physical Drive)의 약자이다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1">## MegaCli64 명령어를 심볼릭 링크로 연결하지 않았을 경우</span>
+</span></span><span class="line"><span class="cl">$ /opt/MegaRAID/MegaCli/MegaCli64 -PDList -aALL
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1">## MegaCli64 명령어를 심볼릭 링크로 연결했을 경우</span>
+</span></span><span class="line"><span class="cl">$ megacli -PDList -aALL
+</span></span><span class="line"><span class="cl">                                     
+</span></span><span class="line"><span class="cl">Adapter <span class="c1">#0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Enclosure Device ID: <span class="m">252</span>
+</span></span><span class="line"><span class="cl">Slot Number: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Drive<span class="s1">&#39;s position: DiskGroup: 0, Span: 0, Arm: 1
+</span></span></span><span class="line"><span class="cl"><span class="s1">Enclosure position: N/A
+</span></span></span><span class="line"><span class="cl"><span class="s1">Device Id: 9
+</span></span></span><span class="line"><span class="cl"><span class="s1">WWN: 5000C5005EC4558C
+</span></span></span><span class="line"><span class="cl"><span class="s1">Sequence Number: 2
+</span></span></span><span class="line"><span class="cl"><span class="s1">Media Error Count: 0
+</span></span></span><span class="line"><span class="cl"><span class="s1">Other Error Count: 0
+</span></span></span><span class="line"><span class="cl"><span class="s1">Predictive Failure Count: 0
+</span></span></span><span class="line"><span class="cl"><span class="s1">Last Predictive Failure Event Seq Number: 0
+</span></span></span><span class="line"><span class="cl"><span class="s1">PD Type: SAS
+</span></span></span><span class="line"><span class="cl"><span class="s1">
+</span></span></span><span class="line"><span class="cl"><span class="s1">Raw Size: 279.396 GB [0x22ecb25c Sectors]
+</span></span></span><span class="line"><span class="cl"><span class="s1">Non Coerced Size: 278.896 GB [0x22dcb25c Sectors]
+</span></span></span><span class="line"><span class="cl"><span class="s1">Coerced Size: 278.464 GB [0x22cee000 Sectors]
+</span></span></span><span class="line"><span class="cl"><span class="s1">Sector Size:  512
+</span></span></span><span class="line"><span class="cl"><span class="s1">Firmware state: Online, Spun Up
+</span></span></span><span class="line"><span class="cl"><span class="s1">Device Firmware Level: 0004
+</span></span></span><span class="line"><span class="cl"><span class="s1">Shield Counter: 0
+</span></span></span><span class="line"><span class="cl"><span class="s1">Successful diagnostics completion on :  N/A
+</span></span></span><span class="line"><span class="cl"><span class="s1">SAS Address(0): 0x5000c5005ec4558d
+</span></span></span><span class="line"><span class="cl"><span class="s1">SAS Address(1): 0x0
+</span></span></span><span class="line"><span class="cl"><span class="s1">Connected Port Number: 1(path0) 
+</span></span></span><span class="line"><span class="cl"><span class="s1">Inquiry Data: SEAGATE ST9300653SS     00046XN2SNLZ            
+</span></span></span><span class="line"><span class="cl"><span class="s1">FDE Capable: Not Capable
+</span></span></span><span class="line"><span class="cl"><span class="s1">FDE Enable: Disable
+</span></span></span><span class="line"><span class="cl"><span class="s1">Secured: Unsecured
+</span></span></span><span class="line"><span class="cl"><span class="s1">Locked: Unlocked
+</span></span></span><span class="line"><span class="cl"><span class="s1">Needs EKM Attention: No
+</span></span></span><span class="line"><span class="cl"><span class="s1">Foreign State: None 
+</span></span></span><span class="line"><span class="cl"><span class="s1">Device Speed: 6.0Gb/s 
+</span></span></span><span class="line"><span class="cl"><span class="s1">Link Speed: 6.0Gb/s 
+</span></span></span><span class="line"><span class="cl"><span class="s1">Media Type: Hard Disk Device
+</span></span></span><span class="line"><span class="cl"><span class="s1">Drive:  Not Certified
+</span></span></span><span class="line"><span class="cl"><span class="s1">Drive Temperature :29C (84.20 F)
+</span></span></span><span class="line"><span class="cl"><span class="s1">PI Eligibility:  No 
+</span></span></span><span class="line"><span class="cl"><span class="s1">Drive is formatted for PI information:  No
+</span></span></span><span class="line"><span class="cl"><span class="s1">PI: No PI
+</span></span></span><span class="line"><span class="cl"><span class="s1">Port-0 :
+</span></span></span><span class="line"><span class="cl"><span class="s1">Port status: Active
+</span></span></span><span class="line"><span class="cl"><span class="s1">Port&#39;</span>s Linkspeed: 6.0Gb/s 
+</span></span><span class="line"><span class="cl">Port-1 :
+</span></span><span class="line"><span class="cl">Port status: Active
+</span></span><span class="line"><span class="cl">Port<span class="s1">&#39;s Linkspeed: 6.0Gb/s 
+</span></span></span><span class="line"><span class="cl"><span class="s1">Drive has flagged a S.M.A.R.T alert : No
+</span></span></span><span class="line"><span class="cl"><span class="s1">
+</span></span></span><span class="line"><span class="cl"><span class="s1">
+</span></span></span><span class="line"><span class="cl"><span class="s1">
+</span></span></span><span class="line"><span class="cl"><span class="s1">Enclosure Device ID: 252
+</span></span></span><span class="line"><span class="cl"><span class="s1">Slot Number: 1
+</span></span></span><span class="line"><span class="cl"><span class="s1">Drive&#39;</span>s position: DiskGroup: 0, Span: 0, Arm: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Enclosure position: N/A
+</span></span><span class="line"><span class="cl">Device Id: <span class="m">8</span>
+</span></span><span class="line"><span class="cl">WWN: 5000C5005EC45560
+</span></span><span class="line"><span class="cl">Sequence Number: <span class="m">2</span>
+</span></span><span class="line"><span class="cl">Media Error Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Other Error Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Predictive Failure Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Last Predictive Failure Event Seq Number: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">PD Type: SAS
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Raw Size: 279.396 GB <span class="o">[</span>0x22ecb25c Sectors<span class="o">]</span>
+</span></span><span class="line"><span class="cl">Non Coerced Size: 278.896 GB <span class="o">[</span>0x22dcb25c Sectors<span class="o">]</span>
+</span></span><span class="line"><span class="cl">Coerced Size: 278.464 GB <span class="o">[</span>0x22cee000 Sectors<span class="o">]</span>
+</span></span><span class="line"><span class="cl">Sector Size:  <span class="m">512</span>
+</span></span><span class="line"><span class="cl">Firmware state: Online, Spun Up
+</span></span><span class="line"><span class="cl">Device Firmware Level: <span class="m">0004</span>
+</span></span><span class="line"><span class="cl">Shield Counter: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Successful diagnostics completion on :  N/A
+</span></span><span class="line"><span class="cl">SAS Address<span class="o">(</span>0<span class="o">)</span>: 0x5000c5005ec45561
+</span></span><span class="line"><span class="cl">SAS Address<span class="o">(</span>1<span class="o">)</span>: 0x0
+</span></span><span class="line"><span class="cl">Connected Port Number: 0<span class="o">(</span>path0<span class="o">)</span> 
+</span></span><span class="line"><span class="cl">Inquiry Data: SEAGATE ST9300653SS     00046XN2SNMA            
+</span></span><span class="line"><span class="cl">FDE Capable: Not Capable
+</span></span><span class="line"><span class="cl">FDE Enable: Disable
+</span></span><span class="line"><span class="cl">Secured: Unsecured
+</span></span><span class="line"><span class="cl">Locked: Unlocked
+</span></span><span class="line"><span class="cl">Needs EKM Attention: No
+</span></span><span class="line"><span class="cl">Foreign State: None 
+</span></span><span class="line"><span class="cl">Device Speed: 6.0Gb/s 
+</span></span><span class="line"><span class="cl">Link Speed: 6.0Gb/s 
+</span></span><span class="line"><span class="cl">Media Type: Hard Disk Device
+</span></span><span class="line"><span class="cl">Drive:  Not Certified
+</span></span><span class="line"><span class="cl">Drive Temperature :28C <span class="o">(</span>82.40 F<span class="o">)</span>
+</span></span><span class="line"><span class="cl">PI Eligibility:  No 
+</span></span><span class="line"><span class="cl">Drive is formatted <span class="k">for</span> PI information:  No
+</span></span><span class="line"><span class="cl">PI: No PI
+</span></span><span class="line"><span class="cl">Port-0 :
+</span></span><span class="line"><span class="cl">Port status: Active
+</span></span><span class="line"><span class="cl">Port<span class="s1">&#39;s Linkspeed: 6.0Gb/s 
+</span></span></span><span class="line"><span class="cl"><span class="s1">Port-1 :
+</span></span></span><span class="line"><span class="cl"><span class="s1">Port status: Active
+</span></span></span><span class="line"><span class="cl"><span class="s1">Port&#39;</span>s Linkspeed: 6.0Gb/s 
+</span></span><span class="line"><span class="cl">Drive has flagged a S.M.A.R.T alert : No
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><br>
+<h3 id="4-물리-디스크-개별-에러-카운트-확인">4. 물리 디스크 개별 에러 카운트 확인</h3>
+<p>디스크의 <code>Error Count</code> 값이 1 이상이면 디스크 교체를 권고한다.<br>
+<code>Predictive Failure Count</code> 값이 급증하는 디스크의 경우는 며칠 이내에 디스크 폴트가 발생할 수 있으니 미리 예비 디스크 파트를 확보해둔다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -PDList -aALL <span class="p">|</span> grep Count
+</span></span><span class="line"><span class="cl">Media Error Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Other Error Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Predictive Failure Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Shield Counter: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Media Error Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Other Error Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Predictive Failure Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Shield Counter: <span class="m">0</span>
+</span></span></code></pre></div><br>
+<h3 id="5-논리적-디스크-정보-확인">5. 논리적 디스크 정보 확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -LDInfo -Lall -aALL
+</span></span><span class="line"><span class="cl">                                     
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Adapter <span class="m">0</span> -- Virtual Drive Information:
+</span></span><span class="line"><span class="cl">Virtual Drive: <span class="m">0</span> <span class="o">(</span>Target Id: 0<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Name                :
+</span></span><span class="line"><span class="cl">RAID Level          : Primary-1, Secondary-0, RAID Level Qualifier-0
+</span></span><span class="line"><span class="cl">Size                : 278.464 GB
+</span></span><span class="line"><span class="cl">Sector Size         : <span class="m">512</span>
+</span></span><span class="line"><span class="cl">Mirror Data         : 278.464 GB
+</span></span><span class="line"><span class="cl">State               : Optimal
+</span></span><span class="line"><span class="cl">Strip Size          : <span class="m">64</span> KB
+</span></span><span class="line"><span class="cl">Number Of Drives    : <span class="m">2</span>
+</span></span><span class="line"><span class="cl">Span Depth          : <span class="m">1</span>
+</span></span><span class="line"><span class="cl">Default Cache Policy: WriteBack, ReadAhead, Direct, No Write Cache <span class="k">if</span> Bad BBU
+</span></span><span class="line"><span class="cl">Current Cache Policy: WriteBack, ReadAhead, Direct, No Write Cache <span class="k">if</span> Bad BBU
+</span></span><span class="line"><span class="cl">Default Access Policy: Read/Write
+</span></span><span class="line"><span class="cl">Current Access Policy: Read/Write
+</span></span><span class="line"><span class="cl">Disk Cache Policy   : Disk<span class="err">&#39;</span>s Default
+</span></span><span class="line"><span class="cl">Encryption Type     : None
+</span></span><span class="line"><span class="cl">PI type: No PI
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Is VD Cached: No
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><br>
+<h3 id="6-어댑터-정보확인">6. 어댑터 정보확인</h3>
+<p><strong>확인 가능한 주요정보</strong></p>
+<ul>
+<li>RAID Controller 모델명</li>
+<li>RAID Controller Serial 번호</li>
+<li>RAID Controller 펌웨어 버전 정보</li>
+<li>RAID Controller가 지원하는 RAID Level 정보</li>
+<li>RAID Controller가 지원하는 드라이브 타입 : SAS, SATA</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -AdpAllInfo -aALL
+</span></span><span class="line"><span class="cl">                                     
+</span></span><span class="line"><span class="cl">Adapter <span class="c1">#0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">==============================================================================</span>
+</span></span><span class="line"><span class="cl">                    <span class="nv">Versions</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Product Name    : LSI MegaRAID SAS 9266-8i
+</span></span><span class="line"><span class="cl">Serial No       : SV23924725
+</span></span><span class="line"><span class="cl">FW Package Build: 23.9.0-0023
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    Mfg. <span class="nv">Data</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Mfg. Date       : 09/29/12
+</span></span><span class="line"><span class="cl">Rework Date     : 00/00/00
+</span></span><span class="line"><span class="cl">Revision No     : 09B
+</span></span><span class="line"><span class="cl">Battery FRU     : N/A
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                Image Versions in Flash:
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">BIOS Version       : 5.38.00_4.12.05.00_0x05180000
+</span></span><span class="line"><span class="cl">WebBIOS Version    : 6.1-49-e_49-Rel
+</span></span><span class="line"><span class="cl">Preboot CLI Version: 05.05-03:#%00011
+</span></span><span class="line"><span class="cl">FW Version         : 3.220.75-2196
+</span></span><span class="line"><span class="cl">NVDATA Version     : 2.1209.03-0117
+</span></span><span class="line"><span class="cl">Boot Block Version : 2.05.00.00-0010
+</span></span><span class="line"><span class="cl">BOOT Version       : 07.26.13.219
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                Pending Images in <span class="nv">Flash</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">None
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                PCI <span class="nv">Info</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Controller Id   : <span class="m">0000</span>
+</span></span><span class="line"><span class="cl">Vendor Id       : <span class="m">1000</span>
+</span></span><span class="line"><span class="cl">Device Id       : 005b
+</span></span><span class="line"><span class="cl">SubVendorId     : <span class="m">1000</span>
+</span></span><span class="line"><span class="cl">SubDeviceId     : <span class="m">9266</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Host Interface  : PCIE
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ChipRevision    : C1
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Link Speed           : <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">Number of Frontend Port: <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">Device Interface  : PCIE
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Number of Backend Port: <span class="m">8</span> 
+</span></span><span class="line"><span class="cl">Port  :  Address
+</span></span><span class="line"><span class="cl"><span class="m">0</span>        5000c5005ec45561 
+</span></span><span class="line"><span class="cl"><span class="m">1</span>        5000c5005ec4558d 
+</span></span><span class="line"><span class="cl"><span class="m">2</span>        <span class="m">0000000000000000</span> 
+</span></span><span class="line"><span class="cl"><span class="m">3</span>        <span class="m">0000000000000000</span> 
+</span></span><span class="line"><span class="cl"><span class="m">4</span>        <span class="m">0000000000000000</span> 
+</span></span><span class="line"><span class="cl"><span class="m">5</span>        <span class="m">0000000000000000</span> 
+</span></span><span class="line"><span class="cl"><span class="m">6</span>        <span class="m">0000000000000000</span> 
+</span></span><span class="line"><span class="cl"><span class="m">7</span>        <span class="m">0000000000000000</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                HW <span class="nv">Configuration</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">SAS Address      : 500605b0057b9570
+</span></span><span class="line"><span class="cl">BBU              : Present
+</span></span><span class="line"><span class="cl">Alarm            : Present
+</span></span><span class="line"><span class="cl">NVRAM            : Present
+</span></span><span class="line"><span class="cl">Serial Debugger  : Present
+</span></span><span class="line"><span class="cl">Memory           : Present
+</span></span><span class="line"><span class="cl">Flash            : Present
+</span></span><span class="line"><span class="cl">Memory Size      : 1024MB
+</span></span><span class="line"><span class="cl">TPM              : Absent
+</span></span><span class="line"><span class="cl">On board Expander: Absent
+</span></span><span class="line"><span class="cl">Upgrade Key      : Absent
+</span></span><span class="line"><span class="cl">Temperature sensor <span class="k">for</span> ROC    : Present
+</span></span><span class="line"><span class="cl">Temperature sensor <span class="k">for</span> controller    : Absent
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ROC temperature : <span class="m">46</span>  degree Celsius
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="nv">Settings</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Current Time                     : 9:44:50 11/18, <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">Predictive Fail Poll Interval    : 300sec
+</span></span><span class="line"><span class="cl">Interrupt Throttle Active Count  : <span class="m">16</span>
+</span></span><span class="line"><span class="cl">Interrupt Throttle Completion    : 50us
+</span></span><span class="line"><span class="cl">Rebuild Rate                     : 30%
+</span></span><span class="line"><span class="cl">PR Rate                          : 30%
+</span></span><span class="line"><span class="cl">BGI Rate                         : 30%
+</span></span><span class="line"><span class="cl">Check Consistency Rate           : 30%
+</span></span><span class="line"><span class="cl">Reconstruction Rate              : 30%
+</span></span><span class="line"><span class="cl">Cache Flush Interval             : 4s
+</span></span><span class="line"><span class="cl">Max Drives to Spinup at One Time : <span class="m">2</span>
+</span></span><span class="line"><span class="cl">Delay Among Spinup Groups        : 12s
+</span></span><span class="line"><span class="cl">Physical Drive Coercion Mode     : 1GB
+</span></span><span class="line"><span class="cl">Cluster Mode                     : Disabled
+</span></span><span class="line"><span class="cl">Alarm                            : Enabled
+</span></span><span class="line"><span class="cl">Auto Rebuild                     : Enabled
+</span></span><span class="line"><span class="cl">Battery Warning                  : Enabled
+</span></span><span class="line"><span class="cl">Ecc Bucket Size                  : <span class="m">15</span>
+</span></span><span class="line"><span class="cl">Ecc Bucket Leak Rate             : <span class="m">1440</span> Minutes
+</span></span><span class="line"><span class="cl">Restore HotSpare on Insertion    : Disabled
+</span></span><span class="line"><span class="cl">Expose Enclosure Devices         : Enabled
+</span></span><span class="line"><span class="cl">Maintain PD Fail History         : Disabled
+</span></span><span class="line"><span class="cl">Host Request Reordering          : Enabled
+</span></span><span class="line"><span class="cl">Auto Detect BackPlane Enabled    : SGPIO/i2c SEP
+</span></span><span class="line"><span class="cl">Load Balance Mode                : Auto
+</span></span><span class="line"><span class="cl">Use FDE Only                     : Yes
+</span></span><span class="line"><span class="cl">Security Key Assigned            : No
+</span></span><span class="line"><span class="cl">Security Key Failed              : No
+</span></span><span class="line"><span class="cl">Security Key Not Backedup        : No
+</span></span><span class="line"><span class="cl">Default LD PowerSave Policy      : Automatic
+</span></span><span class="line"><span class="cl">Maximum number of direct attached drives to spin up in <span class="m">1</span> min : <span class="m">10</span> 
+</span></span><span class="line"><span class="cl">Auto Enhanced Import             : Yes
+</span></span><span class="line"><span class="cl">Any Offline VD Cache Preserved   : No
+</span></span><span class="line"><span class="cl">Allow Boot with Preserved Cache  : No
+</span></span><span class="line"><span class="cl">Disable Online Controller Reset  : No
+</span></span><span class="line"><span class="cl">PFK in NVRAM                     : No
+</span></span><span class="line"><span class="cl">Use disk activity <span class="k">for</span> locate     : No
+</span></span><span class="line"><span class="cl">POST delay                       : <span class="m">90</span> seconds
+</span></span><span class="line"><span class="cl">BIOS Error Handling              : Pause on Errors
+</span></span><span class="line"><span class="cl">Current Boot Mode                 :Normal
+</span></span><span class="line"><span class="cl">                <span class="nv">Capabilities</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">RAID Level Supported             : RAID0, RAID1, RAID5, RAID6, RAID00, RAID10, RAID50, RAID60, PRL 11, PRL <span class="m">11</span> with spanning, SRL <span class="m">3</span> supported, PRL11-RLQ0 DDF layout with no span, PRL11-RLQ0 DDF layout with span
+</span></span><span class="line"><span class="cl">Supported Drives                 : SAS, SATA
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Allowed Mixing:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Mix in Enclosure Allowed
+</span></span><span class="line"><span class="cl">Mix of SAS/SATA of HDD <span class="nb">type</span> in VD Allowed
+</span></span><span class="line"><span class="cl">Mix of SAS/SATA of SSD <span class="nb">type</span> in VD Allowed
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="nv">Status</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">ECC Bucket Count                 : <span class="m">0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="nv">Limitations</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Max Arms Per VD          : <span class="m">32</span> 
+</span></span><span class="line"><span class="cl">Max Spans Per VD         : <span class="m">8</span> 
+</span></span><span class="line"><span class="cl">Max Arrays               : <span class="m">128</span> 
+</span></span><span class="line"><span class="cl">Max Number of VDs        : <span class="m">64</span> 
+</span></span><span class="line"><span class="cl">Max Parallel Commands    : <span class="m">1008</span> 
+</span></span><span class="line"><span class="cl">Max SGE Count            : <span class="m">60</span> 
+</span></span><span class="line"><span class="cl">Max Data Transfer Size   : <span class="m">8192</span> sectors 
+</span></span><span class="line"><span class="cl">Max Strips PerIO         : <span class="m">42</span> 
+</span></span><span class="line"><span class="cl">Max LD per array         : <span class="m">64</span> 
+</span></span><span class="line"><span class="cl">Min Strip Size           : <span class="m">8</span> KB
+</span></span><span class="line"><span class="cl">Max Strip Size           : 1.0 MB
+</span></span><span class="line"><span class="cl">Max Configurable CacheCade Size: <span class="m">0</span> GB
+</span></span><span class="line"><span class="cl">Current Size of CacheCade      : <span class="m">0</span> GB
+</span></span><span class="line"><span class="cl">Current Size of FW Cache       : <span class="m">873</span> MB
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                Device <span class="nv">Present</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Virtual Drives    : <span class="m">1</span> 
+</span></span><span class="line"><span class="cl">  Degraded        : <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">  Offline         : <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">Physical Devices  : <span class="m">3</span> 
+</span></span><span class="line"><span class="cl">  Disks           : <span class="m">2</span> 
+</span></span><span class="line"><span class="cl">  Critical Disks  : <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">  Failed Disks    : <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                Supported Adapter <span class="nv">Operations</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Rebuild Rate                    : Yes
+</span></span><span class="line"><span class="cl">CC Rate                         : Yes
+</span></span><span class="line"><span class="cl">BGI Rate                        : Yes
+</span></span><span class="line"><span class="cl">Reconstruct Rate                : Yes
+</span></span><span class="line"><span class="cl">Patrol Read Rate                : Yes
+</span></span><span class="line"><span class="cl">Alarm Control                   : Yes
+</span></span><span class="line"><span class="cl">Cluster Support                 : No
+</span></span><span class="line"><span class="cl">BBU                             : Yes
+</span></span><span class="line"><span class="cl">Spanning                        : Yes
+</span></span><span class="line"><span class="cl">Dedicated Hot Spare             : Yes
+</span></span><span class="line"><span class="cl">Revertible Hot Spares           : Yes
+</span></span><span class="line"><span class="cl">Foreign Config Import           : Yes
+</span></span><span class="line"><span class="cl">Self Diagnostic                 : Yes
+</span></span><span class="line"><span class="cl">Allow Mixed Redundancy on Array : No
+</span></span><span class="line"><span class="cl">Global Hot Spares               : Yes
+</span></span><span class="line"><span class="cl">Deny SCSI Passthrough           : No
+</span></span><span class="line"><span class="cl">Deny SMP Passthrough            : No
+</span></span><span class="line"><span class="cl">Deny STP Passthrough            : No
+</span></span><span class="line"><span class="cl">Support Security                : No
+</span></span><span class="line"><span class="cl">Snapshot Enabled                : No
+</span></span><span class="line"><span class="cl">Support the OCE without adding drives : Yes
+</span></span><span class="line"><span class="cl">Support PFK                     : Yes
+</span></span><span class="line"><span class="cl">Support PI                      : Yes
+</span></span><span class="line"><span class="cl">Support Boot Time PFK Change    : No
+</span></span><span class="line"><span class="cl">Disable Online PFK Change       : No
+</span></span><span class="line"><span class="cl">Support LDPI Type1                      : No
+</span></span><span class="line"><span class="cl">Support LDPI Type2                      : No
+</span></span><span class="line"><span class="cl">Support LDPI Type3                      : No
+</span></span><span class="line"><span class="cl">PFK TrailTime Remaining         : <span class="m">0</span> days <span class="m">0</span> hours
+</span></span><span class="line"><span class="cl">Support Shield State            : Yes
+</span></span><span class="line"><span class="cl">Block SSD Write Disk Cache Change: No
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                Supported VD <span class="nv">Operations</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Read Policy          : Yes
+</span></span><span class="line"><span class="cl">Write Policy         : Yes
+</span></span><span class="line"><span class="cl">IO Policy            : Yes
+</span></span><span class="line"><span class="cl">Access Policy        : Yes
+</span></span><span class="line"><span class="cl">Disk Cache Policy    : Yes
+</span></span><span class="line"><span class="cl">Reconstruction       : Yes
+</span></span><span class="line"><span class="cl">Deny Locate          : No
+</span></span><span class="line"><span class="cl">Deny CC              : No
+</span></span><span class="line"><span class="cl">Allow Ctrl Encryption: No
+</span></span><span class="line"><span class="cl">Enable LDBBM         : No
+</span></span><span class="line"><span class="cl">Support Breakmirror  : No
+</span></span><span class="line"><span class="cl">Power Savings        : No
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                Supported PD <span class="nv">Operations</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Force Online                            : Yes
+</span></span><span class="line"><span class="cl">Force Offline                           : Yes
+</span></span><span class="line"><span class="cl">Force Rebuild                           : Yes
+</span></span><span class="line"><span class="cl">Deny Force Failed                       : No
+</span></span><span class="line"><span class="cl">Deny Force Good/Bad                     : No
+</span></span><span class="line"><span class="cl">Deny Missing Replace                    : No
+</span></span><span class="line"><span class="cl">Deny Clear                              : No
+</span></span><span class="line"><span class="cl">Deny Locate                             : No
+</span></span><span class="line"><span class="cl">Support Temperature                     : Yes
+</span></span><span class="line"><span class="cl">NCQ                                     : No
+</span></span><span class="line"><span class="cl">Disable Copyback                        : No
+</span></span><span class="line"><span class="cl">Enable JBOD                             : No
+</span></span><span class="line"><span class="cl">Enable Copyback on SMART                : No
+</span></span><span class="line"><span class="cl">Enable Copyback to SSD on SMART Error   : Yes
+</span></span><span class="line"><span class="cl">Enable SSD Patrol Read                  : No
+</span></span><span class="line"><span class="cl">PR Correct Unconfigured Areas           : Yes
+</span></span><span class="line"><span class="cl">Enable Spin Down of UnConfigured Drives : Yes
+</span></span><span class="line"><span class="cl">Disable Spin Down of hot spares         : No
+</span></span><span class="line"><span class="cl">Spin Down <span class="nb">time</span>                          : <span class="m">30</span> 
+</span></span><span class="line"><span class="cl">T10 Power State                         : No
+</span></span><span class="line"><span class="cl">                Error <span class="nv">Counters</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Memory Correctable Errors   : <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">Memory Uncorrectable Errors : <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                Cluster <span class="nv">Information</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Cluster Permitted     : No
+</span></span><span class="line"><span class="cl">Cluster Active        : No
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                Default <span class="nv">Settings</span>
+</span></span><span class="line"><span class="cl">                <span class="o">================</span>
+</span></span><span class="line"><span class="cl">Phy Polarity                     : <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">Phy PolaritySplit                : <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">Background Rate                  : <span class="m">30</span> 
+</span></span><span class="line"><span class="cl">Strip Size                       : 64kB
+</span></span><span class="line"><span class="cl">Flush Time                       : <span class="m">4</span> seconds
+</span></span><span class="line"><span class="cl">Write Policy                     : WB
+</span></span><span class="line"><span class="cl">Read Policy                      : Adaptive
+</span></span><span class="line"><span class="cl">Cache When BBU Bad               : Disabled
+</span></span><span class="line"><span class="cl">Cached IO                        : No
+</span></span><span class="line"><span class="cl">SMART Mode                       : Mode <span class="m">6</span>
+</span></span><span class="line"><span class="cl">Alarm Disable                    : Yes
+</span></span><span class="line"><span class="cl">Coercion Mode                    : 1GB
+</span></span><span class="line"><span class="cl">ZCR Config                       : Unknown
+</span></span><span class="line"><span class="cl">Dirty LED Shows Drive Activity   : No
+</span></span><span class="line"><span class="cl">BIOS Continue on Error           : <span class="m">1</span> 
+</span></span><span class="line"><span class="cl">Spin Down Mode                   : Internal Only
+</span></span><span class="line"><span class="cl">Allowed Device Type              : SAS/SATA Mix
+</span></span><span class="line"><span class="cl">Allow Mix in Enclosure           : Yes
+</span></span><span class="line"><span class="cl">Allow HDD SAS/SATA Mix in VD     : Yes
+</span></span><span class="line"><span class="cl">Allow SSD SAS/SATA Mix in VD     : Yes
+</span></span><span class="line"><span class="cl">Allow HDD/SSD Mix in VD          : No
+</span></span><span class="line"><span class="cl">Allow SATA in Cluster            : No
+</span></span><span class="line"><span class="cl">Max Chained Enclosures           : <span class="m">16</span> 
+</span></span><span class="line"><span class="cl">Disable Ctrl-R                   : Yes
+</span></span><span class="line"><span class="cl">Enable Web BIOS                  : Yes
+</span></span><span class="line"><span class="cl">Direct PD Mapping                : No
+</span></span><span class="line"><span class="cl">BIOS Enumerate VDs               : Yes
+</span></span><span class="line"><span class="cl">Restore Hot Spare on Insertion   : No
+</span></span><span class="line"><span class="cl">Expose Enclosure Devices         : Yes
+</span></span><span class="line"><span class="cl">Maintain PD Fail History         : No
+</span></span><span class="line"><span class="cl">Disable Puncturing               : No
+</span></span><span class="line"><span class="cl">Zero Based Enclosure Enumeration : No
+</span></span><span class="line"><span class="cl">PreBoot CLI Enabled              : Yes
+</span></span><span class="line"><span class="cl">LED Show Drive Activity          : No
+</span></span><span class="line"><span class="cl">Cluster Disable                  : Yes
+</span></span><span class="line"><span class="cl">SAS Disable                      : No
+</span></span><span class="line"><span class="cl">Auto Detect BackPlane Enable     : SGPIO/i2c SEP
+</span></span><span class="line"><span class="cl">Use FDE Only                     : Yes
+</span></span><span class="line"><span class="cl">Enable Led Header                : No
+</span></span><span class="line"><span class="cl">Delay during POST                : <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">EnableCrashDump                  : No
+</span></span><span class="line"><span class="cl">Disable Online Controller Reset  : No
+</span></span><span class="line"><span class="cl">EnableLDBBM                      : No
+</span></span><span class="line"><span class="cl">Un-Certified Hard Disk Drives    : Allow
+</span></span><span class="line"><span class="cl">Treat Single span R1E as R10     : No
+</span></span><span class="line"><span class="cl">Max LD per array                 : <span class="m">64</span>
+</span></span><span class="line"><span class="cl">Power Saving option              : All power saving options are enabled
+</span></span><span class="line"><span class="cl">Default spin down <span class="nb">time</span> in minutes: <span class="m">30</span> 
+</span></span><span class="line"><span class="cl">Enable JBOD                      : No
+</span></span><span class="line"><span class="cl">TTY Log In Flash                 : Yes
+</span></span><span class="line"><span class="cl">Auto Enhanced Import             : Yes
+</span></span><span class="line"><span class="cl">BreakMirror RAID Support         : No
+</span></span><span class="line"><span class="cl">Disable Join Mirror              : No
+</span></span><span class="line"><span class="cl">Enable Shield State              : No
+</span></span><span class="line"><span class="cl">Time taken to detect CME         : 60s
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><br>
+<h3 id="7-bbu-정보-확인">7. BBU 정보 확인</h3>
+<p>BBU(Battery Backup Unit)는 RAID Controller 전용 배터리로, 예고없이 전원 공급이 끊긴 상황에서 캐시 영역의 데이터가 손실되는 걸 방지하는 역할을 한다.</p>
+<br>
+<p><strong>확인 가능한 주요정보</strong></p>
+<ul>
+<li><strong>배터리 상태</strong> : <code>Battery State</code></li>
+<li><strong>제조년월</strong> : <code>Date of Manufacture</code></li>
+<li><strong>제조사</strong> : <code>Manufacture Name</code></li>
+<li><strong>동작정보</strong> : 전압(<code>Voltage</code>), 온도(<code>Temperature</code>), Learn Cycle 상태(<code>Learn Cycle Status</code>)</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -AdpBbuCmd -aALL
+</span></span><span class="line"><span class="cl">                                     
+</span></span><span class="line"><span class="cl">BBU status <span class="k">for</span> Adapter: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">BatteryType: SuperCaP
+</span></span><span class="line"><span class="cl">Voltage: <span class="m">9438</span> mV
+</span></span><span class="line"><span class="cl">Current: <span class="m">0</span> mA
+</span></span><span class="line"><span class="cl">Temperature: <span class="m">28</span> C
+</span></span><span class="line"><span class="cl">Battery State: Optimal
+</span></span><span class="line"><span class="cl">BBU Firmware Status:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  Charging Status              : None
+</span></span><span class="line"><span class="cl">  Voltage                                 : OK
+</span></span><span class="line"><span class="cl">  Temperature                             : OK
+</span></span><span class="line"><span class="cl">  Learn Cycle Requested                   : No
+</span></span><span class="line"><span class="cl">  Learn Cycle Active                      : No
+</span></span><span class="line"><span class="cl">  Learn Cycle Status                      : OK
+</span></span><span class="line"><span class="cl">  Learn Cycle Timeout                     : No
+</span></span><span class="line"><span class="cl">  I2c Errors Detected                     : No
+</span></span><span class="line"><span class="cl">  Battery Pack Missing                    : No
+</span></span><span class="line"><span class="cl">  Battery Replacement required            : No
+</span></span><span class="line"><span class="cl">  Remaining Capacity Low                  : No
+</span></span><span class="line"><span class="cl">  Periodic Learn Required                 : No
+</span></span><span class="line"><span class="cl">  Transparent Learn                       : No
+</span></span><span class="line"><span class="cl">  No space to cache offload               : No
+</span></span><span class="line"><span class="cl">  Pack is about to fail <span class="p">&amp;</span> should be replaced : No
+</span></span><span class="line"><span class="cl">  Cache Offload premium feature required  : No
+</span></span><span class="line"><span class="cl">  Module microcode update required        : No
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">BBU GasGauge Status: 0x002a 
+</span></span><span class="line"><span class="cl">  Pack energy             : <span class="m">298</span> J 
+</span></span><span class="line"><span class="cl">  Capacitance             : <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">  Remaining reserve space : <span class="m">93</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  Battery backup charge <span class="nb">time</span> : <span class="m">0</span> hours
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">BBU Design Info <span class="k">for</span> Adapter: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Date of Manufacture: 06/13, <span class="m">2012</span>
+</span></span><span class="line"><span class="cl">Design Capacity: <span class="m">283</span> J
+</span></span><span class="line"><span class="cl">Design Voltage: <span class="m">9411</span> mV
+</span></span><span class="line"><span class="cl">Serial Number: <span class="m">2679</span>
+</span></span><span class="line"><span class="cl">Manufacture Name: LSI
+</span></span><span class="line"><span class="cl">Firmware Version   : 
+</span></span><span class="line"><span class="cl">Device Name: SuperCaP
+</span></span><span class="line"><span class="cl">Device Chemistry: 
+</span></span><span class="line"><span class="cl">Battery FRU: N/A
+</span></span><span class="line"><span class="cl">TMM FRU: N/A
+</span></span><span class="line"><span class="cl">  Transparent <span class="nv">Learn</span> <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">  App <span class="nv">Data</span> <span class="o">=</span> <span class="m">0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">BBU Properties <span class="k">for</span> Adapter: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  Auto Learn Period: <span class="m">28</span> Days
+</span></span><span class="line"><span class="cl">  Next Learn time: Tue Dec <span class="m">14</span> 12:07:23 <span class="m">2021</span>
+</span></span><span class="line"><span class="cl">  Learn Delay Interval:0 Hours
+</span></span><span class="line"><span class="cl">  Auto-Learn Mode: Transparent
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><br>
+<h3 id="8-컨트롤러-로그확인">8. 컨트롤러 로그확인</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -fwtermlog -dsply -aALL
+</span></span><span class="line"><span class="cl"><span class="o">[</span>...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">11/06/21  3:32:08: pii ccisue ld <span class="nv">pii</span><span class="o">=</span><span class="m">1</span> <span class="nv">ld</span><span class="o">=</span><span class="m">0</span>
+</span></span><span class="line"><span class="cl">11/06/21  3:32:08: cmdBlockPrep: Command block started <span class="o">(</span>host IOs blocked<span class="o">)</span>
+</span></span><span class="line"><span class="cl">11/06/21  3:32:08: EVT#55239-11/06/21  3:32:08:  <span class="nv">58</span><span class="o">=</span>Consistency Check <span class="k">done</span> on VD 00/0
+</span></span><span class="line"><span class="cl">11/06/21  3:32:08: pii modvd bvd <span class="nv">pii</span><span class="o">=</span><span class="m">1</span> &lt;- ld <span class="nv">ld</span><span class="o">=</span><span class="m">0</span>
+</span></span><span class="line"><span class="cl">11/06/21  3:32:08: ccScheduleSetNextStartTime: <span class="nv">RTC_TimeStamp</span><span class="o">=</span>2918b3b8, <span class="nv">nextStartTime</span><span class="o">=</span>2921e6ac
+</span></span><span class="line"><span class="cl">11/06/21  3:32:08: Next cc scheduled to start at 11/13/21  2:59:56
+</span></span><span class="line"><span class="cl">11/06/21  3:32:08: CC Schedule cycle <span class="nb">complete</span>
+</span></span><span class="line"><span class="cl">11/06/21  3:32:08: updateBlockDone: DDF update started
+</span></span><span class="line"><span class="cl">11/06/21  3:32:08: updateStartNext: DDF update <span class="nb">complete</span>
+</span></span><span class="line"><span class="cl">11/06/21  3:32:08: ld sync: all LDs sync<span class="s1">&#39;d
+</span></span></span><span class="line"><span class="cl"><span class="s1">11/06/21  3:32:08: FP_NotifyAndChangeAll - Driver ldsync required 1
+</span></span></span><span class="line"><span class="cl"><span class="s1">11/06/21  3:32:08: CmdUnBlock: Final command block released (host IOs were blocked for 266 ms)
+</span></span></span><span class="line"><span class="cl"><span class="s1">11/06/21  3:32:08: ld sync: all LDs sync&#39;</span>d
+</span></span><span class="line"><span class="cl">11/06/21  3:32:08: LdDcmdSynchronize gLdSyncRequired:0 mfiCmdStatus:0 
+</span></span><span class="line"><span class="cl">11/12/21 12:04:03: EVT#55240-11/12/21 12:04:03: <span class="nv">157</span><span class="o">=</span>Battery relearn will start in <span class="m">4</span> days
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: prDiskStart: starting Patrol Read on <span class="nv">PD</span><span class="o">=</span><span class="m">08</span>
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: EVT#55241-11/13/21  2:59:56:  <span class="nv">94</span><span class="o">=</span>Patrol Read progress on PD 08<span class="o">(</span>e0xfc/s1<span class="o">)</span> is 0.00%<span class="o">(</span>0s<span class="o">)</span>
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: prDiskStart: starting Patrol Read on <span class="nv">PD</span><span class="o">=</span><span class="m">09</span>
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: EVT#55242-11/13/21  2:59:56:  <span class="nv">94</span><span class="o">=</span>Patrol Read progress on PD 09<span class="o">(</span>e0xfc/s0<span class="o">)</span> is 0.00%<span class="o">(</span>0s<span class="o">)</span>
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: EVT#55243-11/13/21  2:59:56:  <span class="nv">39</span><span class="o">=</span>Patrol Read started
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: EVT#55244-11/13/21  2:59:56:  <span class="nv">66</span><span class="o">=</span>Consistency Check started on VD 00/0
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: pii modvd bvd <span class="nv">pii</span><span class="o">=</span><span class="m">1</span> &lt;- ld <span class="nv">ld</span><span class="o">=</span><span class="m">0</span>
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: cmdBlockPrep: Command block started <span class="o">(</span>host IOs blocked<span class="o">)</span>
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: prDiskCheckOkToRun: PR cannot run on this <span class="nv">pd</span><span class="o">=</span><span class="m">8</span> init or CC running <span class="nv">ld</span><span class="o">=</span><span class="m">0</span>
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: prCallback: PR being stopped <span class="k">for</span> <span class="nv">pd</span><span class="o">=</span><span class="m">08</span> - state changed
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: EVT#55245-11/13/21  2:59:56: <span class="nv">445</span><span class="o">=</span>Patrol Read aborted on PD 08<span class="o">(</span>e0xfc/s1<span class="o">)</span>
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: prDiskCheckOkToRun: PR cannot run on this <span class="nv">pd</span><span class="o">=</span><span class="m">9</span> init or CC running <span class="nv">ld</span><span class="o">=</span><span class="m">0</span>
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: prCallback: PR being stopped <span class="k">for</span> <span class="nv">pd</span><span class="o">=</span><span class="m">09</span> - state changed
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: EVT#55246-11/13/21  2:59:56: <span class="nv">445</span><span class="o">=</span>Patrol Read aborted on PD 09<span class="o">(</span>e0xfc/s0<span class="o">)</span>
+</span></span><span class="line"><span class="cl">11/13/21  2:59:56: PR cycle <span class="nb">complete</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><p>RAID Controller 로그에는 PR(Patrol Read)이 수행된 기록, 일관성 검사(CC, Consistency Check) 기록, 논리적 디스크(LD, Logical Drive)의 동기화를 맺은 기록 등이 남아있다.</p>
+<br>
+<h4 id="일관성-검사">일관성 검사</h4>
+<p>영어로 Consistency Check, 축약형은 CC. 일관성 검사는 데이터 및 중복이 올바르게 일치하는지 확인하기 위해 어레이의 모든 드라이브를 서로 비교하는 수동으로 활성해야 동작하는 기능이다. RAID 1으로 구성된 경우 한 드라이브의 데이터를 다른 드라이브와 비교하여 데이터가 오류 없이 복제(미러링)되는지 확인한다.</p>
+<br>
+<h3 id="9-patrol-read">9. Patrol Read</h3>
+<p>Patrol Read(PR)는 디스크 오류 상태가 악화되어 데이터가 손실되기 전에 디스크 오류를 미리 발견하는 자동검사 기능이다.<br>
+기본값으로 새벽 시간마다 자동 수행되며, 수행 간격(<code>Patrol Read Execution Delay</code>)은 168시간이다. Patrol Read는 I/O 리소스의 최대 30%를 차지할 수 있다.
+<br></p>
+<h4 id="pr-설정정보-확인">PR 설정정보 확인</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -AdpPR -Info -aALL
+</span></span><span class="line"><span class="cl">                                     
+</span></span><span class="line"><span class="cl">Adapter 0: Patrol Read Information:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Patrol Read Mode: Auto
+</span></span><span class="line"><span class="cl">Patrol Read Execution Delay: <span class="m">168</span> hours
+</span></span><span class="line"><span class="cl">Number of iterations completed: <span class="m">448</span> 
+</span></span><span class="line"><span class="cl">Next start time: 11/20/2021, 02:00:00
+</span></span><span class="line"><span class="cl">Current State: Stopped
+</span></span><span class="line"><span class="cl">Patrol Read on SSD Devices: Disabled
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><p><strong>해석</strong></p>
+<ul>
+<li><code>Patrol Read Execution Delay</code> : Patrol Read를 실행하는 간격(주기)를 의미합니다.</li>
+<li><code>Number of iterations completed</code> : 지금까지 수행 완료된 Patrol Read 횟수를 의미합니다.</li>
+<li><code>Next start time</code> : 다음 Patrol Read가 실행되는 시간</li>
+<li><code>Patrol Read on SSD Devices</code> : SSD(Solid State Drive)에도 Patrol Read를 수행하는지 여부 <strong>(Patrol Read는 기본적으로 SSD 장치에는 수행하지 않고, HDD 장치에서만 실행합니다.)</strong><br>
+<br></li>
+</ul>
+<h4 id="pr-활성화">PR 활성화</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -AdpPR -EnblAuto -aALL
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Adapter 0: Patrol Read Mode is <span class="nb">set</span> to AUTO.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><br>
+<h4 id="pr-비활성화">PR 비활성화</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -AdpPR -Dsbl -aALL
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Adapter 0: Patrol Read Mode is <span class="nb">set</span> to DISABLED.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><br>
+<h4 id="pr-스캔-수동실행">PR 스캔 수동실행</h4>
+<p>Patrol Read 스캔 작업은 I/O 자원의 최대 30%까지 점유할 수 있다. 따라서 PR 스캔 수동실행 명령어를 실행할 경우 반드시 부하가 적은 시간대(off-peak times)에 시행해야 한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -AdpPR -Start -aALL
+</span></span></code></pre></div><br>
+<h4 id="pr-스캔-중지">PR 스캔 중지</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -AdpPR -Stop -aALL
+</span></span></code></pre></div><br>
+<h3 id="10-디스크-led-블링크">10. 디스크 LED 블링크</h3>
+<p>디스크 교체 작업을 진행할 때 교체 대상 디스크의 전면 LED를 점등시킨 후 교체 작업을 진행하면 정상 디스크를 잘못 제거하는 등의 인적 실수(Human Fault)를 방지할 수 있다.<br>
+특정 디스크의 물리적 위치를 파악할 때도 사용 가능하다.<br>
+<br></p>
+<h4 id="1-enclosure-slot-번호-확인">1. Enclosure, Slot 번호 확인</h4>
+<p>LED Blink를 실행시키려면 먼저 해당 디스크의 Enclosure 번호(<code>Enclosure Device ID</code>)와 디스크 슬롯 번호(<code>Slot Number</code>)를 먼저 파악해야한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -PDList -aALL
+</span></span><span class="line"><span class="cl">                                     
+</span></span><span class="line"><span class="cl">Adapter <span class="c1">#0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Enclosure Device ID: <span class="m">252</span>
+</span></span><span class="line"><span class="cl">Slot Number: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Drive<span class="err">&#39;</span>s position: DiskGroup: 0, Span: 0, Arm: <span class="m">1</span>
+</span></span><span class="line"><span class="cl">Enclosure position: N/A
+</span></span><span class="line"><span class="cl">Device Id: <span class="m">9</span>
+</span></span><span class="line"><span class="cl">WWN: 5000C5005EC4558C
+</span></span><span class="line"><span class="cl">Sequence Number: <span class="m">2</span>
+</span></span><span class="line"><span class="cl">Media Error Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Other Error Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Predictive Failure Count: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">Last Predictive Failure Event Seq Number: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">PD Type: SAS
+</span></span></code></pre></div><p><code>Enclosure Device ID: 252</code>는 Enclosure 번호, <code>Slot Number: 0</code>은 디스크 슬롯 번호를 의미한다.<br>
+<br></p>
+<h4 id="2-led-blinking-시작">2. LED Blinking 시작</h4>
+<p>252번 Enclosure의 0번 슬롯에 장착된 디스크는 <code>-physdrv</code> 옵션에서 <code>[252:0]</code>로 표기한다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">[</span>252:0<span class="o">]</span>
+</span></span><span class="line"><span class="cl"> --- -
+</span></span><span class="line"><span class="cl">  <span class="p">|</span>  +----&gt; <span class="m">0</span> : <span class="o">(</span>Disk<span class="o">)</span> Slot Number
+</span></span><span class="line"><span class="cl">  <span class="p">|</span>
+</span></span><span class="line"><span class="cl">  +-------&gt; <span class="m">252</span> : Enclosure Device ID
+</span></span></code></pre></div><br>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -PdLocate -start -physdrv<span class="o">[</span>252:0<span class="o">]</span> -aALL
+</span></span><span class="line"><span class="cl">                                     
+</span></span><span class="line"><span class="cl">Adapter: 0: Device at EnclId-252 SlotId-0  -- PD Locate Start Command was successfully sent to Firmware 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><p>서버 전면부에 장착된 디스크의 LED가 깜빡이는지 확인한다.<br>
+<br></p>
+<h4 id="3-led-blinking-중지">3. LED Blinking 중지</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ megacli -PdLocate -stop -physdrv<span class="o">[</span>252:0<span class="o">]</span> -aALL
+</span></span><span class="line"><span class="cl">                                     
+</span></span><span class="line"><span class="cl">Adapter: 0: Device at EnclId-252 SlotId-0  -- PD Locate Stop Command was successfully sent to Firmware 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit Code: 0x00
+</span></span></code></pre></div><p>서버 전면부에 장착된 0번 디스크의 LED 점멸이 멈춘다.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

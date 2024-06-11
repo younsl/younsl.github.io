@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/install-sonarqube-on-ecs-fargate/" />
+    <title>SonarQube ECS Fargate 설치</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>SonarQube ECS Fargate 설치</h1>
+        <div>
+                <time>Updated November 2, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>ECS Fargate 워크로드 환경에 SonarQube 9.7.1을 구축합니다.</p>
+<p> </p>
+<h2 id="환경">환경</h2>
+<p>구성할 AWS 인프라 환경은 다음과 같습니다.</p>
+<p><img src="./1.png" alt="전체 소나큐브 아키텍처"></p>
+<p>ECS Fargate를 사용하면 EC2 관리에 발생하는 운영 오버헤드를 줄일 수 있으며, 소나큐브 전용 EC2 인스턴스를 항상 켜놓는 것보다 AWS 비용도 절감되는 장점이 있습니다.</p>
+<p> </p>
+<h2 id="구축하기">구축하기</h2>
+<h3 id="작업용-ec2-생성">작업용 EC2 생성</h3>
+<p>먼저 작업용 EC2 1대를 생성하도록 합니다.<br>
+해당 EC2는 다음 부수적인 작업들을 수행할 때 활용할 예정입니다.</p>
+<p><img src="./2.png" alt="EC2 동작 아키텍처"></p>
+<ul>
+<li>퍼블릭한 도커 허브에서 SonarQube 컨테이너 이미지 다운로드</li>
+<li>ECR에 소나큐브 이미지를 업로드</li>
+<li>RDS에 접속</li>
+<li>SonarQube 설치 전 DB 세팅
+<ul>
+<li>sonarqube 사용자 생성</li>
+<li>sonarqube 데이터베이스 생성</li>
+</ul>
+</li>
+</ul>
+<p> </p>
+<p>AWS 콘솔에서 EC2 인스턴스를 1대 생성합니다.<br>
+Management 용도로 잠시 사용할 EC2이기 때문에 인스턴스 타입과 볼륨 등은 최저로 할당합니다.</p>
+<ul>
+<li><strong>OS</strong> : Amazon Linux 2 (x86_64)</li>
+<li><strong>Instance Type</strong> : t3.micro</li>
+<li><strong>EBS 볼륨</strong>
+<ul>
+<li><strong>용량</strong> : 가장 최소인 8GB로 할당</li>
+<li><strong>타입</strong> : gp3
+<ul>
+<li>gp2보다 gp3가 20% 더 저렴합니다. <a href="https://aws.amazon.com/ko/blogs/korea/new-amazon-ebs-gp3-volume-lets-you-provision-performance-separate-from-capacity-and-offers-20-lower-price/">AWS Korea 블로그</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Subnet</strong> : 인스턴스를 Internet Gateway 또는 NAT Gateway가 연결되어 있는 Public 서브넷에 생성해줍니다.
+<ul>
+<li>해당 EC2가 인터넷이 연결되는 환경이어야 아웃바운드로 Docker Hub에 연결한 후 소나큐브 컨테이너 이미지를 받아올 수 있습니다.</li>
+</ul>
+</li>
+</ul>
+<p> </p>
+<p>생성한 EC2의 OS, CPU 아키텍처 정보를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat /etc/*-release
+</span></span><span class="line"><span class="cl"><span class="nv">NAME</span><span class="o">=</span><span class="s2">&#34;Amazon Linux&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&#34;2&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">ID</span><span class="o">=</span><span class="s2">&#34;amzn&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">ID_LIKE</span><span class="o">=</span><span class="s2">&#34;centos rhel fedora&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">VERSION_ID</span><span class="o">=</span><span class="s2">&#34;2&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">PRETTY_NAME</span><span class="o">=</span><span class="s2">&#34;Amazon Linux 2&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">ANSI_COLOR</span><span class="o">=</span><span class="s2">&#34;0;33&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">CPE_NAME</span><span class="o">=</span><span class="s2">&#34;cpe:2.3:o:amazon:amazon_linux:2&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">HOME_URL</span><span class="o">=</span><span class="s2">&#34;https://amazonlinux.com/&#34;</span>
+</span></span><span class="line"><span class="cl">Amazon Linux release <span class="m">2</span> <span class="o">(</span>Karoo<span class="o">)</span>
+</span></span></code></pre></div><p> </p>
+<p><code>x86_64</code>는 아키텍처 정보로 Intel CPU 기반을 의미합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ arch
+</span></span><span class="line"><span class="cl">x86_64
+</span></span></code></pre></div><p> </p>
+<p>작업용 EC2 인스턴스에 도커를 설치합니다.<br>
+Docker Hub에서 소나큐브 컨테이너 이미지를 다운로드(Pull)하고, Private ECR에 컨테이너 이미지를 업로드할 때 도커가 필요합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo amazon-linux-extras install docker
+</span></span><span class="line"><span class="cl">$ sudo service docker start
+</span></span><span class="line"><span class="cl">$ sudo usermod -a -G docker ec2-user
+</span></span><span class="line"><span class="cl">$ sudo chkconfig docker on
+</span></span></code></pre></div><p>위 명령어 절차는 <a href="https://gist.github.com/npearce/6f3c7826c7499587f00957fee62f8ee9">install-docker.md Gist</a>를 그대로 참고했습니다.</p>
+<p> </p>
+<p>인스턴스에서 소나큐브 컨테이너 이미지를 다운로드 받습니다.<br>
+ECS Fargate에 사용할 컨테이너 이미지는 <a href="https://hub.docker.com/layers/library/sonarqube/9.7-community/images/sha256-d8247aa44526ccf185bf07fd0331a663f16d96f9d12f3e483982c2808083d2f0?context=explore">sonarqube:9.7-community</a> 입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ docker pull sonarqube:9.7-community
+</span></span></code></pre></div><p><strong>인터넷 연결 필요</strong><br>
+EC2 인스턴스가 도커 허브에서 소나큐브 이미지를 받으려면 인터넷 연결이 가능한 퍼블릭한 환경이어야 합니다.</p>
+<p><img src="./3.png" alt="도커허브 접속을 위한 구성도 (예시 1)" title="네트워크 구성 예시 1 - NAT Gateway가 연결된 구성"></p>
+<p><img src="./4.png" alt="도커허브 접속 구성도 구성도 (예시 2)" title="네트워크 구성 예시 2 - Internet Gateway가 연결된 구성"></p>
+<p>도커 허브에서 소나큐브 이미지를 받아오지 못할 경우, 다음 체크리스트를 확인합니다.</p>
+<ul>
+<li>EC2 인스턴스가 Internet Gateway 또는 NAT Gateway가 연결된 서브넷에 배치되어 있는지 확인합니다.</li>
+<li>EC2에 연결된 보안그룹의 Outbound 룰에서 HTTP(80), HTTPS(443)이 허용되어 있는지 확인합니다.</li>
+<li>EC2 인스턴스에 도커 패키지가 정상적으로 설치되어 있는지 확인합니다.</li>
+</ul>
+<p> </p>
+<h3 id="ecr-생성">ECR 생성</h3>
+<p>AWS CLI로 ECR 레포지터리를 생성합니다. 이 과정은 AWS 콘솔을 통해 ECR 저장소를 생성하셔도 상관 없습니다.<br>
+ECR 저장소의 태그 값 <code>--tags</code>는 예시입니다. ECR 저장소의 태그는 자신의 환경에 맞게 변경해주세요.</p>
+<p>제 경우 <code>AdministratorFullAccess</code> IAM 권한을 가진 IAM Role에서 아래 명령어를 수행했습니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ aws ecr create-repository <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --repository-name core-apne2-sonarqube <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --region ap-northeast-2 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --tags <span class="s1">&#39;[{&#34;Key&#34;:&#34;Environment&#34;,&#34;Value&#34;:&#34;core&#34;},{&#34;Key&#34;:&#34;Creator&#34;,&#34;Value&#34;:&#34;seyslee&#34;}]&#39;</span>
+</span></span></code></pre></div><p> </p>
+<p>작업용 EC2에서 ECR로 소나큐브 컨테이너 이미지를 업로드할 수 있도록 ECR에 허용 정책을 추가합니다.</p>
+<p>AWS 콘솔에서 ECR → Repositories → Permissions → Edit policy json 클릭 → 아래 내용 복사 붙여넣기 → Save 버튼 클릭</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;Version&#34;</span><span class="p">:</span> <span class="s2">&#34;2012-10-17&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;Statement&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Sid&#34;</span><span class="p">:</span> <span class="s2">&#34;AllowPushPullImage&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Effect&#34;</span><span class="p">:</span> <span class="s2">&#34;Allow&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Principal&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;AWS&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                    <span class="s2">&#34;*&#34;</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;Action&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:BatchGetImage&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:BatchCheckLayerAvailability&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:CompleteLayerUpload&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:GetDownloadUrlForLayer&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:InitiateLayerUpload&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:PutImage&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ecr:UploadLayerPart&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p> </p>
+<p>인스턴스의 로컬에 다운로드 받은 <code>sonarqube:9.7-community</code> 이미지를 ECR에 업로드하기 위해 이미지 태그를 변경합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ docker tag sonarqube:9.7-community &lt;aws-account-id&gt;.dkr.ecr.ap-northeast-2.amazonaws.com/&lt;ecr-repository-name&gt;:9.7-community
+</span></span></code></pre></div><p> </p>
+<p>EC2 인스턴스에서 Amazon ECR에 로그인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">aws ecr get-login-password --region &lt;region&gt; <span class="p">|</span> docker login --username AWS --password-stdin &lt;aws-account-id&gt;.dkr.ecr.&lt;region&gt;.amazonaws.com
+</span></span></code></pre></div><p><code>&lt;aws-account-id&gt;</code>는 ECR이 위치한 AWS Account ID로 변경하고, <code>&lt;region&gt;</code>은 ECR이 위치한 Region으로 변경합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 명령어 예시</span>
+</span></span><span class="line"><span class="cl">aws ecr get-login-password --region ap-northeast-2 <span class="p">|</span> docker login --username AWS --password-stdin 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com
+</span></span></code></pre></div><p> </p>
+<h3 id="rds-세팅">RDS 세팅</h3>
+<p>AWS 콘솔에서 PostgreSQL RDS를 생성합니다.</p>
+<h4 id="engine-options">Engine Options</h4>
+<ul>
+<li><strong>Engine options</strong>
+<ul>
+<li>Engine type : PostgreSQL</li>
+<li>Engine version : PostgreSQL 13.7-R1
+<ul>
+<li><strong>주의</strong> : SonarQube 9.7 기준으로 PostgreSQL 14.x 버전을 공식적으로 지원하지 않습니다. <a href="https://docs.sonarqube.org/latest/requirements/requirements/">SonarQube 공식문서</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Templates</strong>
+<ul>
+<li>Production</li>
+</ul>
+</li>
+<li><strong>Availability and durability</strong>
+<ul>
+<li>Deployment options : Single DB instance</li>
+</ul>
+</li>
+<li><strong>Instance configuration</strong>
+<ul>
+<li>DB instance class : t4g.micro
+<ul>
+<li>Graviton CPU 기반 인스턴스 타입인 <code>t4g.micro</code>를 사용해도 소나큐브 운영에는 지장이 없으므로, 비용 절감을 위해 <code>t4g.micro</code>로 사용하도록 합니다.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Storage</strong>
+<ul>
+<li>Storage type : General Purpose SSD (gp2)</li>
+<li>Allocate storage : 20 GiB
+<ul>
+<li>처음에 할당하는 스토리지 용량은 최소로 잡아줍니다. 운영하면서 자연스럽게 용량을 스케일링해 늘려가는 방식으로 운영해야 비용이 적게 나옵니다.</li>
+</ul>
+</li>
+<li>Enable storage autoscaling 체크</li>
+<li>Maximum storage threshold : 200 GiB</li>
+</ul>
+</li>
+<li><strong>Connectivity</strong>
+<ul>
+<li>Network Type : IPv4</li>
+<li>Public Access : No</li>
+<li>VPC security group (firewall)
+<ul>
+<li>Choose existing</li>
+<li>보안그룹에서 PostgreSQL의 기본 포트인 5432 인바운드를 허용해주어야 합니다.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Monitoring</strong>
+<ul>
+<li>Turn on Performance Insights 체크 해제</li>
+</ul>
+</li>
+</ul>
+<p>RDS 생성이 완료되면 AWS 콘솔에서 RDS Endpoint를 확인할 수 있습니다.<br>
+RDS Endpoint를 클립보드에 복사합니다.</p>
+<p> </p>
+<p>작업용 EC2에 접속합니다. 이 작업용 EC2에서 PostgreSQL DB에 접속할 예정입니다.</p>
+<p>PostgreSQL RDS에 접속하려면 <code>psql</code> 명령어가 필요합니다. Amazon Linux 2에는 <code>psql</code> 명령어가 기본적으로 포함되어 있지 않아서 별도 설치가 필요합니다.</p>
+<p><code>postgresql</code> 패키지를 설치해줍니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sudo -i
+</span></span><span class="line"><span class="cl">$ id
+</span></span><span class="line"><span class="cl"><span class="nv">uid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span>
+</span></span><span class="line"><span class="cl">$ yum install postgresql -y
+</span></span></code></pre></div><p> </p>
+<p><code>postgresql</code> 패키지의 설치 결과를 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ which psql
+</span></span><span class="line"><span class="cl">/bin/psql
+</span></span><span class="line"><span class="cl">$ psql --version
+</span></span><span class="line"><span class="cl">psql <span class="o">(</span>PostgreSQL<span class="o">)</span> 9.2.24
+</span></span></code></pre></div><p>위와 같이 결과가 나오면 정상적으로 설치된 것입니다.</p>
+<p> </p>
+<p>EC2 인스턴스에서 PostgreSQL RDS에 접속합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ psql <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -U postgres <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -h &lt;YOUR_RDS_ENDPOINT&gt;
+</span></span></code></pre></div><p> </p>
+<p><code>postgres</code> 유저의 패스워드를 입력해서 로그인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Password <span class="k">for</span> user postgres: &lt;초기 RDS 생성시에 입력한 패스워드 입력&gt;
+</span></span><span class="line"><span class="cl">psql <span class="o">(</span>9.2.24, server 13.7<span class="o">)</span>
+</span></span><span class="line"><span class="cl">WARNING: psql version 9.2, server version 13.0.
+</span></span><span class="line"><span class="cl">         Some psql features might not work.
+</span></span><span class="line"><span class="cl">SSL connection <span class="o">(</span>cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Type <span class="s2">&#34;help&#34;</span> <span class="k">for</span> help.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">postgres</span><span class="o">=</span>&gt;
+</span></span></code></pre></div><p> </p>
+<h3 id="postgres-db-세팅">PostGres DB 세팅</h3>
+<p>소나큐브에 연동하기 위해 RDS에 소나큐브용 계정과 소나큐브용 데이터베이스 생성이 필요합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="o">#====</span><span class="w"> </span><span class="n">sonarqube</span><span class="w"> </span><span class="err">유저</span><span class="w"> </span><span class="err">생성</span><span class="w"> </span><span class="o">====</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">postgres</span><span class="o">=&gt;</span><span class="w"> </span><span class="k">create</span><span class="w"> </span><span class="k">user</span><span class="w"> </span><span class="n">sonarqube</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">password</span><span class="w"> </span><span class="s1">&#39;sonarqube&#39;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">CREATE</span><span class="w"> </span><span class="k">ROLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">postgres</span><span class="o">=&gt;</span><span class="w"> </span><span class="k">alter</span><span class="w"> </span><span class="k">role</span><span class="w"> </span><span class="n">sonarqube</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">createdb</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">ALTER</span><span class="w"> </span><span class="k">ROLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="o">#====</span><span class="w"> </span><span class="n">sonarqube</span><span class="w"> </span><span class="err">데이터베이스</span><span class="w"> </span><span class="err">생성</span><span class="w"> </span><span class="o">====</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">postgres</span><span class="o">=&gt;</span><span class="w"> </span><span class="k">create</span><span class="w"> </span><span class="k">database</span><span class="w"> </span><span class="n">sonarqube</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">CREATE</span><span class="w"> </span><span class="k">DATABASE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">postgres</span><span class="o">=&gt;</span><span class="w"> </span><span class="k">alter</span><span class="w"> </span><span class="k">database</span><span class="w"> </span><span class="n">sonarqube</span><span class="w"> </span><span class="k">owner</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">sonarqube</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">ALTER</span><span class="w"> </span><span class="k">DATABASE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">postgres</span><span class="o">=&gt;</span><span class="w"> </span><span class="k">grant</span><span class="w"> </span><span class="k">all</span><span class="w"> </span><span class="k">privileges</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="k">database</span><span class="w"> </span><span class="n">sonarqube</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">sonarqube</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">GRANT</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<p>데이터베이스 목록을 확인합니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="n">sonarqube</span><span class="o">=&gt;</span><span class="w"> </span><span class="err">\</span><span class="n">l</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                   </span><span class="n">List</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">databases</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">   </span><span class="n">Name</span><span class="w">    </span><span class="o">|</span><span class="w">   </span><span class="k">Owner</span><span class="w">   </span><span class="o">|</span><span class="w"> </span><span class="k">Encoding</span><span class="w"> </span><span class="o">|</span><span class="w">   </span><span class="k">Collate</span><span class="w">   </span><span class="o">|</span><span class="w">    </span><span class="n">Ctype</span><span class="w">    </span><span class="o">|</span><span class="w">    </span><span class="k">Access</span><span class="w"> </span><span class="k">privileges</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">-----------+-----------+----------+-------------+-------------+-------------------------
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w"> </span><span class="n">postgres</span><span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="n">postgres</span><span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="n">UTF8</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="n">en_US</span><span class="p">.</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">en_US</span><span class="p">.</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="w"> </span><span class="o">|</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">rdsadmin</span><span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="n">rdsadmin</span><span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="n">UTF8</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="n">en_US</span><span class="p">.</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">en_US</span><span class="p">.</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">rdsadmin</span><span class="o">=</span><span class="n">CTc</span><span class="o">/</span><span class="n">rdsadmin</span><span class="w">  </span><span class="o">+</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">           </span><span class="o">|</span><span class="w">           </span><span class="o">|</span><span class="w">          </span><span class="o">|</span><span class="w">             </span><span class="o">|</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">rdstopmgr</span><span class="o">=</span><span class="n">Tc</span><span class="o">/</span><span class="n">rdsadmin</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">sonarqube</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">sonarqube</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">UTF8</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="n">en_US</span><span class="p">.</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">en_US</span><span class="p">.</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="o">=</span><span class="n">Tc</span><span class="o">/</span><span class="n">sonarqube</span><span class="w">          </span><span class="o">+</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">           </span><span class="o">|</span><span class="w">           </span><span class="o">|</span><span class="w">          </span><span class="o">|</span><span class="w">             </span><span class="o">|</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">sonarqube</span><span class="o">=</span><span class="n">CTc</span><span class="o">/</span><span class="n">sonarqube</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">template0</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">rdsadmin</span><span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="n">UTF8</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="n">en_US</span><span class="p">.</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">en_US</span><span class="p">.</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="o">=</span><span class="k">c</span><span class="o">/</span><span class="n">rdsadmin</span><span class="w">            </span><span class="o">+</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">           </span><span class="o">|</span><span class="w">           </span><span class="o">|</span><span class="w">          </span><span class="o">|</span><span class="w">             </span><span class="o">|</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">rdsadmin</span><span class="o">=</span><span class="n">CTc</span><span class="o">/</span><span class="n">rdsadmin</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">template1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">postgres</span><span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="n">UTF8</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="n">en_US</span><span class="p">.</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">en_US</span><span class="p">.</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="o">=</span><span class="k">c</span><span class="o">/</span><span class="n">postgres</span><span class="w">            </span><span class="o">+</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">           </span><span class="o">|</span><span class="w">           </span><span class="o">|</span><span class="w">          </span><span class="o">|</span><span class="w">             </span><span class="o">|</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">postgres</span><span class="o">=</span><span class="n">CTc</span><span class="o">/</span><span class="n">postgres</span><span class="w">
+</span></span></span></code></pre></div><p><code>postgres</code> Name을 가진 데이터베이스가 추가되었고, Owner가 <code>postgres</code> 계정이면 정상입니다.</p>
+<p> </p>
+<p>PostgreSQL DB 내부의 전체 Role 목록을 확인합니다.<br>
+<code>sonarqube</code> Role에 Create DB 권한이 부여되어 있으면 정상입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="n">sonarqube</span><span class="o">=&gt;</span><span class="w"> </span><span class="err">\</span><span class="n">du</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                                               </span><span class="n">List</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">roles</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">         </span><span class="k">Role</span><span class="w"> </span><span class="n">name</span><span class="w">         </span><span class="o">|</span><span class="w">                   </span><span class="n">Attributes</span><span class="w">                   </span><span class="o">|</span><span class="w">                          </span><span class="n">Member</span><span class="w"> </span><span class="k">of</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">---------------------------+------------------------------------------------+--------------------------------------------------------------
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w"> </span><span class="n">pg_execute_server_program</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">pg_monitor</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{</span><span class="n">pg_read_all_settings</span><span class="p">,</span><span class="n">pg_read_all_stats</span><span class="p">,</span><span class="n">pg_stat_scan_tables</span><span class="err">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">pg_read_all_settings</span><span class="w">      </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">pg_read_all_stats</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">pg_read_server_files</span><span class="w">      </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">pg_signal_backend</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">pg_stat_scan_tables</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">pg_write_server_files</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">postgres</span><span class="w">                  </span><span class="o">|</span><span class="w"> </span><span class="k">Create</span><span class="w"> </span><span class="k">role</span><span class="p">,</span><span class="w"> </span><span class="k">Create</span><span class="w"> </span><span class="n">DB</span><span class="w">                        </span><span class="o">+|</span><span class="w"> </span><span class="err">{</span><span class="n">rds_superuser</span><span class="err">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                           </span><span class="o">|</span><span class="w"> </span><span class="n">Password</span><span class="w"> </span><span class="k">valid</span><span class="w"> </span><span class="k">until</span><span class="w"> </span><span class="n">infinity</span><span class="w">                  </span><span class="o">|</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">rds_ad</span><span class="w">                    </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">rds_iam</span><span class="w">                   </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">rds_password</span><span class="w">              </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">rds_replication</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">rds_superuser</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="w">                                   </span><span class="o">|</span><span class="w"> </span><span class="err">{</span><span class="n">pg_monitor</span><span class="p">,</span><span class="n">pg_signal_backend</span><span class="p">,</span><span class="n">rds_replication</span><span class="p">,</span><span class="n">rds_password</span><span class="err">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">rdsadmin</span><span class="w">                  </span><span class="o">|</span><span class="w"> </span><span class="n">Superuser</span><span class="p">,</span><span class="w"> </span><span class="k">Create</span><span class="w"> </span><span class="k">role</span><span class="p">,</span><span class="w"> </span><span class="k">Create</span><span class="w"> </span><span class="n">DB</span><span class="p">,</span><span class="w"> </span><span class="n">Replication</span><span class="o">+|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                           </span><span class="o">|</span><span class="w"> </span><span class="n">Password</span><span class="w"> </span><span class="k">valid</span><span class="w"> </span><span class="k">until</span><span class="w"> </span><span class="n">infinity</span><span class="w">                  </span><span class="o">|</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">rdsrepladmin</span><span class="w">              </span><span class="o">|</span><span class="w"> </span><span class="k">No</span><span class="w"> </span><span class="n">inheritance</span><span class="p">,</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">login</span><span class="p">,</span><span class="w"> </span><span class="n">Replication</span><span class="w">      </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">rdstopmgr</span><span class="w">                 </span><span class="o">|</span><span class="w"> </span><span class="n">Password</span><span class="w"> </span><span class="k">valid</span><span class="w"> </span><span class="k">until</span><span class="w"> </span><span class="n">infinity</span><span class="w">                  </span><span class="o">|</span><span class="w"> </span><span class="err">{</span><span class="n">pg_monitor</span><span class="err">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">sonarqube</span><span class="w">                 </span><span class="o">|</span><span class="w"> </span><span class="k">Create</span><span class="w"> </span><span class="n">DB</span><span class="w">                                      </span><span class="o">|</span><span class="w"> </span><span class="err">{}</span><span class="w">
+</span></span></span></code></pre></div><p> </p>
+<h3 id="target-group">Target Group</h3>
+<ul>
+<li><strong>Protocol HTTP</strong> : Port 9000</li>
+<li><strong>IP address type</strong> : IPv4</li>
+<li><strong>VPC</strong> : ECS Fargate 컨테이너가 구동되는 동일한 VPC로 설정</li>
+<li><strong>Protocol Version</strong> : HTTP1</li>
+<li>Health checks
+<ul>
+<li>Health check protocol : HTTP</li>
+<li>Health check path : /</li>
+</ul>
+</li>
+</ul>
+<p>ECS Fargate의 경우 Target Group에 등록된 타겟 IP를 자동적으로 관리해줍니다.<br>
+ECS 컨테이너가 새로 뜨는 경우 컨테이너의 IP가 변경되는데, 이 때 자동적으로 타겟그룹에 등록된 IP도 자동적으로 변경해줍니다.</p>
+<p> </p>
+<h3 id="alb">ALB</h3>
+<ul>
+<li>Load balancer types : Application Load Balancer</li>
+<li>Scheme : Internet-facing</li>
+<li>IP address type : IPv4</li>
+<li>리스너 설정
+<ul>
+<li>HTTP 80은 HTTPS 443으로 Redirect</li>
+<li>HTTPS 443은 9000번 소나큐브 타겟그룹으로 Forward</li>
+</ul>
+</li>
+<li>Secure listener settings
+<ul>
+<li>Security policy : 기본값 (ELBSecurityPolicy-2016-08)</li>
+<li>Default SSL/TLS certificate
+<ul>
+<li>From ACM</li>
+<li>Select a certificate 에서 미리 생성한 ACM 인증서 선택</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>세팅 완료한 ALB의 리스너 설정은 다음과 같습니다.</p>
+<p><img src="./5.png" alt="ALB의 리스너 설정" title="ALB의 리스너 설정"></p>
+<p> </p>
+<h3 id="task-definition-생성">Task Definition 생성</h3>
+<p>Select launch type compatibility에서 Fargate를 선택합니다.</p>
+<ul>
+<li><strong>Task definition name</strong> : sonarqube</li>
+<li><strong>Task role</strong> : None
+<ul>
+<li>소나큐브 컨테이너의 환경변수에 PostgreSQL DB의 ID, PW가 직접 들어가 있기 때문에 Task role은 별도로 필요하지 않습니다.</li>
+</ul>
+</li>
+<li><strong>Operating system family</strong> : Linux</li>
+<li><strong>Task execution rol</strong>e : ecsTaskExecutionRole</li>
+<li><strong>Task size</strong>
+<ul>
+<li>Task memory (GB) : 2GB</li>
+<li>Task CPU (vCPU) : 0.5 vCPU</li>
+</ul>
+</li>
+</ul>
+<p>Add container에서 다음과 같이 설정합니다.</p>
+<h4 id="standard">Standard</h4>
+<ul>
+<li><strong>Container name</strong> : sonarqube</li>
+<li><strong>Image</strong> : &lt;YOUR_AWS_ACCOUNT_ID&gt;.dkr.ecr.ap-northeast-2.amazonaws.com/&lt;YOUR_ECR_NAME&gt;:9.7-community</li>
+<li><strong>Memory Limits (MiB)</strong> : Soft limit, 1024
+<ul>
+<li>컨테이너가 전체 2GB 테스크 메모리 중 1GB를 점유하고 구동되도록 설정 합니다.</li>
+</ul>
+</li>
+<li><strong>Port mappings</strong> : 9000 tcp</li>
+</ul>
+<p> </p>
+<h4 id="advanced-container-configuration">Advanced container configuration</h4>
+<p>컨테이너 환경변수, 실행할 명령어, Resource Limits 등의 더 자세한 설정을 하는 단계입니다.</p>
+<ul>
+<li>
+<p><strong>ENVIRONMENT</strong></p>
+<ul>
+<li>
+<p><strong>command</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">-Dsonar.search.javaAdditionalOpts<span class="o">=</span>-Dnode.store.allow_mmap<span class="o">=</span><span class="nb">false</span>
+</span></span></code></pre></div></li>
+<li>
+<p><strong>Environment variables</strong> : 컨테이너에 주입되는 3개의 환경변수의 경우, 필요하다면 SSM Parameter Store를 사용하는 선택지도 존재합니다.</p>
+<ul>
+<li><strong>SONAR_JDBC_URL</strong> = jdbc:postgresql://core-apne2-sonarqube-postgresql.xyzxxyzxxyzx.ap-northeast-2.rds.amazonaws.com:5432/sonarqube
+<ul>
+<li>PostgreSQL DB용 JDBC URL 포맷은 <code>jdbc:postgresql://&lt;RDS_ENDPOINT&gt;:5432/&lt;DATABASE_NAME&gt;</code> 입니다. 위 값은 예시이며, 자신의 환경에 맞게 <code>&lt;RDS_ENDPOINT&gt;</code>와 <code>&lt;DATABASE_NAME&gt;</code>을 바꿔주세요.</li>
+<li><strong>참고자료</strong> : <a href="https://jdbc.postgresql.org/documentation/use/#connecting-to-the-database">PostgreSQL의 JDBC 설정 공식문서</a></li>
+</ul>
+</li>
+<li><strong>SONAR_JDBC_USERNAME</strong> = sonarqube</li>
+<li><strong>SONAR_JDBC_PASSWORD</strong> = sonarqube
+<ul>
+<li><code>SONAR_JDBC_USERNAME</code>과 <code>SONAR_JDBC_PASSWORD</code>는 RDS 세팅 과정에서 설정한 ID/PW와 동일하게 맞춰주어야 합니다.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>RESOURCE LIMITS</strong></p>
+<table>
+<thead>
+<tr>
+<th>Limit name</th>
+<th>Soft limit</th>
+<th>Hard limit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NOFILE</td>
+<td>131072</td>
+<td>131072</td>
+</tr>
+<tr>
+<td>NPROC</td>
+<td>8192</td>
+<td>8192</td>
+</tr>
+</tbody>
+</table>
+<p>리눅스 서버에서 소나큐브를 구동하는 경우에는 반드시 nofile 값이 최소 131072, nproc 값이 최소 8192로 설정되어 있어야만 합니다. <a href="https://docs.sonarqube.org/latest/requirements/requirements/">소나큐브 공식문서</a></p>
+<p>위와 같이 <code>NOFILE</code>, <code>NPROC</code> 값을 설정하지 않으면 소나큐브 컨테이너가 생성 → 중지 → 다시 생성을 무한 반복하게 됩니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 문제 발생시에 ECS Task에 출력되는 로그</span>
+</span></span><span class="line"><span class="cl">bootstrap check failure <span class="o">[</span>1<span class="o">]</span> of <span class="o">[</span>1<span class="o">]</span>: max file descriptors <span class="o">[</span>4096<span class="o">]</span> <span class="k">for</span> elasticsearch process is too low, increase to at least <span class="o">[</span>65535<span class="o">]</span>
+</span></span></code></pre></div><p>이 경우 Add container → Advanced container configuration → RESOURCE LIMITS에서 NOFILE 값을 131072로 설정해주면 해결할 수 있습니다.</p>
+</li>
+</ul>
+<p> </p>
+<h3 id="결과-확인">결과 확인</h3>
+<p>웹 브라우저를 열고 ALB에 할당된 도메인 주소 또는 ALB 주소를 매핑한 Route 53의 도메인 주소로 접속합니다. (e.g. <a href="https://sonarqube.company.com">https://sonarqube.company.com</a>)</p>
+<p><img src="./6.png" alt="SonarQube 9.7 로그인 화면" title="SonarQube에 로그인한 화면"></p>
+<p>ECS Fargate 기반의 SonarQube 9.7.1 구축이 완료되었습니다.</p>
+<p>이 글에서 다루지는 않았지만 Okta를 통한 SAML 연동과 젠킨스 파이프라인과의 연동도 정상적으로 동작하는 걸 확인했습니다.</p>
+<p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://aws.plainenglish.io/sonarqube-deployed-in-aws-ecs-fargate-e86fee056aae">SonarQube deployed in AWS ECS Fargate</a><br>
+제 경우 위 글을 보고 ECS Fargate 기반의 소나큐브를 구축할 수 있었습니다.</p>
+<p><a href="https://www.linuxdeveloper.space/sonarqube-in-ecs/">Running SonarQube in ECS</a><br>
+ECS에서 RESOURCE LIMITS 설정 방법을 이 글을 통해서 찾았습니다.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>

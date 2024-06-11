@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="younsl">
+    
+    <link rel="shortcut icon" href="http://localhost:1313/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <link rel="canonical" href="http://localhost:1313/blog/ecs-multiple-load-balancer/" />
+    <title>ECS 서비스에 여러개 로드밸런서 연결</title>
+</head>
+<body><header id="banner">
+    <h2><a href="http://localhost:1313/">younsl</a></h2>
+    <nav>
+        <ul>
+            
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>ECS 서비스에 여러개 로드밸런서 연결</h1>
+        <div>
+                <time>Updated November 29, 2022</time>
+            </div>
+    </header>
+    
+    
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script><h2 id="개요">개요</h2>
+<p>하나의 ECS Service에 2개 이상의 ELB를 연결하는 방법</p>
+<p> </p>
+<h2 id="사용-예시">사용 예시</h2>
+<p>동일한 ECS 서비스에 Public ALB와 Private ELB를 동시에 연결해야 하는 경우</p>
+<p><img src="./1.png" alt="시스템 구성도"></p>
+<p> </p>
+<h2 id="설정방법">설정방법</h2>
+<p>이 작업은 기본적으로 AWS 콘솔에서는 설정 불가능합니다.<br>
+AWS CLI, Task Definition, CloudFormation 템플릿 변경을 통해서만 설정 가능합니다.</p>
+<p>기존에 생성한 ECS 서비스의 로드 밸런서 구성을 수정하려면 AWS CLI를 통해 <a href="https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_UpdateService.html">UpdateService</a> API를 사용해야 합니다.</p>
+<p> </p>
+<h3 id="1-타겟그룹과-elb-생성">1. 타겟그룹과 ELB 생성</h3>
+<p>AWS 콘솔을 사용해서 추가로 연결할 Target Group과 ELB를 미리 생성합니다.</p>
+<p> </p>
+<h3 id="2-aws-cli">2. AWS CLI</h3>
+<p>이후 AWS CLI를 사용해 ECS 서비스에 Target Group을 추가로 연결합니다.</p>
+<p>하나의 Service에 2개의 로드밸런서(타겟 그룹)를 연결하는 AWS CLI 명령어입니다.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ aws ecs update-service <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --cluster financial-external-service <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --service external-service <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --load-balancers <span class="nv">targetGroupArn</span><span class="o">=</span><span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/YOUR-FIRST-TG-NAME/YOUR_TG_1_ARN&#34;</span>,containerName<span class="o">=</span><span class="s2">&#34;main&#34;</span>,containerPort<span class="o">=</span><span class="m">8080</span> <span class="nv">targetGroupArn</span><span class="o">=</span><span class="s2">&#34;arn:aws:elasticloadbalancing:ap-northeast-2:111122223333:targetgroup/YOUR-SECOND-TG-NAME/YOUR_TG_2_ARN&#34;</span>,containerName<span class="o">=</span><span class="s2">&#34;main&#34;</span>,containerPort<span class="o">=</span><span class="m">8080</span>
+</span></span></code></pre></div><p> </p>
+<h2 id="참고자료">참고자료</h2>
+<p><a href="https://aws.amazon.com/ko/about-aws/whats-new/2019/07/amazon-ecs-services-now-support-multiple-load-balancer-target-groups/">Amazon ECS 서비스, 이제 다중 로드 밸런서 대상 그룹 지원</a></p>
+<p><a href="https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_UpdateService.html">API Reference: UpdateService</a><br>
+AWS CLI를 사용하는 경우 참고할만한 ECS UpdateService의 API Reference.</p>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9392246440799605"
+     crossorigin="anonymous">
+</script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-9392246440799605"
+     data-ad-slot="6801152730"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    
+    
+    <script src="https://utteranc.es/client.js"
+        repo="younsl/younsl.github.io"
+        issue-term="pathname"
+        label="blog-comment"
+        theme="github-dark"
+        crossorigin="anonymous"
+        async>
+</script>
+
+
+</article>
+
+        </main><footer id="footer">
+    
+</footer>
+</body>
+</html>
