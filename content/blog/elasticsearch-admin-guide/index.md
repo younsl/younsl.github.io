@@ -854,7 +854,7 @@ Mon, 10 Jun 2024 08:46:16 GMT | sent 100 objects to destination file, wrote 100
 
 ```bash
 $ ls -lh /tmp/
--rw-r--r--    1 coinone  coinone   303.4M Jun 10 09:42 index-market-backup.json
+-rw-r--r--    1 younsl  younsl   303.4M Jun 10 09:42 index-market-backup.json
 ```
 
 &nbsp;
