@@ -778,9 +778,11 @@ GET /_cat/aliases?v
 
 &nbsp;
 
-### 백업
+### Index backup using elasticdump
 
-elasticdump를 사용하여 백업할 수 있습니다.
+[elasticdump](https://github.com/elasticsearch-dump/elasticsearch-dump)를 사용하여 elasticsearch 클러스터에 저장되어 있는 index 또는 alias를 백업할 수 있습니다.
+
+![elasticdump 구조](./8.png)
 
 &nbsp;
 
@@ -833,7 +835,7 @@ green  open   market     gXXvxwxmXTxPXaX2XgX5kw   3   1     205246           31 
 
 &nbsp;
 
-인덱스를 백업합니다.
+`elsticdump` 명령어를 사용해서 특정 인덱스를 백업합니다.
 
 ```bash
 elasticdump \
@@ -850,6 +852,8 @@ Mon, 10 Jun 2024 08:46:16 GMT | got 100 objects from source elasticsearch (offse
 Mon, 10 Jun 2024 08:46:16 GMT | sent 100 objects to destination file, wrote 100
 ```
 
+&nbsp;
+
 2GB 용량의 인덱스를 `.json` 포맷으로 백업하면 파일시스템에 차지하는 용량은 약 300MB 줄어듭니다.
 
 ```bash
@@ -863,45 +867,21 @@ $ ls -lh /tmp/
 
 다음은 인덱스 백업 파일인 `/tmp/index-market-backup.json`을 특정 파드에서 로컬 파일 시스템으로 백업하는 방법입니다:
 
-## Case
-
-제 경우, Elasticdump를 사용하여 생성한 300MB 크기의 `.json` 인덱스 백업 파일을 로컬로 복사할때 발생했습니다.
-
-## Solution
-
-`kubectl cp` 명령어에 `--retries 10` 옵션을 추가해서 성공했습니다.
-
-## Detail log
-
 ```bash
 kubectl cp <namespace>/<pod-name>:/tmp/index-market-backup.json ./index-market-backup.json --retries 10
 ```
 
-인덱스 백업본 파일 복사 과정에서 `Dropping out copy after 0 retries` 에러와 함께 파일 복사가 실패할 수 있습니다.
+&nbsp;
 
-`kubectl cp` 실행시 `--retries 10` 옵션을 추가해서 재시도하도록 설정합니다.
-
-마지막에 실패한 결과:
+**중요**:  
+`kubectl cp` 명령어 실행시 반드시 `--retries 10` 옵션을 추가해서 실행해야 복사 과정에서 발생하는 `Dropping out copy after 0 retries` 에러를 방지할 수 있습니다.
 
 ```bash
+$ kubectl cp <namespace>/<pod-name>:/tmp/index-market-backup.json ./index-market-backup.json
 tar: removing leading '/' from member names
 Dropping out copy after 0 retries
 error: unexpected EOF
 ...
 ```
 
-&nbsp;
-
-성공한 결과:
-
-```bash
-$ kubectl cp <namespace>/<pod-name>:/tmp/index-market-backup.json ./index-market-backup.json --retries 10
-tar: removing leading '/' from member names
-Resuming copy at 315394048 bytes, retry 1/10
-tar: removing leading '/' from member names
-
-$ ls -lh index-market-backup.json
--rw-r--r--@ 1 john.doe  staff   303M  6 11 09:25 index-market-backup.json
-```
-
-</details>
+자세한 사항은 [kubectl cp will return a error "Dropping out copy after 0 retries error: unexpected EOF" #1425](https://github.com/kubernetes/kubectl/issues/1425#issuecomment-2159561783) 이슈를 참고하세요.
