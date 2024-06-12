@@ -92,7 +92,7 @@ on:
   # 수동으로 워크플로우를 실행할 수 있도록 함
   workflow_dispatch:
   
-  # UTC 기준 1일 1회, 0시 0분에 실행되도록 스케줄 설정
+  # 하루에 한 번, UTC 00:00(KST 09:00)에 실행되도록 스케줄 설정
   schedule:
     - cron: '0 0 * * *'
 
@@ -102,18 +102,21 @@ jobs:
 
     steps:
     - name: Checkout Private Repo
+      id: clone
       run: |
         git clone --mirror https://<GITHUB_CLOUD_USERNAME>:${{ secrets.ORG_GITHUB_CLOUD_ADMIN_PAT }}@github.com/tradingview/charting_library
         ls -alh
 
     - name: Push to target repository
+      id: push
+      # clone 단계가 성공했을 때만 push 실행
+      if: ${{ steps.clone.outcome == 'success' }}
       run: |
         cd charting_library.git
         git config user.name "github-admin"
         git config user.email "admin@doge.com"
         git remote set-url --push origin https://${{ secrets.DOGECOMPANY_ORG_GITHUB_ENTERPRISE_ADMIN_PAT }}@github-enterprise.example.com/doge/charting_library.git
         git push --mirror 2>&1 | tee push.log
-      continue-on-error: true
 ```
 
 `on` 키워드를 보면 크게 2가지 조건에 의해 Mirror Clone이 트리거됩니다.
