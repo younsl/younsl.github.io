@@ -64,22 +64,28 @@ actions-runner   mgmt-cd-runner-wrftn-wxgwq      doge                           
 
 &nbsp;
 
-## 구현
+## 자동화 구현
 
-Mirror Clone을 받아오는 동작방식은 다음과 같습니다.
+### Actions Workflow 구성
+
+Mirror Clone을 받아오는 파이프라인 동작방식은 다음과 같습니다.
 
 ![Architecture](./1.png)
 
+> PAT는 Personal Access Token의 줄임말입니다. 자세한 사항은 Github 공식문서의 [개인용 액세스 토큰 관리](https://docs.github.com/ko/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) 페이지를 참고합니다.
+
+Github Cloud에 위치한 Private repository를 PAT를 사용해서 받아온 후, Github Enterprise Server에 위치한 Repository로 mirror push 합니다.
+
 &nbsp;
 
-Github Enterprise Server에서 2개의 레포를 생성합니다.
+GitHub Enterprise Server에서 두 개의 레포지터리를 생성합니다.
 
 ![레포 생성 결과](./2.png)
 
-2개의 레포는 각각 복제본 결과물을 담는 레포지터리, Actions Workflow가 실행되는 역할을 하는 레포지터리입니다.
+이 두 레포지터리는 각각 복제본 결과물을 담는 레포지터리와 Actions Workflow가 실행되는 역할을 합니다.
 
-- **charting_library** : Mirror clone 받아온 복제본 레포
-- **charting-library-mirror** : Mirror clone 자동화용 Actions가 실행되는 레포
+- **charting_library**: Mirror clone을 받아온 복제본 레포지터리
+- **charting-library-mirror**: Mirror clone 자동화용 Actions가 실행되는 레포지터리
 
 &nbsp;
 
@@ -89,10 +95,8 @@ Actions Workflow 코드입니다.
 name: Mirror clone private repository from Github Cloud
 
 on:
-  # 수동으로 워크플로우를 실행할 수 있도록 함
   workflow_dispatch:
-  
-  # 하루에 한 번, UTC 00:00(KST 09:00)에 실행되도록 스케줄 설정
+
   schedule:
     - cron: '0 0 * * *'
 
@@ -100,31 +104,67 @@ jobs:
   checkout_and_push:
     runs-on: [self-hosted, linux, build]
 
+    env:
+      GHC_SOURCE_REPO: tradingview/charting_library
+      GHE_TARGET_REPO: doge/charting_library
+      REPO_NAME: charting_library
+
     steps:
-    - name: Checkout Private Repo
+    - name: Checkout source repository
       id: clone
       run: |
-        git clone --mirror https://<GITHUB_CLOUD_USERNAME>:${{ secrets.ORG_GITHUB_CLOUD_ADMIN_PAT }}@github.com/tradingview/charting_library
+        git clone --mirror https://<GITHUB_CLOUD_USERNAME>:${{ secrets.ORG_GITHUB_CLOUD_ADMIN_PAT }}@github.com/${{ env.GHC_SOURCE_REPO }}
         ls -alh
 
     - name: Push to target repository
       id: push
-      # clone 단계가 성공했을 때만 push 실행
       if: ${{ steps.clone.outcome == 'success' }}
       run: |
-        cd charting_library.git
+        cd ${{ env.REPO_NAME }}.git
         git config user.name "github-admin"
         git config user.email "admin@doge.com"
-        git remote set-url --push origin https://${{ secrets.DOGECOMPANY_ORG_GITHUB_ENTERPRISE_ADMIN_PAT }}@github-enterprise.example.com/doge/charting_library.git
+        git remote set-url --push origin https://${{ secrets.DOGECOMPANY_ORG_GITHUB_ENTERPRISE_ADMIN_PAT }}@github-enterprise.example.com/${{ env.GHE_TARGET_REPO }}.git
         git push --mirror 2>&1 | tee push.log
 ```
 
+&nbsp;
+
+#### 파이프라인 디테일
+
 `on` 키워드를 보면 크게 2가지 조건에 의해 Mirror Clone이 트리거됩니다.
+
+```yaml
+on:
+  # 수동으로 워크플로우를 실행할 수 있도록 함
+  workflow_dispatch:
+
+  # 하루에 한 번, UTC 00:00(KST 09:00)에 실행되도록 스케줄 설정
+  schedule:
+    - cron: '0 0 * * *'
+```
 
 - `worfklow_dispatch` : Actions 레포에서 관리자가 직접 실행
 - `schedule` : Cron Schedule 기반의 정기적인 실행
 
 &nbsp;
+
+`push` 스탭은 이전 스탭인 `clone` 과정이 성공한 경우에만 실행되도록 아래와 같이 `if`를 추가합니다.
+
+```yaml
+    - name: Push to target repository
+      id: push
+      # clone 스탭이 성공했을 때만 push 스탭을 실행
+      if: ${{ steps.clone.outcome == 'success' }}
+```
+
+조건부 실행에 대한 자세한 사용 예시은 아래 페이지를 참고하세요.
+
+- **Stack overflow**: [Running a GitHub Actions step only if previous step has run](https://stackoverflow.com/a/70549615)
+- **Github docs**: [steps context](https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context)
+
+&nbsp;
+
+### Actions Secret 구성
 
 Github Enterprise Server에 위치한 Mirror용 Repository에는 2개의 Actions Secret을 생성해두어야 합니다.
 
@@ -132,3 +172,4 @@ Github Enterprise Server에 위치한 Mirror용 Repository에는 2개의 Actions
 
 - `${{ secrets.ORG_GITHUB_CLOUD_ADMIN_PAT }}`에는 Github Cloud 계정의 PAT를 시크릿으로 생성해야 합니다.
 - `${{ secrets.DOGECOMPANY_ORG_GITHUB_ENTERPRISE_ADMIN_PAT }}`에는 Github Enterprise Server의 관리자 계정 PAT를 시크릿으로 생성해야 합니다.
+  - PAT에 필요한 권한은 `repo:*`
