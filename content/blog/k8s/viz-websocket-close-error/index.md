@@ -120,6 +120,32 @@ dashboard:
 
 EKS 워커노드 SG의 인바운드 룰에 EKS 컨트롤플레인이 출발지가 되는 `TCP/8088`, `TCP/8089` 트래픽을 추가로 허용해야 이 문제를 해결할 수 있습니다.
 
+```tf
+module "eks" {
+  # ... truncated ...
+  node_security_group_additional_rules = {
+    ingress_vault_agent_injector_mutating_webhook = {
+      description                   = "Allow ingress mutating webhook traffic from kube-apiserver to vault-agent-injector pod"
+      protocol                      = "tcp"
+      from_port                     = 8080
+      to_port                       = 8080
+      type                          = "ingress"
+      source_cluster_security_group = true
+    }
+    # Similar case for linkerd-viz tap pod's api service
+    ingress_linkerd_viz_tap_api = {
+      description                   = "Allow ingress api calling traffic from kube-apiserver to linkerd-viz tap pod"
+      protocol                      = "tcp"
+      from_port                     = 8088
+      to_port                       = 8089
+      type                          = "ingress"
+      source_cluster_security_group = true
+    }
+  }
+  # ... truncated ...
+}
+```
+
 ![변경후 SG 인바운드룰](./2.png)
 
 해당 포트는 `linkerd-viz`를 구성하는 컴포넌트 중 하나인 `tap`의 API Server에서 사용하는 포트입니다. 자세한 사항은 [Linkerd troubleshooting 공식문서](https://linkerd.io/2.15/tasks/troubleshooting/#l5d-tap-api)를 참고합니다.
