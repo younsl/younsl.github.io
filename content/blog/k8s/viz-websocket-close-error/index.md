@@ -118,12 +118,16 @@ dashboard:
 
 &nbsp;
 
-EKS 워커노드 SG의 인바운드 룰에 EKS 컨트롤플레인이 출발지가 되는 `TCP/8088`, `TCP/8089` 트래픽을 추가로 허용해야 이 문제를 해결할 수 있습니다.
+EKS 워커노드 SG<sup>Security Group</sup>의 인바운드 룰에 EKS 컨트롤플레인이 출발지가 되는 `TCP/8088`, `TCP/8089` 트래픽을 추가로 허용해야 이 문제를 해결할 수 있습니다.
+
+terraform module로 프로비저닝 및 관리하는 EKS 클러스터의 경우, 다음과 같이 `node_security_group_additional_rules` 값에 인바운드 룰을 추가하면 워커노드 SG에 반영됩니다.
 
 ```tf
 module "eks" {
   # ... truncated ...
   node_security_group_additional_rules = {
+    # Required for mutating webhook in vault-agent-injector, one of the components of vault.
+    # https://github.com/hashicorp/vault-helm/issues/163
     ingress_vault_agent_injector_mutating_webhook = {
       description                   = "Allow ingress mutating webhook traffic from kube-apiserver to vault-agent-injector pod"
       protocol                      = "tcp"
@@ -132,7 +136,6 @@ module "eks" {
       type                          = "ingress"
       source_cluster_security_group = true
     }
-    # Similar case for linkerd-viz tap pod's api service
     ingress_linkerd_viz_tap_api = {
       description                   = "Allow ingress api calling traffic from kube-apiserver to linkerd-viz tap pod"
       protocol                      = "tcp"
@@ -206,6 +209,7 @@ EOF
 [ingress-nginx](https://kubernetes.github.io/ingress-nginx/user-guide/miscellaneous/#websockets) 공식문서에 따르면 NGINX은 웹소켓에 대한 지원을 즉시 제공합니다. 특별한 구성이 필요하지 않습니다. 연결 종료를 방지하기 위한 유일한 요구 사항은 프록시 읽기 시간 초과 및 프록시 전송 시간 초과 값을 늘리는 것입니다.
 
 ```yaml
+kind: Ingress
 metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
