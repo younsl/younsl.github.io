@@ -1,4 +1,5 @@
 name: Find broken links on a website
+run-name: 🔬 Find broken links on a website
 
 on:
   # Allows you to run this workflow manually from the Actions tab
