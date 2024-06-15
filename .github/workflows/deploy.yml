@@ -32,11 +32,28 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      HUGO_VERSION: 0.114.0
+      HUGO_VERSION: 0.127.0
     steps:
+      - name: Determine architecture
+        id: determine-arch
+        run: |
+          ARCH=$(uname -m)
+          if [ "$ARCH" == "x86_64" ]; then
+            echo "ARCH=amd64" >> $GITHUB_ENV
+          elif [ "$ARCH" == "aarch64" ]; then
+            echo "ARCH=arm64" >> $GITHUB_ENV
+          else
+            echo "Unsupported architecture: $ARCH"
+            exit 1
+          fi
+
       - name: Install Hugo CLI
         run: |
-          wget -O ${{ runner.temp }}/hugo.deb https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.deb \
+          # Download Hugo CLI deb package to a temporary location
+          wget -O ${{ runner.temp }}/hugo.deb \
+            https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${{ env.HUGO_VERSION }}_linux-${{ env.ARCH }}.deb \
+
+          # Install the downloaded deb package
           && sudo dpkg -i ${{ runner.temp }}/hugo.deb
           
       - name: Install Dart Sass
