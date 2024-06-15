@@ -34,8 +34,8 @@ jobs:
     env:
       HUGO_VERSION: 0.127.0
     steps:
-      - name: Determine architecture
-        id: determine-arch
+      - name: Set architecture
+        id: set-arch
         run: |
           ARCH=$(uname -m)
           if [ "$ARCH" == "x86_64" ]; then
@@ -49,7 +49,6 @@ jobs:
 
       - name: Install Hugo CLI
         run: |
-          # Download Hugo CLI deb package to a temporary location
           wget -O ${{ runner.temp }}/hugo.deb \
             https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${{ env.HUGO_VERSION }}_linux-${{ env.ARCH }}.deb \
           && sudo dpkg -i ${{ runner.temp }}/hugo.deb
