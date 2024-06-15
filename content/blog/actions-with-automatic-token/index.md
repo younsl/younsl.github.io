@@ -98,7 +98,7 @@ permissions:
 토큰 권한을 작업(Job) 수준 또는 전체 워크플로 수준에서 맞춤 설정할 수 있습니다. (또는 둘 다 설정할 수도 있습니다.)
 
 ```yaml
-# 전체 워크플로 수준의 권한 설정
+# 전체 워크플로 수준의 GITHUB_TOKEN 권한 설정
 permissions:
   contents: write          # 코드 저장소의 콘텐츠를 쓸 수 있는 권한
   pull-requests: write     # 풀 리퀘스트를 쓸 수 있는 권한  
@@ -107,18 +107,18 @@ jobs:
   job1:
     runs-on: ubuntu-latest
     steps:
-      # job1에 대한 작업 스텝 정의
+      # ... job1에 대한 작업 스텝 정의 ...
 
   job2:   
     runs-on: ubuntu-latest  
     permissions:
-      # job2 작업에 대한 권한 설정
+      # job2 작업에 대한 GITHUB_TOKEN 권한 설정
       issues: write        # 이슈를 쓸 수 있는 권한
     steps:
-      # job2에 대한 작업 스텝 정의
+      # ... job2에 대한 작업 스텝 정의 ...
 ```
 
-이와 같이 작업(job) 수준에서 개별적으로 권한을 설정하면, 특정 작업에서만 필요한 권한을 부여할 수 있어 보안이 더욱 강화됩니다. 예를 들어, job2에서는 이슈에 대한 쓰기 권한만 필요하므로, 이 권한만 설정하여 다른 불필요한 권한을 제한할 수 있습니다.
+이와 같이 작업<sup>Job</sup> 수준에서 개별적으로 권한을 설정하면, 특정 작업에서만 필요한 권한을 부여할 수 있어 보안이 더욱 강화됩니다. 예를 들어, job2에서는 이슈에 대한 쓰기 권한만 필요하므로, `issues: write` 권한만 설정하여 다른 불필요한 권한을 제한할 수 있습니다.
 
 이러한 세부 권한 설정은 다음과 같은 상황에서 유용합니다:
 
@@ -133,17 +133,23 @@ jobs:
 
 ### Github CLI에서 env로 등록하여 사용
 
-이 예제 워크플로에서는 `GH_TOKEN`이라는 이름의 환경변수의 값으로 `GITHUB_TOKEN`이 필요한 GitHub CLI를 사용합니다.
+이 예제 워크플로에서는 `GITHUB_TOKEN`을 사용해서 새 Issue를 오픈합니다. Github Enterprise Server에서는 이슈 생성한 유저 이름이 `github-actions`로 찍힙니다.
+
+![](./2.png)
 
 ```yaml
 name: Open issue
-run-name: Open issue triggered by ${{ github.actor }}
+run-name: 🖐️ Open issue triggered by ${{ github.actor }}
 
 on:
   workflow_dispatch:
 
 jobs:
   open-issue:
+    env:
+      # specify the GitHub hostname for commands that would otherwise assume the "github.com" host
+      # when not in a context of an existing repository.
+      GH_HOST: github.example.com
     runs-on: [self-hosted, linux]
     # GITHUB_TOKEN에 부여할 권한
     permissions:
@@ -156,13 +162,30 @@ jobs:
           sudo apt install gh
           which gh && gh --version
 
+      - name: Login gh
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --hostname ${{ env.GH_HOST }} --with-token
+          gh auth status
+      
       - name: Open issue
         run: |
-          gh issue --repo ${{ github.repository }} \
-            create --title "Issue title" --body "Issue body"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          gh issue create \
+            --repo ${{ github.repository }} \
+            --title "Issue title ${{ github.run_number }}" \
+            --body "This issue is created by github-actions bot. Commit SHA: ${{ github.sha }}"
 ```
+
+#### 왜 gh CLI를 별도 설치해야 할까요?
+
+GitHub Enterprise Server 환경에서 self-hosted runner를 사용하는 경우, 기본적으로 `gh` CLI가 설치되어 있지 않을 수 있습니다. 이는 self-hosted runner가 GitHub에서 제공하는 관리형 환경이 아니라 사용자가 직접 관리하는 서버이기 때문입니다. 따라서 필요한 도구와 패키지를 직접 설치해야 합니다.
+
+gh CLI는 GitHub와 상호작용하기 위한 강력한 도구로, issue 생성, pull request 관리, repository 설정 등 다양한 작업을 명령줄에서 수행할 수 있게 해줍니다. GitHub Actions 워크플로에서 gh CLI를 사용하려면, 먼저 이를 runner 환경에 설치해야 합니다.
+
+&nbsp;
+
+#### 환경변수
+
+Github CLI에서 사용 가능한 `env` 목록은 공식문서의 [gh environment](https://cli.github.com/manual/gh_help_environment) 페이지에서 확인 가능합니다.
 
 &nbsp;
 
@@ -170,9 +193,11 @@ jobs:
 
 자동 생성된 `GITHUB_TOKEN` 시크릿에 `permissions` 키워드로 특정 권한을 부여하면 브랜치 삭제나 아티팩트<sup>Release</sup> 삭제 등의 Github API 호출을 수행할 수 있습니다. 이 예시 워크플로는 GitHub REST API를 사용하여 브랜치를 삭제합니다.
 
+> Github Cloud의 REST API 주소는 `api.github.com`입니다. Github Enterprise Server의 경우는 `https://<SERVER_HOSTNAME>/api/v3`와 같은 고유한 REST API 주소를 가지고 있습니다. 자세한 사항은 REST API 공식문서의 [빠른 시작](https://docs.github.com/ko/rest/quickstart?apiVersion=2022-11-28) 페이지를 참고하세요.
+
 ```yaml
 name: Delete stale branch
-run-name: Delete stale branch triggered by ${{ github.actor }}
+run-name: 🧼 Delete stale branch triggered by ${{ github.actor }}
 
 on:
   workflow_dispatch:
@@ -189,15 +214,27 @@ jobs:
         id: checkout
         uses: actions/checkout@v2
 
+      - name: List all branches
+        id: list-branch
+        run: |
+          curl -L \
+               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github+json" \
+               -H "X-GitHub-Api-Version: 2022-11-28" \
+               ${{ github.server_url }}/api/v3/repos/${{ github.repository }}/branches \
+               | jq '.[].name'
+
       - name: Delete stale branch
         id: delete-branch
+        env:
+          TARGET_BRANCH: new-branch
         run: |
           curl -L \
                -X DELETE \
                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                -H "Accept: application/vnd.github+json" \
                -H "X-GitHub-Api-Version: 2022-11-28" \
-               https://<HOSTNAME>/api/v3/repos/${{ github.repository }}/git/refs/<BRANCH_NAME>
+               ${{ github.server_url }}/api/v3/repos/${{ github.repository }}/git/refs/heads/${{ env.TARGET_BRANCH }}
 ```
 
 &nbsp;
@@ -208,7 +245,7 @@ jobs:
 
 ```yaml
 name: Create branch
-run-name: Create branch triggered by ${{ github.actor }}
+run-name: 🪄 Create branch triggered by ${{ github.actor }}
 
 on:
   workflow_dispatch:
@@ -233,7 +270,7 @@ jobs:
                      -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                      -H "Accept: application/vnd.github+json" \
                      -H "X-GitHub-Api-Version: 2022-11-28" \
-                     https://<HOSTNAME>/api/v3/repos/${{ github.repository }}/git/ref/heads/${{ env.BASE_BRANCH }} | jq -r .object.sha)
+                     ${{ github.server_url }}/api/v3/repos/${{ github.repository }}/git/ref/heads/${{ env.BASE_BRANCH }} | jq -r .object.sha)
           
           echo "SHA value of the base branch (${{ env.BASE_BRANCH }}): $SHA"
 
@@ -242,12 +279,28 @@ jobs:
                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                -H "Accept: application/vnd.github+json" \
                -H "X-GitHub-Api-Version: 2022-11-28" \
-               https://<HOSTNAME>/api/v3/repos/${{ github.repository }}/git/refs \
+               ${{ github.server_url }}/api/v3/repos/${{ github.repository }}/git/refs \
                -d "{
                       \"ref\": \"refs/heads/${{ env.NEW_BRANCH }}\", 
                       \"sha\": \"$SHA\"
                    }"
+
+      - name: List all branches
+        id: list-branch
+        run: |
+          curl -L \
+               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github+json" \
+               -H "X-GitHub-Api-Version: 2022-11-28" \
+               ${{ github.server_url }}/api/v3/repos/${{ github.repository }}/branches \
+               | jq '.[].name'
 ```
+
+컨텍스트는 워크플로 실행, 변수, 실행기 환경, 작업 및 단계에 대한 정보에 액세스하는 방법입니다. Workflow 코드에서는 `${{ <context> }}` 와 같이 표기됩니다.
+
+REST API 엔드포인트 주소에 쓰인 `${{ github.server_url }}` 컨텍스트는 `https://github.example.com/`와 같이 Github Enterprise Server의 호스트 주소를 의미합니다. 장기적인 관점에서 서버 호스트 주소를 하드코딩하는 방식 대신 `github.server_url` 컨텍스트 사용을 권장합니다.
+
+Workflow에서 사용 가능한 모든 컨텍스트 목록은 [공식문서](https://docs.github.com/ko/enterprise-server@3.12/actions/learn-github-actions/contexts)에서 확인할 수 있습니다.
 
 - **permissions 설정**: permissions 섹션에서 contents: write 권한이 필요합니다. 이는 브랜치를 생성하는 데 필수적인 권한입니다.
 - **환경변수 사용**: ${{ secrets.GITHUB_TOKEN }}을 사용하여 자동 생성된 토큰을 curl 명령어에 전달함으로써 인증된 API 호출을 수행할 수 있습니다.
@@ -261,4 +314,5 @@ jobs:
 
 ## 참고자료
 
-[Automatic token authentication](https://docs.github.com/en/enterprise-server/actions/security-guides/automatic-token-authentication#example-2-calling-the-rest-api)
+[Automatic token authentication](https://docs.github.com/en/enterprise-server/actions/security-guides/automatic-token-authentication#example-2-calling-the-rest-api)  
+[Github context](https://docs.github.com/ko/enterprise-server/actions/learn-github-actions/contexts#github-context)
