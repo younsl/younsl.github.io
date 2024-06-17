@@ -312,6 +312,28 @@ Workflow에서 사용 가능한 모든 컨텍스트 목록은 [공식문서](htt
 
 &nbsp;
 
+## 결론
+
+### GITHUB_TOKEN의 활용
+
+GITHUB_TOKEN은 GitHub Actions에서 자동으로 생성되는 시크릿 토큰으로, GitHub 작업 자동화에 매우 유용합니다. 개인 액세스 토큰(PAT)이나 관리자 계정 없이도 이슈 생성, 브랜치 삭제, 클론 등의 작업을 수행할 수 있어 토큰 관리가 간편해집니다. 기본적으로 포괄적인 권한이 부여되지만, YAML 파일에서 권한을 세부 조정하여 보안을 강화하고 최소 권한 원칙을 적용할 수 있습니다. GITHUB_TOKEN은 `{{ secrets.GITHUB_TOKEN }}`으로 선언하여 사용할 수 있습니다.
+
+예를 들어, GitHub CLI를 사용한 이슈 생성과 REST API를 통한 브랜치 삭제 및 생성이 가능합니다. 이러한 예시는 GITHUB_TOKEN을 활용해 GitHub 리소스를 안전하고 효율적으로 관리하는 방법을 보여줍니다.
+
+&nbsp;
+
+### GITHUB_TOKEN의 라이프사이클
+
+GITHUB_TOKEN은 각 워크플로 실행 시마다 새롭게 생성되며, 워크플로 종료 시 자동으로 만료됩니다. 이는 토큰이 일시적이고 워크플로 실행 중에만 유효함을 의미하며, 보안을 강화하고 불필요한 토큰 노출 위험을 줄여줍니다.
+
+&nbsp;
+
+### 한계점
+
+하지만 GITHUB_TOKEN으로 다른 레포지터리를 클론하거나, 다른 레포지터리의 이슈 삭제, 브랜치 삭제 등의 작업은 불가능합니다. 해당 토큰이 생성된 레포지터리에만 접근 권한이 있기 때문입니다. 다른 레포지터리 작업을 위해서는 PAT이나 Deploy Key를 사용해야 합니다.
+
+&nbsp;
+
 ## 참고자료
 
 [Automatic token authentication](https://docs.github.com/en/enterprise-server/actions/security-guides/automatic-token-authentication#example-2-calling-the-rest-api)  
