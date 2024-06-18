@@ -603,3 +603,6 @@ NTH 공식 깃허브에 업로드된 Helm Chart. 혹은 [ArtifactHUB](https://ar
 
 [Spot Instance Advisor](https://aws.amazon.com/ko/ec2/spot/instance-advisor/)  
 각 리전과 인스턴스 타입별로 스팟 인스턴스 중단 빈도[%]를 확인할 수 있습니다.
+
+[인스턴스 메타데이터 및 사용자 데이터](https://docs.aws.amazon.com/ko_kr/AWSEC2/latest/UserGuide/ec2-instance-metadata.html)  
+AWS EC2 공식문서
