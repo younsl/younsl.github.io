@@ -345,6 +345,10 @@ webhookTemplate: >
   }
 ```
 
+Folded scalar는 YAML에서 긴 문자열을 여러 줄로 작성할 때 사용하는 기능으로, > 기호를 사용하며 줄바꿈을 공백으로 대체합니다. 긴 설명이나 메시지를 가독성 있게 표현할 때 유용합니다.
+
+&nbsp;
+
 ![Folded Scalar를 사용하여 줄바꿈 적용된 Slack 알람 예시](./7.png)
 
 `webhookTemplate` 설정 외에도 별도의 ConfigMap(또는 Secret) 리소스에 슬랙 템플릿 정보를 저장한 후, 불러오는 방법도 있습니다.
