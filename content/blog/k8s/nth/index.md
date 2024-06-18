@@ -564,16 +564,26 @@ spec:
 
 이 예시에서 `terminationGracePeriodSeconds` 값은 `60`초로 설정되어 있습니다. 컨테이너는 종료 신호 수신 후 preStop 후크로 지정된 `sleep 55` 커맨드가 실행되며, 이 커맨드는 종료 전 `55`초 동안 파드를 대기 상태로 유지합니다. 이 시간 동안 파드는 마지막 데이터 처리, DB 커넥션 해제, 리소스 할당 해제 등 필요한 작업을 완료할 수 있습니다.
 
+terminationGracePeriodSeconds와 preStop이 적용된 파드 라이프사이클을 타임라인으로 표현하면 다음과 같습니다.
+
+![Graceful shutdown 관련 파드 라이프사이클](./10.png)
+
 이 방법을 통해 파드의 우아한 종료가 보장되며, 애플리케이션의 안정성을 높이고 데이터 손실 위험을 줄일 수 있습니다.
 
 &nbsp;
 
 ## 정리
 
-- NTH(Node Termination Handler)는 쿠버네티스 클러스터에 깔아쓰는 데몬셋 에드온입니다. NTH를 사용하면 스팟 인스턴스 및 메인터넌스 스케줄과 같은 EC2 인스턴스 관련 이벤트들을 자동 처리할 수 있습니다.
-- NTH의 동작방식은 크게 2개이며 IMDS 모드와 Queue 모드를 지원합니다.
-- 모드에 따라 자동 처리할 수 있는 인스턴스 이벤트 타입 범위가 다르며, Queue 모드가 더 넓은 이벤트 처리 범위를 가지고 있습니다.
-- NTH에 의해 노드가 drain 처리되더라도 그 위에서 구동되는 파드들이 우아하게 종료되도록 `preStop`과 `spec.terminationGracePeriodSeconds`를 조합하도록 보강해야 합니다.
+- NTH<sup>Node Termination Handler</sup>는 쿠버네티스 클러스터에 설치되는 데몬셋 노드 컨트롤러입니다. NTH를 사용하면 스팟 인스턴스 및 메인터넌스 스케줄과 같은 EC2 인스턴스 관련 이벤트들을 자동으로 처리할 수 있습니다.
+- NTH의 동작 방식은 크게 IMDS 모드와 Queue 모드 두 가지가 있습니다.
+- IMDS 모드는 EC2 인스턴스의 메타데이터 서비스(Instance Metadata Service, IMDS)를 통해 이벤트를 감지하고, Queue 모드는 Amazon EventBridge(이전의 CloudWatch Events)를 사용하여 더 넓은 범위의 이벤트를 처리합니다. Queue Mode는 아래와 같이 동작합니다.
+  
+  ![Queue Mode](./11.png)
+
+- 각 모드에 따라 자동으로 처리할 수 있는 인스턴스 이벤트 타입의 범위가 다르며, Queue 모드가 더 넓은 이벤트 처리 범위를 제공합니다.
+NTH에 의해 노드가 drain 처리될 때, 그 위에서 구동되는 파드들이 우아하게 종료되도록 하기 위해 파드 설정에 `preStop`과 `spec.terminationGracePeriodSeconds`를 조합하여 추가해야 합니다.
+- 이 노드 컨트롤러는 특히 스팟 인스턴스를 활용하는 환경에서 유용하며, 비용 효율성을 높이면서도 안정적인 클러스터 운영을 가능하게 합니다.
+- NTH는 노드 종료 이벤트를 감지하여 노드가 종료되기 전에 파드를 안전하게 다른 노드로 이동시키도록 도와줍니다. 이를 통해 데이터 유실을 최소화하고, 서비스의 지속성을 유지할 수 있습니다.
 
 &nbsp;
 
