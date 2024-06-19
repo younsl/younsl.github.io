@@ -24,6 +24,7 @@ May 30, 2023 ― Present <small>(1 yr 1 mo)</small>
 AWS, GCP, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops
 
 - Manage and operate 6 EKS clusters in a multi-stage environment: experienced EKS versions v1.24 to v1.27.
+- Migrate EKS node groups provisioned with terraform from AL2 to AL2023.
 - Operate Kubernetes policy engine <sup>Kyverno</sup> and Node Termination Handler. _[1](/blog/k8s/kyverno/) [2](/blog/k8s/nth/)_
 - Improve scalability by applying pod autoscaling based on Throughput Per Seconds metric using KEDA in the production environment. _[1](/blog/k8s/keda/)_
 - Automate repetitive operational tasks.
