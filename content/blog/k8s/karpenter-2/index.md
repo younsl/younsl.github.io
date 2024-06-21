@@ -1,7 +1,7 @@
 ---
 title: "Karpenter"
 date: 2024-04-05T20:52:15+09:00
-lastmod: 2024-04-05T20:52:33+09:00
+lastmod: 2024-06-21T21:33:33+09:00
 slug: ""
 description: "DevOps Engineer를 위한 Karpenter 운영 가이드"
 keywords: []
@@ -317,6 +317,131 @@ spec:
 ```
 
 이러한 작업은 클러스터의 효율성과 비용 효율성을 높이기 위해 중요합니다. 하지만, 특정 Karpenter Node가 이러한 작업의 대상이 되지 않도록 설정하려면, 예외 처리용 Annotation을 사용하여 해당 노드를 제외시킬 수 있습니다. 이는 해당 노드가 중요한 워크로드를 처리하거나, 특별한 구성이 필요한 경우 유용할 수 있습니다.
+
+&nbsp;
+
+### AL2023
+
+[Amazon Linux 2 FAQ](https://aws.amazon.com/ko/amazon-linux-2/faqs/)에 따르면 Amazon Linux 2 운영체제는 2025년 6월 30일부로 지원종료됩니다. 이러한 이유로 미리 EKS 워커노드를 Amazon Linux 2에서 Amazon Linux 2023으로 전환하여 대비할 필요가 있습니다.
+
+카펜터 노드를 Amazon Linux 2<sup>AL2</sup>에서 Amazon Linux 2023<sup>AL2023</sup>으로 업그레이드 하려면 `amiFamily` 값을 `AL2`에서 `AL2023`으로만 변경하면 됩니다.
+
+```yaml
+apiVersion: karpenter.k8s.aws/v1beta1
+kind: EC2NodeClass
+metadata:
+  name: default
+spec:
+  amiFamily: AL2023
+  amiSelectorTerms:
+  - name: amazon-eks-node-al2023-x86_64-standard-1.30-*
+  metadataOptions:
+    httpEndpoint: enabled
+    httpProtocolIPv6: disabled
+    httpPutResponseHopLimit: 2
+    httpTokens: required
+  # ...
+```
+
+적용 이후 기존에 nodeClaim에 의해 생성된 Karpenter Node들이 모두 즉시 교체되는 것은 아니고, EC2NodeClass가 업데이트된 이후 시점부터 생성한 노드가 AL2023으로 세팅됩니다.
+
+&nbsp;
+
+Karpenter가 생성한 노드에 아래와 `kubectl node-shell`을 사용해서 접속합니다.
+
+참고로 `kubectl` 패키지 매니저인 `krew`를 사용해서 `node-shell` 플러그인을 설치할 수 있습니다.
+
+```bash
+kubectl krew install node-shell
+kubectl node-shell ip-xx-xxx-xxx-xxx.ap-northeast-2.compute.internal
+```
+
+&nbsp;
+
+기존 Amazon Linux 2 EKS 노드는 노드가 생성될 때 `/etc/eks/bootstrap.sh` 스크립트에 의해 `kubelet` 설정들이 주입되었습니다.
+
+EKS Amazon Linux 2023부터는 YAML 문법을 사용하는 새로운 노드 초기화 프로세스 nodeadm이 도입됩니다.
+
+`nodeadm`의 NodeConfig 예시는 다음과 같습니다.
+
+```yaml
+---
+apiVersion: node.eks.aws/v1alpha1
+kind: NodeConfig
+spec:
+  kubelet:
+    config:
+      shutdownGracePeriod: 30s
+      shutdownGracePeriodCriticalPods: 10s
+      featureGates:
+        DisableKubeletCloudCredentialProviders: true
+    flags:
+      - "--node-labels=node.kubernetes.io/name=basic,node.kubernetes.io/lifecycle=ondemand"
+```
+
+&nbsp;
+
+워커노드에 접속한 후 `nodeadm` 명령어를 통해 `kubelet` 설정 상태도 검증할 수 있습니다.
+
+```bash
+$ nodeadm
+nodeadm - From zero to Node faster than you can say Elastic Kubernetes Service
+
+http://github.com/awslabs/amazon-eks-ami/nodeadm
+
+  Usage:
+    nodeadm [config|init]
+
+  Subcommands:
+    config   Manage configuration
+    init     Initialize this instance as a node in an EKS cluster
+
+  Flags:
+       --version         Displays the program version string.
+    -h --help            Displays help with available flag, subcommand, and positional value parameters.
+    -c --config-source   Source of node configuration. The format is a URI with supported schemes: [imds, file]. (default: imds://user-data)
+    -d --development     Enable development mode for logging.
+
+No command specified
+```
+
+```bash
+$ nodeadm config check --config-source imds://user-data
+{"level":"info","ts":1718972521.2758596,"caller":"config/check.go:27","msg":"Checking configuration","source":"imds://user-data"}
+{"level":"info","ts":1718972521.2799668,"caller":"config/check.go:36","msg":"Configuration is valid"}
+```
+
+&nbsp;
+
+`nodeadm`이 실제 노드에 주입한 `kubelet` 설정 정보는 아래 2개 파일에 저장됩니다.
+
+- `/etc/kubernetes/kubelet/config.jons.d/00-nodeadm.conf`
+- `/etc/kubernetes/kubelet/config.json`
+
+더 자세한 사항은 AWS 공식문서 [AL2에서 AL2023으로 업그레이드](https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/eks-optimized-ami.html#al2023)를 참고합니다.
+
+&nbsp;
+
+워커노드에 `node-shell`, SSM, SSH 등을 이용해서 접근한 후 `nodeadm` 명령어로 nodeadm이 실제 적용한 `kubelet` 세부 설정을 확인할 수 있습니다.
+
+```bash
+$ cat /etc/kubernetes/kubelet/config.json.d/00-nodeadm.conf
+{
+    "apiVersion": "kubelet.config.k8s.io/v1beta1",
+    "clusterDNS": [
+        "172.20.0.10"
+    ],
+    "kind": "KubeletConfiguration",
+    "maxPods": 234,
+    "registerWithTaints": [
+        {
+            "effect": "NoSchedule",
+            "key": "application-priority",
+            "value": "critical"
+        }
+    ]
+}
+```
 
 &nbsp;
 
