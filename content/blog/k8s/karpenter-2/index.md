@@ -1,7 +1,7 @@
 ---
 title: "Karpenter"
 date: 2024-04-05T20:52:15+09:00
-lastmod: 2024-06-21T21:33:33+09:00
+lastmod: 2024-06-27T23:02:33+09:00
 slug: ""
 description: "DevOps Engineer를 위한 Karpenter 운영 가이드"
 keywords: []
