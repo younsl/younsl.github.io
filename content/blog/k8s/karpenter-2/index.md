@@ -48,6 +48,51 @@ Karpenter 공식문서의 [Getting Started](https://karpenter.sh/v0.35/getting-s
 
 &nbsp;
 
+### Drift
+
+EC2NodeClass에 지정된 `spec.amiSelectorTerms` 값이 없는 경우, Karpenter는 Amazon EKS 최적화 AMI에 대해 게시된 SSM 파라미터를 모니터링합니다.
+
+```yaml
+apiVersion: karpenter.k8s.aws/v1beta1
+kind: EC2NodeClass
+metadata:
+  name: default
+spec:
+  amiFamily: AL2
+  role: karpenterNodeRole-$CLUSTER_NAME
+  securityGroupSelectorTerms:
+  - tags:
+      alpha.eksctl.io/cluster-name: $CLUSTER_NAME
+  subnetSelectorTerms:
+  - tags:
+      alpha.eksctl.io/cluster-name: $CLUSTER_NAME
+  tags:
+    intent: apps
+    managed-by: karpenter
+```
+
+&nbsp;
+
+Karpenter 0.33 버전 이상부터는 기본적으로 Drift 기능이 활성화되어 있습니다.
+
+```yaml
+# karpenter/values.yaml
+# -- Global Settings to configure Karpenter
+settings:
+  # ... truncated ...
+  featureGates:
+    # -- drift is in BETA and is enabled by default.
+    # Setting drift to false disables the drift disruption method to watch for drift between currently deployed nodes
+    # and the desired state of nodes set in nodepools and nodeclasses
+    drift: true
+```
+
+Karpenter의 Drift 기능을 비활성화하려면 `settings.featureGates.drift` 값을 `false`로 변경합니다.
+
+더 자세한 사항은 [Karpenter Drift를 사용하여 Amazon EKS 워커 노드를 업그레이드하기](https://aws.amazon.com/ko/blogs/tech/how-to-upgrade-amazon-eks-worker-nodes-with-karpenter-drift/) AWS Blog 글을 참고합니다.
+
+&nbsp;
+
 ### 카펜터 노드 수동으로 늘리기 (Inflate)
 
 Karpenter 노드는 ASG<sup>Auto Scaling Group</sup>를 사용하지 않는 특성으로 인해 Cluster Autoscaler와 다르게 각 노드그룹의 최소(Min), 현재(Desired), 최대(Max) 인스턴스 개수를 지정할 수 없습니다. 이것이 Karpenter와 Cluster Autoscaler의 가장 큰 차이점입니다.
