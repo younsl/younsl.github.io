@@ -1,0 +1,33 @@
+{{ define "main" }}
+<article>
+    <header id="post-header">
+        <h1>{{ .Title }}</h1>
+        <div>
+        {{- if isset .Params "date" -}}
+            {{ if eq .Lastmod .Date }}
+                <time>{{ .Date | time.Format (i18n "post.created") }}</time>
+            {{ else }}
+                <time>{{ .Lastmod | time.Format (i18n "post.updated") }}</time>
+            {{ end }}
+        {{- end -}}
+        </div>
+    </header>
+    <!-- Google Adsense 광고 기능 -->
+    {{ if .Params.showAdvertisement | default (.Site.Params.article.showAdvertisement | default true) }}
+        {{ if templates.Exists "partials/adsense.html" }}
+            {{- partial "adsense.html" . -}}
+            {{- .Content -}}
+            {{- partial "adsense.html" . -}}
+        {{ else }}
+            {{ warnf "[ETCH] Adsense is enabled for %s but no google adsense partial exists." .File.Path }}
+        {{ end }}
+    {{ else }}
+        <!-- 각 포스트별 메인 컨텐츠 -->
+        {{- .Content -}}
+    {{ end }}
+    <!-- Utterances 댓글 기능 -->
+    {{ if .Params.showComments | default (.Site.Params.article.showComments | default true) }}
+        {{- partial "comments.html" . -}}
+    {{ end }}
+</article>
+{{ end }}

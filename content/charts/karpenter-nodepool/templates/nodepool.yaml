@@ -1,0 +1,64 @@
+{{- range $key, $value := .Values.nodePool }}
+---
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: {{ $key }}
+spec:
+  template:
+    metadata:
+      labels:
+        {{ template "nodePool.labels" (dict "labels" .labels "Release" $.Release "Chart" $.Chart "globalLabels" $.Values.globalLabels) }}
+      {{- with (merge .annotations $.Values.globalAnnotations) }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .nodeClassRef }}
+      nodeClassRef:
+        group: {{ default "karpenter.k8s.aws" .group }}
+        kind: {{ default "EC2NodeClass" .kind }}
+        name: {{ default "default" .name }}
+      {{- end }}
+      {{- with .taints }}
+      taints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .startupTaints }}
+      startupTaints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      expireAfter: {{ default "720h" .expireAfter }}
+      {{- with .requirements }}
+      requirements:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .kubelet }}
+      kubelet:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+  {{- if .disruption }}
+  {{- with .disruption }}
+  disruption: 
+    consolidationPolicy: {{ default "WhenEmptyOrUnderutilized" .consolidationPolicy }}
+    {{- if and (eq .consolidationPolicy "WhenEmpty") .consolidateAfter }}
+    consolidateAfter: {{ .consolidateAfter }}
+    {{- end }}
+    {{- with .budgets }}
+    budgets:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+
+  {{- if .limits }}
+  limits:
+    cpu: {{ default 100 .limits.cpu }}
+    memory: {{ default "100Gi" .limits.memory }}
+  {{- end }}
+  
+  {{- if .weight }}
+  weight: {{ .weight }}
+  {{- end }}
+{{- end }}
