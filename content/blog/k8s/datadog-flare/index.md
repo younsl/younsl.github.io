@@ -1,16 +1,22 @@
 ---
 title: "datadog flare"
 date: 2024-09-28T01:10:15+09:00
-lastmod: 2024-09-28T01:10:33+09:00
+lastmod: 2024-09-28T12:59:33+09:00
 slug: ""
 description: "EKS 환경에서 Datadog Agent의 flare 생성 및 전송 방법 가이드"
 keywords: []
-tags: ["devops", "kubernetes", "datadog"]
+tags: ["devops", "operation", "kubernetes", "datadog"]
 ---
+
+{{< toc >}}
+
+&nbsp;
 
 ## 개요
 
 이 글은 EKS(Amazon Elastic Kubernetes Service) 환경에서 Datadog Agent의 flare를 생성하고 전송하는 방법을 상세히 안내합니다. Flare는 Datadog 에이전트의 문제를 진단하고 해결하는 데 필수적인 도구로, 에이전트 로그, 구성 파일, 시스템 정보 등을 수집합니다.
+
+![System architecture](./1.png)
 
 이 가이드는 EKS 환경에서 Datadog을 사용하는 DevOps 엔지니어, SRE(Site Reliability Engineer), 그리고 클라우드 관리자를 대상으로 합니다. Kubernetes와 Datadog에 대한 기본적인 이해가 있는 독자에게 적합하며, flare 생성의 필요성, 실행 방법, 주의사항을 포함한 전체 프로세스를 단계별로 설명합니다.
 
@@ -27,13 +33,9 @@ Flare는 Datadog 에이전트의 문제 해결을 위해 사용되는 도구입�
 다음과 같은 주요 상황에서 flare를 보내는 것이 권장됩니다:
 
 1. **에이전트 작동 문제**: 에이전트가 시작되지 않거나 예기치 않게 종료될 때. `agent status` 명령어가 오류를 반환하거나 예상치 못한 결과를 보일 때
-
 2. **데이터 수집 이슈**: 메트릭, 로그, 또는 트레이스가 Datadog에 나타나지 않거나 불완전할 때. 특정 통합(Integration)이 제대로 작동하지 않을 때.
-
 3. **성능 문제**: 에이전트가 비정상적으로 높은 CPU, 메모리, 또는 디스크 사용량을 보일 때. RDS와 같은 모니터링 대상의 성능 지표가 비정상적으로 나타날 때 (예: 높은 CPU 사용률, 느린 쿼리 응답 시간)
-
 4. **구성 변경 후 문제 발생**: 에이전트 설정 변경 또는 버전 업그레이드 후 새로운 문제가 발생했을 때
-
 5. **Datadog 지원팀 요청 시**: 지원 티켓 처리 과정에서 Datadog 지원팀이 flare를 요청할 때
 
 이러한 상황에서 flare를 보내면 문제를 더 빠르고 정확하게 진단하고 해결할 수 있습니다. 특히 RDS와 같은 데이터베이스 성능 문제의 경우, flare를 통해 수집된 상세 정보가 문제의 근본 원인을 파악하는 데 큰 단서가 됩니다.
@@ -143,11 +145,11 @@ log_level is set to: info
 
 &nbsp;
 
-## 주의사항
+## 트러블슈팅 가이드
 
 ### 503 Service Unavailable 에러
 
-아래와 같이 503 Service Unavailable의 경우 Case ID가 다르거나 Case Closed 되면 발생할 수 있습니다.
+아래와 같이 503 Service Unavailable의 경우 Case ID가 다르거나 Case가 종료(Close)된 상태이면 발생할 수 있습니다.
 
 ```bash
 Are you sure you want to upload a flare? [y/N]
@@ -158,8 +160,11 @@ Server returned:
 {"status":"error","error":"request submission to Zendesk failed: ZEN_004"}
 ```
 
+`agent flare` 명령어에서 Case ID 값을 다르게 지정해서 다시 실행하면 해결됩니다.
+
 &nbsp;
 
 ## 관련자료
 
-[에이전트 플레어](https://docs.datadoghq.com/ko/agent/troubleshooting/send_a_flare/?tab=%EC%97%90%EC%9D%B4%EC%A0%84%ED%8A%B8v6v7)
+- [데이터독 차트](https://github.com/DataDog/helm-charts/tree/main/charts/datadog)
+- [에이전트 플레어](https://docs.datadoghq.com/ko/agent/troubleshooting/send_a_flare/?tab=%EC%97%90%EC%9D%B4%EC%A0%84%ED%8A%B8v6v7)
