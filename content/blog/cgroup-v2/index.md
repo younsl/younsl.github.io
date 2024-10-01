@@ -22,9 +22,7 @@ Amazon Linux 2023은 기본적으로 cgroup v2를 사용합니다. 따라서 Ama
 
 &nbsp;
 
-## cgroup 버전 확인방법
-
-cgroup 버전은 사용 중인 Linux 배포판과 OS에 구성된 기본 cgroup 버전에 따라 달라집니다. 배포판에서 사용하는 cgroup 버전을 확인하려면 노드에서 `stat -fc %T /sys/fs/cgroup/` 명령을 실행합니다.
+cgroup 버전은 워커노드가 사용 중인 Linux 배포판과 OS에 구성된 기본 cgroup 버전에 따라 달라집니다. 배포판에서 사용하는 cgroup 버전을 확인하려면 노드에서 `stat -fc %T /sys/fs/cgroup/` 명령을 실행합니다.
 
 ```bash
 # Node level: Worker node using cgroup v2
@@ -52,7 +50,9 @@ cgroup v1은 강력한 리소스 관리 기능을 제공하지만, 그 복잡성
 
 &nbsp;
 
-## 증상 1: Java 메모리 할당 이슈
+## 이슈
+
+### 1. Java 메모리 할당 이슈
 
 **개요**:  
 해당 이슈는 Kubernetes에서 **cgroup v2**를 사용하는 환경에서 발생하는 메모리 할당 문제와 관련되어 있습니다. 특히 **Kubernetes 1.28+ 버전에서 cgroup v2**를 사용하는 경우 메모리 관리 방식이 변경되면서 특정한 조건에서 OOMKilled가 더 빈번하게 발생할 수 있습니다. 이 문제는 **containerd**와 Kubernetes 간의 상호작용에서 메모리 계산과 제한을 처리하는 방식의 차이에서 비롯됩니다.
@@ -110,7 +110,7 @@ Amazon Linux 2 운영체제는 cgroup v1을 사용하므로, 이 문제를 일�
 
 &nbsp;
 
-### Java에서 발생하는 이슈 관련 분석
+#### Java에서 발생하는 이슈 관련 분석
 
 **개요**:  
 Red Hat 블로그에서 [OpenJDK 8u372 to feature cgroup v2 support](https://developers.redhat.com/articles/2023/04/19/openjdk-8u372-feature-cgroup-v2-support#how_to_see_which_cgroup_version_openjdk_8u_detected) 글은 OpenJDK 8에서 **cgroup v2** 지원과 관련된 내용을 다룹니다. 특히, OpenJDK 8u372부터 cgroup v2를 지원하면서 Java 애플리케이션의 메모리 관리가 개선되었는데, 이 부분이 Kubernetes와 함께 사용하는 경우에도 중요한 역할을 합니다.
@@ -180,7 +180,7 @@ JVM의 `UseContainerSupport` 플래그 상태 확인 방법:
 
 ```bash
 # Pod level
-$ java -XX:+PrintFlagsFinal | grep UseContainerSupport
+$ java -XX:+PrintFlagsFinal -version | grep UseContainerSupport
      bool UseContainerSupport                      = true                                      {product} {default}
 ```
 
@@ -256,7 +256,7 @@ cgroup v2의 결과 설명:
 
 &nbsp;
 
-## 증상 2: dind 컨테이너 메트릭 이슈
+### 2. dind 컨테이너 메트릭 이슈
 
 **문제점**:  
 EKS에서 운영되는 Actions Runner Pod와 같이 dind<sup>docker-in-docker</sup> 환경에서 구동되는 컨테이너의 경우 CPU, Memory 사용률이 제대로 수집 조회되지 않는 이슈가 있습니다.
