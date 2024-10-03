@@ -25,20 +25,40 @@ tinyproxy v1.8.3에서 v1.11.2로 수동 설치를 통한 업그레이드 가이
 
 &nbsp;
 
-## 업그레이드 배경
+## 배경지식
+
+### 업그레이드 필요성
 
 tinyproxy v1.8.3에는 다음과 같은 주요 이슈가 있습니다:
 
-1. **간헐적인 Hang 현상**: 프록시 서버가 예기치 않게 응답을 중단하는 문제가 발생할 수 있습니다.
-2. **NLB 헬스체크 문제**: Network Load Balancer(NLB)의 헬스체크 요청을 제대로 처리하지 못해 서비스 안정성에 영향을 줄 수 있습니다. [#438](https://github.com/tinyproxy/tinyproxy/issues/438)
-3. **성능 저하**: 모든 인바운드 연결에 대해 역방향 DNS 조회(Reverse DNS Lookup)를 수행하여 불필요한 지연이 발생할 수 있습니다.
+**간헐적 Hang 증상**  
+프록시 서버가 예기치 않게 응답을 중단하는 문제가 발생할 수 있습니다. 모든 인바운드 연결에 대해 역방향 DNS 조회(Reverse DNS Lookup)를 수행하여 불필요한 지연이 발생할 수 있습니다.
 
+&nbsp;
+
+**NLB 헬스체크 문제**  
+[#438](https://github.com/tinyproxy/tinyproxy/issues/438). Network Load Balancer(NLB)의 헬스체크 요청을 제대로 처리하지 못해 서비스 안정성에 영향을 줄 수 있습니다. tinyproxy 메인테이너의 설명에 따르면, 이는 실제 문제가 아니라고 합니다. tinyproxy는 요청의 출처와 관계없이 모든 오류를 기록합니다. 근본적인 문제는 NLB의 "health-check" 데몬이 제대로 형식화된 HTTP 요청을 보내지 않고 연결을 즉시 끊는 데 있습니다.
+
+```bash
+$ tail -f /var/log/tinyproxy/tinyproxy.log
+CONNECT   Oct 02 06:31:38.698 [16213]: Connect (file descriptor: 6) x.x.x.37
+ERROR     Oct 02 06:31:38.701 [16213]: read_request_line: Client (file descriptor: 6) closed socket before read.
+... Two NLB IPs are alternately repeated ...
+```
+
+로그의 오류 메시지가 문제가 된다면, 헬스체크 데몬을 수정하여 적절한 HTTP 요청을 보내도록 하는 것이 좋습니다. 앞단에 NLB가 아닌 ALB를 사용한다면 헬스체크 경로를 지정할 수 있기 때문에 반드시 헬스체크 경로를 `/stats/`로 지정해서 헬스체크 요청을 tinyproxy가 에러로 감지되지 않도록 해야 합니다.
+
+&nbsp;
+
+**v1.11.x의 주요 개선사항**  
 이러한 문제들을 해결하기 위해 `tinyproxy`를 `v1.8.3`에서 `v1.11.2`로 업그레이드하는 것을 강력히 권장합니다. v1.11.0부터 도입된 주요 개선 사항은 다음과 같습니다:
 
 - **성능 향상**: 인바운드 연결에 대한 역방향 DNS 조회(Reverse DNS Lookup)를 기본적으로 수행하지 않아 더 빠르고 안정적인 성능을 제공합니다. [#383](https://github.com/tinyproxy/tinyproxy/issues/383#issuecomment-1887250882)
 - **버그 수정**: 이전 버전에서 발생하던 여러 안정성 문제들이 해결되었습니다.
 
-이 가이드에서는 최신 버전인 v1.11.2로의 수동 설치 및 업그레이드 과정을 상세히 설명합니다.
+&nbsp;
+
+이 가이드에서는 2024년 10월 기준으로 최신 버전인 v1.11.2로의 수동 설치 및 업그레이드 과정을 상세히 설명합니다.
 
 > **참고**: 
 > - 업그레이드 전 반드시 현재 환경을 백업하고, 테스트 환경에서 먼저 진행하는 것을 추천합니다.
