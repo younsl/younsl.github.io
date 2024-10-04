@@ -14,7 +14,7 @@ tags: ["tinyproxy"]
 
 ## 개요
 
-tinyproxy v1.8.3에서 v1.11.2로 수동 설치를 통한 업그레이드 가이드.
+EC2에서 tinyproxy v1.8.3에서 v1.11.2로 수동 설치를 통한 업그레이드 가이드.
 
 &nbsp;
 
@@ -29,7 +29,7 @@ tinyproxy v1.8.3에서 v1.11.2로 수동 설치를 통한 업그레이드 가이
 
 ### 업그레이드 필요성
 
-tinyproxy v1.8.3에는 다음과 같은 주요 이슈가 있습니다:
+tinyproxy v1.8.3에는 다음과 같은 주요 이슈가 있습니다.
 
 **간헐적 Hang 증상**  
 프록시 서버가 예기치 않게 응답을 중단하는 문제가 발생할 수 있습니다. 모든 인바운드 연결에 대해 역방향 DNS 조회(Reverse DNS Lookup)를 수행하여 불필요한 지연이 발생할 수 있습니다.
@@ -37,7 +37,15 @@ tinyproxy v1.8.3에는 다음과 같은 주요 이슈가 있습니다:
 &nbsp;
 
 **NLB 헬스체크 문제**  
-[#438](https://github.com/tinyproxy/tinyproxy/issues/438). Network Load Balancer(NLB)의 헬스체크 요청을 제대로 처리하지 못해 서비스 안정성에 영향을 줄 수 있습니다. tinyproxy 메인테이너의 설명에 따르면, 이는 실제 문제가 아니라고 합니다. tinyproxy는 요청의 출처와 관계없이 모든 오류를 기록합니다. 근본적인 문제는 NLB의 "health-check" 데몬이 제대로 형식화된 HTTP 요청을 보내지 않고 연결을 즉시 끊는 데 있습니다.
+Network Load Balancer(NLB)의 헬스체크 요청을 제대로 처리하지 못해 서비스 안정성에 영향을 줄 수 있습니다.
+
+![NLB Healthcheck](./2.png)
+
+[#438](https://github.com/tinyproxy/tinyproxy/issues/438)에서 tinyproxy 메인테이너의 설명에 따르면, 이는 실제 문제가 아닌 의도된 동작이라고 합니다. tinyproxy는 요청의 출처와 관계없이 모든 오류를 기록합니다. 근본적인 문제는 NLB의 "health-check" 데몬이 제대로 형식화된 HTTP 요청을 보내지 않고 연결을 즉시 끊는 데 있습니다. 
+
+&nbsp;
+
+이에 비해 Squid Proxy는 TCP 연결만으로도 헬스체크를 통과할 수 있어, NLB의 불완전한 HTTP 요청에 대해서도 문제가 발생하지 않습니다. 만약 이러한 에러 로그가 거슬린다면, NLB 헬스체크 패킷을 더 잘 처리하는 Squid Proxy를 대안으로 고려해볼 수 있습니다. Squid Proxy는 TCP 연결 수준에서 헬스체크를 처리할 수 있어, NLB의 불완전한 HTTP 요청에 대해서도 오류 로그를 생성하지 않습니다.
 
 ```bash
 $ tail -f /var/log/tinyproxy/tinyproxy.log
@@ -68,9 +76,11 @@ ERROR     Oct 02 06:31:38.701 [16213]: read_request_line: Client (file descripto
 
 ## 환경
 
-- EC2
-- Ubuntu 16.04, arm64
-- tinyproxy v1.8.3 → v1.11.2
+작업하게 될 tinyproxy 서버 정보:
+
+- **플랫폼**: EC2
+- **OS**: Ubuntu 16.04, amd64
+- **어플리케이션 정보**: tinyproxy `v1.8.3`을 `v1.11.2`(최신)로 업그레이드
 
 &nbsp;
 
@@ -84,6 +94,19 @@ ERROR     Oct 02 06:31:38.701 [16213]: read_request_line: Client (file descripto
 # NOTE: YOU NEED TO INSTALL TINYPROXY AS ROOT USER!
 sudo -i
 ```
+
+&nbsp;
+
+먼저 필요한 빌드 도구와 의존성 패키지를 설치합니다. 이는 tinyproxy를 소스로부터 컴파일하고 빌드하는 데 필요합니다. 만약 이미 설치되어 있다면 이 설치과정을 건너뛰어도 됩니다.
+
+```bash
+apt-get update
+apt-get install build-essential
+apt-get install autoconf 
+```
+
+- `build-essential`: C/C++ 컴파일러와 관련 라이브러리들을 포함하는 패키지 모음입니다. 소스 코드를 컴파일하는 데 필요한 기본 도구들을 제공합니다.
+- `autoconf`: 소스 코드 패키지를 구성하는 데 사용되는 도구입니다. 이는 `configure` 스크립트를 생성하는 데 필요합니다.
 
 &nbsp;
 
