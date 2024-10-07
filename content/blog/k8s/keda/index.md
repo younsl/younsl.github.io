@@ -431,6 +431,44 @@ keda:
 
 &nbsp;
 
+#### Threshold 계산식
+
+HPA 스케일링은 다음 방정식을 따릅니다.
+
+```bash
+desiredReplicas = ceil[currentReplicas * ( currentMetricValue / desiredMetricValue )]
+```
+
+이때, KEDA에 설정된 `threshold`는 HPA에서 `targetAverageValue` 또는 `targetAverageUtilization`로 간주되는 임계값입니다.
+
+이 임계값을 기준으로 현재 메트릭 값과 비교해 필요한 Pod 수를 조정합니다. 만약 `targetAverageValue`나 `targetAverageUtilization`이 설정되어 있으면, `currentMetricValue`는 HPA에서 확장 대상이 되는 모든 Pod에서 메트릭 값의 평균을 계산하여 구합니다.
+
+예를 들어, 현재 Pod의 수가 3개이고 NRQL 쿼리를 통해 반환된 메트릭 값이 90이며, 각 Pod당 목표 메트릭 값이 30인 상황에서, 계산식은 다음과 같습니다:
+
+```bash
+desiredReplicas = ceil(3 * (90 / 30))
+                = ceil(3 * 3)
+                = ceil(9)
+                = 9
+```
+
+따라서 Pod는 9개로 확장됩니다.
+
+반대로, 현재 Pod 수가 6개이고 NRQL 쿼리로 반환된 메트릭 값이 20인 경우, 계산식은 다음과 같이 됩니다:
+
+```bash
+desiredReplicas = ceil(6 * (20 / 30))
+                = ceil(6 * 0.67)
+                = ceil(4.02)
+                = 5
+```
+
+결과적으로 Pod 수는 6개에서 5개로 축소됩니다.
+
+자세한 사항은 [HPA Algorithm detail](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details) 문서와 [#3035](https://github.com/kedacore/keda/discussions/3035)를 참고합니다.
+
+&nbsp;
+
 만약 `keda.enabled: false`로 설정하게 되면 scaledObject와 HPA가 생성되지 않고 deployment만 운영하는 형태로 어플리케이션이 배포될 것입니다.
 
 ```yaml
