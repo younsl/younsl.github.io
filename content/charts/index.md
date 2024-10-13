@@ -6,7 +6,6 @@ slug: ""
 description: "Index page for helm chart repoistory"
 keywords: []
 tags: ["helm", "chart"]
-showComments: false
 showAdvertisement: false
 ---
 

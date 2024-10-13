@@ -6,7 +6,6 @@ slug: ""
 description: "About"
 keywords: []
 tags: ["bio", "profile"]
-showComments: false
 showAdvertisement: false
 ---
 

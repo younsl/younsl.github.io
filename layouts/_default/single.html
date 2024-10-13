@@ -25,9 +25,10 @@
         <!-- 각 포스트별 메인 컨텐츠 -->
         {{- .Content -}}
     {{ end }}
-    <!-- Giscus 댓글 기능 -->
+    <!-- Giscus 댓글 기능
     {{ if .Params.showComments | default (.Site.Params.article.showComments | default true) }}
         {{- partial "comments.html" . -}}
     {{ end }}
+    -->
 </article>
 {{ end }}
