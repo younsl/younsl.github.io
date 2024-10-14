@@ -38,7 +38,8 @@ tags: ["git", "dev"]
 
 ### 주의사항
 
-이 가이드를 따라하면 지금까지의 main 브랜치의 전체 커밋 로그(히스토리)가 사라집니다. 삭제된 커밋 로그는 복구할 방법이 없다는 사실을 명심하도록 합니다.
+- 이 가이드를 따라하면 지금까지의 main 브랜치의 전체 커밋 로그(히스토리)가 사라집니다. 삭제된 커밋 로그는 복구할 방법이 없다는 사실을 명심하도록 합니다.
+- **Public Activity의 한계점**: GitHub에서 [활동 기록](https://docs.github.com/en/repositories/viewing-activity-and-data-for-your-repository/using-the-activity-view-to-see-changes-to-a-repository)<sup>Activity</sup>은 완전히 삭제할 수 없다는 점에 유의해야 합니다. 모든 커밋 로그를 삭제하더라도 레포지토리의 활동 기록은 그대로 남습니다. [GitHub 지원팀에 따르면](https://webapps.stackexchange.com/a/82920), 민감한 정보가 노출되지 않는 한 공개 활동<sup>Public Activity</sup>은 삭제되지 않으며, 이는 레포지토리의 투명성과 변경 이력을 보존하기 위한 정책입니다. 대신 GitHub의 Secret Scanning 기능이 기본적으로 활성화되어 있어 비밀 키나 토큰이 포함된 커밋은 푸시가 거부되므로 안전하게 코드가 관리됩니다. Secret Scanning이 많은 걱정을 덜어주지만, 지속적인 주의가 필요합니다.
 
 &nbsp;
 
