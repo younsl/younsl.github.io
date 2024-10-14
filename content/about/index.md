@@ -38,6 +38,7 @@ AWS, GCP, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops
 - Integrate private networking between GCP and AWS to connect GCP Service APIs from EKS Pods.
 - Implemented and managed Velero server in a production EKS cluster, orchestrating scheduled backups and executing recovery tests. _[*](/blog/k8s/velero-irsa/)_
 - Automate daily resource creation using GitHub Actions for terraform apply, and enhance Terraform workflows with Atlantis for collaboration. _[*](/blog/k8s/atlantis/)_
+- Deployed and managed Linkerd, a service mesh, to enhance cluster security with mTLS and improve observability between microservices.
 
 &nbsp;
 
