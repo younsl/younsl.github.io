@@ -14,7 +14,9 @@ tags: ["devops", "kubernetes", "linkerd"]
 
 ## 개요
 
-서비스 메시 툴인 Linkerd를 버전 업그레이드하는 가이드입니다.
+이 가이드는 서비스 메시 툴인 Linkerd의 버전 업그레이드를 설명합니다. 가이드는 linkerd 컨트롤 플레인을 helm 차트가 아닌 `linkerd install` 명령어로 설치한 경우를 기준으로 합니다.
+
+업그레이드 과정에서 필요한 사전 준비사항, 업그레이드 절차, 그리고 주의할 점을 포함하여 단계별로 안내합니다.
 
 &nbsp;
 
@@ -22,8 +24,8 @@ tags: ["devops", "kubernetes", "linkerd"]
 
 ### 쿠버네티스 클러스터
 
-- **EKS v1.30** (amd64 기반)
-- **AMI**: Amazon Linux 2023
+- **EKS v1.30**
+- **AMI**: Amazon Linux 2023 (amd64)
 
 &nbsp;
 
@@ -31,6 +33,13 @@ tags: ["devops", "kubernetes", "linkerd"]
 
 - **linkerd**: linkerd는 서비스 메시 컨트롤 플레인입니다. `edge-24.5.3` → `edge-24.7.5`로 업그레이드
 - **linkerd-viz**: linkerd-viz는 네트워크 트래픽과 서비스 성능을 시각적으로 보여주는 대시보드입니다. 쉽게 말해, linkerd-viz를 사용하면 서비스 간의 연결과 성능을 한눈에 보고 문제를 쉽게 찾을 수 있습니다. 이것도 동일하게 `edge-24.5.3` → `edge-24.7.5`로 업그레이드
+
+버전 업그레이드 시나리오 요약표:
+
+| 컴포넌트 이름      | 기존 버전      | 새 버전      | 설치 방식 |
+|-----------------|-------------|-------------|--------|
+| **linkerd**     | edge-24.5.3 | edge-24.7.5 | `linkerd` CLI로 설치 | 
+| **linkerd-viz** | edge-24.5.3 | edge-24.7.5 | 헬름 차트 |
 
 &nbsp;
 
@@ -61,6 +70,34 @@ Linkerd에서 업그레이드해야 할 네 가지 구성 요소는 다음과 �
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install-edge | sh
+```
+
+&nbsp;
+
+#### 1-1. CLI 경로 설정
+
+> **참고**: 이 과정은 선택 사항입니다. 터미널에서 `which linkerd` 명령어로 이미 linkerd가 경로에 추가되어 있는지 확인할 수 있습니다. `linkerd`의 경로가 출력되면 설정이 완료된 상태이며, 이 단계를 건너뛰어도 됩니다.
+
+`linkerd` CLI를 로컬에서 사용하기 위해 `PATH` 환경변수에 새롭게 `linkerd` 명령어 파일의 경로를 추가합니다.
+
+```bash
+export PATH=${PATH}:${HOME}/.linkerd2/bin
+```
+
+&nbsp;
+
+아래는 `echo`와 `tee` 명령을 조합하여 `.zshrc` 마지막 라인에 PATH 설정을 추가하고, 영구적으로 적용하는 방법입니다.
+
+```bash
+echo 'export PATH=${PATH}:${HOME}/.linkerd2/bin' | tee -a ~/.zshrc
+```
+
+&nbsp;
+
+이제 새 터미널을 열 때마다 `linkerd` 명령어를 사용할 수 있으며, 아래 명령으로 변경된 설정을 즉시 반영할 수 있습니다.
+
+```bash
+source ~/.zshrc
 ```
 
 &nbsp;
@@ -98,6 +135,10 @@ customresourcedefinition.apiextensions.k8s.io/httproutes.gateway.networking.k8s.
 customresourcedefinition.apiextensions.k8s.io/grpcroutes.gateway.networking.k8s.io configured
 customresourcedefinition.apiextensions.k8s.io/externalworkloads.workload.linkerd.io configured
 ```
+
+> Linkerd에서 사용하는 CRD<sup>Custom Resource Definition</sup>를 업그레이드하더라도 linkerd-proxy가 주입된 파드들은 데이터 플레인의 일부로 자동으로 재시작되지 않으므로 안심해도 됩니다.
+
+이제 CRD<sup>Custom Resource Definition</sup>들을 업그레이드 완료되었으므로 다음 단계로 Control plane을 업그레이드하면 됩니다.
 
 &nbsp;
 
@@ -273,3 +314,6 @@ linkerd check --proxy
 
 **linkerd-viz**  
 [linkerd-viz helm chart](https://github.com/linkerd/linkerd2/tree/main/viz/charts/linkerd-viz)
+
+**서비스메시 성능 비교글**  
+[Service Meshes Decoded Part One: A performance comparison of Istio vs Linkerd vs Cilium](https://livewyer.io/blog/2024/05/08/comparison-of-service-meshes/)
