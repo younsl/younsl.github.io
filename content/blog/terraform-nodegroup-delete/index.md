@@ -38,7 +38,7 @@ EKS 모듈 v18 이전 버전에서는 노드 그룹이 list 구조로 관리되�
 
 ### EKS module v17과 v18의 node group 코드비교
 
-아래 EKS module `v17.x`처럼 `worker_groups`가 리스트 타입으로 정의된 경우, 첫 번째 워커 그룹(worker-group-1)을 삭제하면 나머지 그룹들의 인덱스가 변경되어 Terraform이 모든 그룹을 재생성하려고 합니다.
+아래 EKS module `v17.x`처럼 `worker_groups`가 리스트 타입으로 정의된 경우, 첫 번째 워커 그룹(`frontend-node-group`)을 삭제하면 나머지 그룹들의 인덱스가 변경되어 Terraform이 모든 그룹을 재생성하려고 합니다.
 
 ```terraform
 # main.tf
