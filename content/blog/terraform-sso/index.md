@@ -182,7 +182,7 @@ terraform plan
 terraform apply
 ```
 
-또는, asp 명령어를 사용해서 동일한 작업을 수행할 수 있습니다.
+또는, `asp` 명령어를 사용해서 동일한 작업을 수행할 수 있습니다.
 
 ```bash
 # "dev" 작업 이후 "prd" 환경의 테라폼 디렉토리로
