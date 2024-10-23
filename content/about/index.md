@@ -20,7 +20,7 @@ DevOps Engineer. [Github](https://github.com/younsl).
 ### Work Experience
 
 **DevOps Engineer** <small>|</small> [Coinone](https://coinone.co.kr)  
-May 30, 2023 ― Present <small>(1 yr 5 mo)</small>
+May 30, 2023 ― Present <small>(1 yr 6 mo)</small>
 
 AWS, GCP, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops
 
