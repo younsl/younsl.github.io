@@ -1,0 +1,157 @@
+// -------------- THEME SWITCHER -------------- //
+@mixin theme($--bg-color, $--primary-text-color, $--secondary-text-color, $--link-color, $--visited-link-color, $--highlight) {
+  background-color: $--bg-color;
+
+  color: $--primary-text-color;
+
+  a {
+    color: $--link-color;
+    text-decoration: none;
+    &:visited { color: $--visited-link-color; }
+    &:hover { text-decoration: underline; }
+  }
+
+  details {
+    border: thin solid $--primary-text-color;
+    padding: 1rem;
+  }
+
+  details summary {
+    color: $--primary-text-color;
+    text-decoration: none;
+  }
+
+  code:not(pre > code) {
+    background-color: $--primary-text-color;
+    color: $--bg-color;
+  }
+
+  *:target {
+    background: $--highlight;
+    color: $--primary-text-color;
+   }
+
+   table, th, td {
+     border: thin solid $--primary-text-color;
+
+   }
+  .toc {
+    border: thin solid $--primary-text-color;
+    padding: 1rem;
+  }
+
+  figcaption { color: $--secondary-text-color; }
+}
+
+
+@mixin dark-appearance {
+  @include theme(#0f0e0e, #fafafa, #000000, #0071bc, #a359e9, #FFFF00);
+}
+
+@mixin light-appearance {
+  @include theme(#ffffff, #212121, #666666, #1e70bf, #921292, #FFFF00);
+}
+
+body[a="dark"] { @include dark-appearance; }
+body[a="light"] { @include light-appearance; }
+
+@media (prefers-color-scheme: dark) {
+  body[a="auto"] { @include dark-appearance; }
+}
+
+@media (prefers-color-scheme: light) {
+  body[a="auto"] { @include light-appearance; }
+}
+
+// -------------------------------------------- //
+
+html { height: 100%; }
+
+body {
+  font-family: monospace;
+  font-size: 16px;
+  line-height: 1.4;
+  margin: 0;
+  min-height: 100%;
+  overflow-wrap: break-word;
+}
+
+.post-meta { text-align: right; }
+
+h2, h3, h4, h5, h6 { margin-top: 0.5rem; }
+
+hr { margin: 2rem 0; }
+
+p { margin: 1rem 0; }
+
+li { margin: 0.4rem 0; }
+
+.w {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+}
+
+.toc {
+  padding: 1rem;
+}
+
+hr {
+  text-align: center;
+  border: 0;
+
+  &:before { content: '/////' }
+  &:after { content: attr(data-content) '/////' }
+}
+
+pre {
+  background: black;
+  padding: 1em;
+  overflow-x: auto; /* Fix pre content overflowing parent without scroll bar */
+}
+
+table { width: 100%; }
+
+table, th, td {
+  border: thin solid black;
+  border-collapse: collapse;
+  padding: 0.4rem;
+}
+
+code {
+  text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+code:not(pre > code) {
+  padding: 0.1em 0.2em;
+  font-size: 90%;
+}
+
+code.has-jax {
+  -webkit-font-smoothing: antialiased;
+  background: inherit !important;
+  border: none !important;
+  font-size: 100%;
+}
+
+blockquote {
+  font-style: italic;
+  border: thin solid black;
+  padding: 1rem;
+
+  p { margin: 0; }
+}
+
+img {
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
+
+figcaption {
+  text-align: center;
+  opacity: 0.5;
+}

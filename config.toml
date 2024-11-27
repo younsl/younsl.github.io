@@ -1,0 +1,46 @@
+baseURL      = "https://younsl.github.io"
+title        = "younsl"
+theme        = "nostyleplease"
+languageCode = "en-US"
+disableKinds = ["taxonomy", "term"]
+ignoreLogs   = ['warning-goldmark-raw-html']
+
+[module]
+  [module.hugoVersion]
+    extended = true
+    min      = "0.41.0"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.parser]
+      [markup.goldmark.parser.attribute]
+        block = true
+        title = true
+
+  [markup.highlight]
+    anchorLineNos      = true
+    codeFences         = true
+    guessSyntax        = true
+    hl_Lines           = ''
+    hl_inline          = false
+    lineAnchors        = ''
+    lineNoStart        = 1
+    lineNos            = false
+    lineNumbersInTable = true
+    noClasses          = true
+    noHl               = false
+    style              = 'rrt'
+    tabWidth           = 4
+  
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel   = 3
+    ordered    = false
+
+[params]
+  [params.theme_config]
+    appearance        = "dark"
+    back_home_text    = ".."
+    date_format       = "2006-01-02"
+    isListGroupByDate = false
+    isShowFooter      = false

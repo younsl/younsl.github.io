@@ -1,0 +1,2 @@
+
+Welcome! {{ .Chart.Name }}-{{ .Chart.Version }} has deployed.
