@@ -1,14 +1,34 @@
 // -------------- THEME SWITCHER -------------- //
-@mixin theme($--bg-color, $--primary-text-color, $--secondary-text-color, $--link-color, $--visited-link-color, $--highlight) {
+@mixin theme($--bg-color, $--primary-text-color, $--secondary-text-color, $--highlight) {
   background-color: $--bg-color;
 
   color: $--primary-text-color;
 
+  // Links in the content page
   a {
-    color: $--link-color;
+    color: $--primary-text-color;
+    text-decoration: underline $--highlight;
+    &:hover {
+      color: $--highlight;
+      text-decoration-color: $--highlight;
+    }
+  }
+
+  // Post links in the main page
+  a.main {
     text-decoration: none;
-    &:visited { color: $--visited-link-color; }
-    &:hover { text-decoration: underline; }
+    &:hover {
+      text-decoration: underline;
+      text-decoration-color: $--highlight;
+    }
+  }
+
+  span {
+    color: $--highlight;
+  }
+
+  pre span {
+    color: inherit;
   }
 
   details {
@@ -45,11 +65,11 @@
 
 
 @mixin dark-appearance {
-  @include theme(#0f0e0e, #fafafa, #000000, #0071bc, #a359e9, #FFFF00);
+  @include theme(#0f0e0e, #fafafa, #000000, #999999);
 }
 
 @mixin light-appearance {
-  @include theme(#ffffff, #212121, #666666, #1e70bf, #921292, #FFFF00);
+  @include theme(#ffffff, #212121, #666666, #999999);
 }
 
 body[a="dark"] { @include dark-appearance; }

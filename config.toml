@@ -38,9 +38,20 @@ ignoreLogs   = ['warning-goldmark-raw-html']
     ordered    = false
 
 [params]
+  # Theme configurations
   [params.theme_config]
     appearance        = "dark"
     back_home_text    = ".."
     date_format       = "2006-01-02"
     isListGroupByDate = false
     isShowFooter      = false
+    titleLinkEnable   = true
+    titleLink         = "/about"
+
+  # Post list configurations
+  [[params.entries]]
+    [params.entries.post_list]
+      limit          = 0
+      show_more      = false
+      show_more_text = ""
+      show_more_url  = ""
