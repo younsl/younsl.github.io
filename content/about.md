@@ -9,7 +9,7 @@ tags: ["bio", "profile"]
 showAdvertisement: false
 ---
 
-### Younsung Lee
+**Younsung Lee**
 
 DevOps Engineer. [Github](https://github.com/younsl).
 
@@ -17,7 +17,7 @@ DevOps Engineer. [Github](https://github.com/younsl).
 
 ### Work Experience
 
-**DevOps Engineer** <small>|</small> [Coinone](https://coinone.co.kr)  
+**DevOps Engineer** @ [Coinone](https://coinone.co.kr)  
 May 30, 2023 ― Present <small>(1 yr 7 mo)</small>
 
 AWS, GCP, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops
@@ -40,7 +40,7 @@ AWS, GCP, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops
 
 &nbsp;
 
-**DevOps Engineer** <small>|</small> [Greenlabs Financial](https://seedglobal.co)  
+**DevOps Engineer** @ [Greenlabs Financial](https://seedglobal.co)  
 Sep 5, 2022 ― Apr 7, 2023 <small>(7 mos)</small>
 
 AWS, Kubernetes, Istio, Observability, CI/CD, Terraform, MLOps, Infrastructure Ops
@@ -52,14 +52,14 @@ AWS, Kubernetes, Istio, Observability, CI/CD, Terraform, MLOps, Infrastructure O
 
 &nbsp;
 
-**Cloud Engineer** <small>|</small> [Watcha](https://watcha.team)  
+**Cloud Engineer** @ [Watcha](https://watcha.team)  
 Feb 14, 2022 ― Aug 5, 2022 <small>(6 mos)</small>
 
 AWS, Kubernetes, CI/CD, Terraform, Infrastructure Ops
 
 &nbsp;
 
-**System Engineer** <small>|</small> [KDN](https://kdn.com)  
+**System Engineer** @ [KDN](https://kdn.com)  
 Dec 16, 2013 ― Feb 11, 2022 <small>(8 yrs 2 mos)</small>
 
 On-premise, Linux administration, VMware Cluster administration, Storage administration, Backup and Recovery, Monitoring, Infrastructure Ops
@@ -76,7 +76,7 @@ On-premise, Linux administration, VMware Cluster administration, Storage adminis
 
 ### Education
 
-**BSE, ICT Applied** <small>|</small> Chosun University  
+**BSE, ICT Applied** @ Chosun University  
 Mar 2018 ― Feb 2022
 
 <!-- GPA: 4.09 / 4.5 -->

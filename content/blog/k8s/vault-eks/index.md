@@ -35,7 +35,78 @@ EKS 클러스터에 Vault 클러스터를 설치하고 AWS KMS를 사용한 Auto
 
 &nbsp;
 
-### Vault 설치
+## 가이드
+
+### 사전 네트워크 구성
+
+설치 전에 EKS 컨트롤플레인과 vault sidecar injector 간의 통신이 가능한 환경이 되어야 합니다.
+
+컨트롤플레인의 `kube-apiserver`와 `vault-agent-injector` 파드 간의 네트워크 연결이 구성되지 않으면, Mutating Webhook 호출에 대한 대기 시간이 길어져 클러스터 전체적으로 롤아웃 재시작, 포드 종료, 컨테이너 생성 등의 문제가 발생할 수 있습니다.
+
+![Network connectivity between kube-apiserver and vault-agent-injector](./2.png)
+
+가장 큰 영향은 클러스터의 모든 파드의 생성(containerCreating)과 종료(Terminating) 상태가 지연되는 것입니다. `vault`가 쿠버네티스의 [Mutating Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#webhook-configuration)을 통해 파드에 `vault-agent`를 삽입하는지 검증하기 위해서는 네트워크 연결이 필요합니다. `kube-apiserver`의 Mutating Webhook 호출이 지연되는 경우, 파드 생성과 종료가 지연되는 것을 확인할 수 있습니다.
+
+&nbsp;
+
+네트워크 구성이 안된 경우, `kube-apiserver`의 CloudWatch Logs 로그에서 `context deadline exceeded` 메시지가 반복되는 것을 확인할 수 있습니다.
+
+```bash
+E0610 20:50:30.214031      10 dispatcher.go:214] failed calling webhook "vault.hashicorp.com": failed to call webhook: Post "[https://vault-agent-injector-svc.vault.svc:443/mutate?timeout=30s](https://vault-agent-injector-svc.vault.svc/mutate?timeout=30s)": context deadline exceeded
+```
+
+> **주의사항**: 항상 Mutating Webhook을 사용하는 서비스에 대해서는 컨트롤플레인과 파드 간의 네트워크 연결이 구성되어 있는지 확인해야 합니다.
+
+&nbsp;
+
+Mutating Webhook 문제에 대한 자세한 원인 및 해결방법은 다음 이슈를 참고하세요.
+
+- [hashicorp/vault-helm#163 - Mutation webhook failing to inject vault sidecars](https://github.com/hashicorp/vault-helm/issues/163#issuecomment-2165959438)
+- [Linkerd-Viz Tap FailedDiscoveryCheck while Running on EKS](https://linkerd.buoyant.io/t/linkerd-viz-tap-faileddiscoverycheck-while-running-on-eks/252): `vault-agent-injector`의 Mutating Webhook 문제는 Linkerd 서비스 메시에서 발생하는 네트워크 구성 문제와 동일한 원인으로 발생합니다.
+
+&nbsp;
+
+EKS 테라폼 모듈을 사용해서 클러스터를 생성하는 경우, `node_security_group_additional_rules` 옵션을 통해 워커노드의 보안그룹에 추가 인바운드 룰을 설정할 수 있습니다.
+
+```hcl {hl_lines=["4-13"]}
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+
+  node_security_group_additional_rules = {
+    ingress_vault_agent_injector_mutating_webhook = {
+      description                   = "Allow ingress mutating webhook traffic from kube-apiserver to vault-agent-injector pod"
+      protocol                      = "tcp"
+      from_port                     = 8080
+      to_port                       = 8080
+      type                          = "ingress"
+      source_cluster_security_group = true
+    }
+  }
+  # ... omitted for brevity ...
+}
+```
+
+&nbsp;
+
+기본적으로 Mutating Webhook의 API 서버 역할을 하는 `vault-agent-injector` 파드는 8080 포트를 통해 컨트롤플레인과 통신합니다. 아래는 `vault` 차트의 `injector` 설정입니다.
+
+```yaml {hl_lines=["11"]}
+# charts/vault/values.yaml
+# chart version 0.29.0
+injector:
+  # True if you want to enable vault agent injection.
+  # @default: global.enabled
+  enabled: "-"
+
+  replicas: 1
+
+  # Configures the port the injector should listen on
+  port: 8080
+```
+
+&nbsp;
+
+### vault 설치
 
 `vault` 네임스페이스를 먼저 생성합니다. `vault` 네임스페이스에 vault 차트를 설치할 예정입니다.
 
@@ -47,7 +118,7 @@ kubectl create namespace vault
 
 `vault` 차트에서 사용할 `values.yaml` 파일을 작성합니다. 세부 설정으로는 HA 모드를 활성화하고 3개의 파드를 배포합니다.
 
-```yaml
+```yaml {hl_lines=["3-5"]}
 # charts/vault/values.yaml
 server:
   ha:
@@ -514,7 +585,7 @@ vault 파드의 KMS Key 획득을 위해서는 [IAM Role for Service Accounts (I
 
 Vault 파드는 다음과 같은 방식으로 권한 획득 및 KMS Key 획득을 진행해서 Auto Unseal을 실행합니다.
 
-![vault autounseal with AWS KMS key by IRSA](./2.png)
+![vault autounseal with AWS KMS key by IRSA](./3.png)
 
 &nbsp;
 
