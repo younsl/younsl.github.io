@@ -7,7 +7,8 @@
   // Links in the content page
   a {
     color: $--primary-text-color;
-    text-decoration: underline $--highlight;
+    text-decoration: underline;
+    text-decoration-color: $--highlight;
     &:hover {
       color: $--highlight;
       text-decoration-color: $--highlight;
