@@ -85,16 +85,11 @@ Mar 2018 ― Feb 2022
 
 ### Certification
 
-#### CNCF 
-
 - Linux Foundation Certified IT Associate: 2024.11.29 - 2026.11.29
 - Kubernetes and Cloud Native Associate: 2024.11.29 - 2026.11.29
-- Certified Kubernetes Administrator: 2022.09.13 ― 2025.09.13
-
-#### AWS
-
 - AWS Certified Solutions Architect - Professional: 2023.05.21 - 2026.05.21
 - AWS Certified Developer - Associate: 2023.05.18 - 2026.05.18
 - AWS Certified SysOps Administrator - Associate: 2023.05.13 - 2026.05.13
 - AWS Certified Cloud Practitioner: 2023.05.04 - 2026.05.04
+- Certified Kubernetes Administrator: 2022.09.13 ― 2025.09.13
 - AWS Certified Solutions Architect - Associate: 2020.06.26 - 2026.05.21
