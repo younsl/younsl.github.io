@@ -38,7 +38,6 @@ ignoreLogs   = ['warning-goldmark-raw-html']
     ordered    = false
 
 [params]
-  # Theme configurations
   [params.theme_config]
     appearance        = "dark"
     back_home_text    = ".."
@@ -48,7 +47,6 @@ ignoreLogs   = ['warning-goldmark-raw-html']
     titleLinkEnable   = true
     titleLink         = "/about"
 
-  # Post list configurations
   [[params.entries]]
     [params.entries.post_list]
       limit          = 0

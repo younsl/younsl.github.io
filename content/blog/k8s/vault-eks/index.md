@@ -116,7 +116,7 @@ kubectl create namespace vault
 
 &nbsp;
 
-`vault` 차트에서 사용할 `values.yaml` 파일을 작성합니다. 세부 설정으로는 HA 모드를 활성화하고 3개의 파드를 배포합니다.
+`vault` 차트에서 사용할 `values.yaml` 파일을 작성합니다. 세부 설정으로는 [High Availability(HA) 모드](https://www.vaultproject.io/docs/concepts/ha)를 활성화하고 3개의 파드를 배포합니다.
 
 ```yaml {hl_lines=["3-5"]}
 # charts/vault/values.yaml
@@ -381,7 +381,7 @@ Threshold               1
 Version                 1.18.1
 Build Date              2024-10-29T14:21:31Z
 Storage Type            raft
-HA Enabled             true
+HA Enabled              true
 ```
 
 &nbsp;
@@ -905,7 +905,7 @@ Build Date               2024-10-29T14:21:31Z
 Storage Type             raft
 Cluster Name             vault-cluster-0c3c3c82
 Cluster ID               8ae9c0f8-212f-2fcd-f2fb-a12819e5ac36
-HA Enabled              true
+HA Enabled               true
 HA Cluster               https://vault-0.vault-internal:8201
 HA Mode                  active
 Active Since             2024-11-20T23:51:46.98699563Z
