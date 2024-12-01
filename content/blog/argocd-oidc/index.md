@@ -320,6 +320,47 @@ configs:
 
 &nbsp;
 
+#### 선택사항: 웹 기반 터미널 기능
+
+웹 기반 터미널 기능은 선택사항입니다. ArgoCD 웹(Argo UI)에서 터미널 기능을 사용하기 위해서는 configMap의 `exec.enabled` 값을 `true`로 설정해야 합니다.
+
+```yaml
+# charts/argocd/values.yaml
+configs:
+  cm:
+    # -- Enable exec feature in Argo UI
+    ## Ref: https://argo-cd.readthedocs.io/en/latest/operator-manual/rbac/#exec-resource
+    exec.enabled: true
+```
+
+&nbsp;
+
+Application Project 단위에 속하는(application-specific) `applications`, `applicationsets`, `logs` 및 `exec` 리소스에 대한 접근 권한을 부여하기 위해서는 아래와 같은 형식을 사용합니다.
+
+이 값은 `policy.csv` 파일에서 사용되는 형식입니다.
+
+```bash
+p, <role/user/group>, <resource>, <action>, <appproject>/<object>, allow
+```
+
+> ArgoCD 권한 관리에서는 `deny` 규칙을 지원하지 않습니다. 이러한 이유로 기본 정책을 통해 최소 필요한 권한을 부여하고, 필요에 따라 개별 역할에 권한을 부여하는 방법을 사용합니다.
+
+&nbsp;
+
+`role:team_beta`에 대해 `beta` 프로젝트의 모든 파드에 대해 터미널 접속 권한을 부여하기 위해서는 아래와 같은 설정을 `policy.csv` 파일에 추가합니다.
+
+```yaml
+# charts/argocd/values.yaml
+configs:
+  cm:
+    policy.default: role:readonly
+    policy.csv: |
+      p, role:team_beta, exec, create, beta/*, allow
+      g, team_beta@example.com, role:team_beta
+```
+
+&nbsp;
+
 변경된 설정을 적용하기 위해 `dex` 파드를 재시작합니다.
 
 ```bash

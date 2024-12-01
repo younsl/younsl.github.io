@@ -1,7 +1,7 @@
 ---
 title: "About"
 date: 2022-08-31T15:38:15+09:00
-lastmod: 2023-10-02T15:35:33+09:00
+lastmod: 2024-12-01T17:32:33+09:00
 slug: ""
 description: "About"
 keywords: []
