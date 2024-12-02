@@ -41,6 +41,9 @@ Vercel의 VP, leerob.
 [roadmap.sh/devops](https://roadmap.sh/devops)  
 DevOps 학습 로드맵
 
+[DevOps is bullshit](https://www.massdriver.cloud/blogs/devops-is-bullshit)  
+DevOps 컨셉에 대한 비판글: 항상 모든 기술 선택에는 트레이드오프가 존재하므로, 모든 기술 선택에 대한 비판적인 사고를 가지는 것이 DevOps Engineer의 필수 소프트 스킬이라고 생각합니다.
+
 [DevOps Exercises](https://github.com/bregman-arie/devops-exercises)
 
 [DevOps 엔지니어란 누구입니까?](https://www.atlassian.com/ko/devops/what-is-devops/devops-engineer)

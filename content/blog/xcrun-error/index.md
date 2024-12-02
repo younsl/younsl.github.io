@@ -1,17 +1,18 @@
 ---
-title: "macOS xcrun: error 해결법"
+title: "xcrun error"
 date: 2021-10-27T01:13:09+09:00
-lastmod: 2023-04-18T22:57:05+09:00
+lastmod: 2024-12-02T21:11:05+09:00
 slug: ""
-description: "macOS 업데이트 이후 git 명령어 실행시 발생하는 xcrun: error의 해결법을 소개합니다."
+description: "macOS 업데이트 이후 git 명령어 실행시 발생하는 xcrun: error: invalid active developer path 에러 해결하기"
 keywords: []
-tags: ["dev"]
+tags: ["dev", "terminal", "macos"]
 ---
 
 ## 개요
 
-`xcrun: error: invalid active developer path` 에러를 해결하는 가이드입니다.  
-해당 에러는 macOS 업데이트 완료 후 발생할 수 있습니다.
+`git` 명령어 실행시 `xcrun: error: invalid active developer path` 에러가 발생하면 해당 가이드를 참고해서 문제를 해결할 수 있습니다.
+
+해당 에러는 macOS 업데이트 완료 이후 발생할 수 있습니다.
 
 &nbsp;
 
@@ -19,24 +20,27 @@ tags: ["dev"]
 
 ### 로컬 환경
 
+에러가 발생한 시스템 환경은 다음과 같습니다.
+
 - **Model** : MacBook Pro (13inch, M1, 2020)
 - **OS** : macOS Monterey 12.0.1
-
-  ```bash
-  $ sw_vers
-  ProductName:  macOS
-  ProductVersion: 12.0.1
-  BuildVersion: 21A559
-  ```
-
 - **Shell** : zsh
 - **터미널** : macOS 기본 터미널
+
+```bash
+$ sw_vers
+ProductName:  macOS
+ProductVersion: 12.0.1
+BuildVersion: 21A559
+```
 
 &nbsp;
 
 ## 증상
 
-macOS Catalina 11.6에서 macOS Monterey 12.0.1로 소프트웨어 업데이트를 한 이후부터 `git` 명령어를 실행하면 에러 메세지가 반환되며 실행할 수 없습니다.
+macOS Catalina 11.6에서 macOS Monterey 12.0.1로 소프트웨어 업데이트를 한 이후부터 `git` 명령어를 실행하면 `xcrun: error: invalid active developer path` 에러 메세지가 반환되며 명령어를 실행할 수 없습니다.
+
+`git` 명령어를 실행할 때 발생하는 에러 메세지는 다음과 같습니다.
 
 ```bash
 $ git commit -m 'rebuilding site 2021년 10월 27일 수요일 00시 34분 04초 KST'
@@ -71,7 +75,14 @@ macOS에서 OS 업데이트가 진행될때마다 자주 발생되는 Xcode CLI 
 Xcode CLI를 수동으로 설치해서 문제를 해결할 수 있습니다.
 
 ```bash
-$ xcode-select --install
+xcode-select --install
+```
+
+&nbsp;
+
+명령어 실행 결과는 다음과 같습니다.
+
+```bash
 xcode-select: note: install requested for command line developer tools
 ```
 
@@ -99,7 +110,7 @@ Password: [패스워드 입력]
 
 ```bash
 $ git commit -m 'rebuilding site 2021년 10월 27일 수요일 00시 45분 23초 KST'
-[...]
+... omitted for brevity ...
  2 files changed, 28 insertions(+), 3 deletions(-)
 ```
 
@@ -110,8 +121,15 @@ Counting objects: 100% (9/9), done.
 Delta compression using up to 8 threads
 Compressing objects: 100% (5/5), done.
 Writing objects: 100% (5/5), 1.33 KiB | 1.33 MiB/s, done.
-[...]
+... omitted for brevity ...
    5936bbc..902284d  master -> master
 ```
 
-Xcode CLI를 설치완료 후 에러 메세지 없이 `git` 명령어가 실행됩니다.
+Xcode CLI를 설치완료 이후에는 `xcrun: error: invalid active developer path` 에러 메세지 없이 `git` 명령어가 정상적으로 실행됩니다.
+
+&nbsp;
+
+## 관련자료
+
+- [Mac 업그레이드 후 xcrun: error: invalid active developer path 에러 해결하기](https://www.hahwul.com/2019/11/18/how-to-fix-xcrun-error-after-macos-update/)
+- [Apple forum의 문의글 - xcrun: error: invalid active developer path](https://forums.developer.apple.com/forums/thread/673827)
