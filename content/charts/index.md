@@ -9,25 +9,36 @@ tags: ["helm", "chart"]
 showAdvertisement: false
 ---
 
-## 개요
+## Summary
 
-헬름 차트 저장소.
+Helm chart repository hosted on [younsl.github.io](https://github.com/younsl/younsl.github.io).
 
-현재 [`younsl.github.io`](https://github.com/younsl/younsl.github.io) 블로그 레포지터리는 헬름 차트 저장소로서도 서비스 되고 있습니다.
+## Usage
 
-&nbsp;
-
-## 사용법
-
-`younsl`이라는 이름으로 헬름 차트 저장소를 추가합니다.
+Add the helm chart repository with the name `younsl`.
 
 ```bash
+helm version  # If you don't have helm installed, install first
 helm repo add younsl https://younsl.github.io
 helm repo update
 ```
 
-`younsl` 차트 저장소에 있는 모든 헬름 차트를 검색합니다. 이를 통해 저장소에 포함된 차트의 목록과 각 차트의 세부 정보를 확인할 수 있습니다.
+Search all helm charts in the `younsl` chart repository.
 
 ```bash
 helm search repo younsl
 ```
+
+The `helm search repo` command checks the status of the charts based on the `index.yaml` file in the helm chart repository.
+
+The `index.yaml` file contains the metadata of the repository and is used for chart search and installation. Check [index file](https://github.com/younsl/younsl.github.io/blob/main/static/index.yaml) directly.
+
+## Available charts
+
+| Chart name | Status | Chart version |
+| ---------- | ------ | ------------- |
+| **actions-runner** | maintained | 0.1.3 |
+| **argocd-apps** | maintained | 1.6.1 |
+| **backup-utils** | maintained | 0.3.2 |
+| **karpenter-nodepool** | maintained | 0.1.1 |
+| **rbac** | maintained | 0.2.0 |
