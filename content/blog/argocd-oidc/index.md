@@ -361,6 +361,30 @@ configs:
 
 &nbsp;
 
+#### 주의사항: 업데이트/삭제 작업에 대한 세분화된 권한
+
+ArgoCD v2.9에서는 `rollout`, `pod`와 같은 프로젝트의 하위 쿠버네티스 리소스에 대한 권한은 세부적으로 관리할 수 없는 한계점이 있습니다. 따라서 Applications에 대한 삭제 권한을 부여하면 해당 애플리케이션이 배포한 모든 쿠버네티스 리소스에 대한 삭제 권한을 부여해야만 하는 한계점이 있습니다.
+
+아래는 ArgoCD RBAC Configuration 공식문서의 [Application resources](https://argo-cd.readthedocs.io/en/release-2.9/operator-manual/rbac/#application-resources) 섹션 내용 일부입니다.
+
+> Delete access to **sub-resources of a project, such as a rollout or a pod, cannot be managed granularly**. `<project-name>/<application-name>` grants access to all subresources of an application.
+
+예를 들어, 아래 RBAC 설정은 `beta` 프로젝트의 `important-backend-api` 애플리케이션이 배포한 모든 쿠버네티스 리소스(pod, deployment, configMap, secret, etc.)에 대한 삭제(`delete`) 권한을 같이 부여합니다.
+
+```yaml
+# charts/argocd/values.yaml
+# argocd v2.9
+configs:
+  cm:
+    policy.csv: |
+      p, role:team_beta, applications, delete, beta/important-backend-api, allow
+      g, team_beta@example.com, role:team_beta
+```
+
+이는 어쩔 수 없이 발생하는 구 버전 ArgoCD의 한계점입니다. 네임스페이스 및 리소스 단위의 세부 권한 제어 기능인 [Fine-grained Permissions for update/delete action](https://argo-cd.readthedocs.io/en/release-2.12/operator-manual/rbac/#fine-grained-permissions-for-updatedelete-action)를 사용하려면 ArgoCD v2.12 이상 버전으로 업그레이드해야 합니다.
+
+&nbsp;
+
 변경된 설정을 적용하기 위해 `dex` 파드를 재시작합니다.
 
 ```bash
