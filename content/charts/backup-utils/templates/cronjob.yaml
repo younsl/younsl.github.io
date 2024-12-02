@@ -9,6 +9,7 @@ metadata:
     {{- include "github-backup-utils.labels" . | nindent 4 }}
 spec:
   {{- with .Values.backupUtils }}
+  timeZone: {{ .timezone | quote }}
   schedule: {{ .schedule | quote }}
   concurrencyPolicy: {{ .concurrencyPolicy }}
   jobTemplate:

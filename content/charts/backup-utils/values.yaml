@@ -25,6 +25,11 @@ backupUtils:
   podAnnotations: {}
     # linkerd.io/inject: enabled
 
+  # -- timeZone
+  # Timezone for scheduled backups executed by cronjob
+  # ref: https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#time-zones
+  timeZone: "Asia/Seoul"
+
   # -- schedule
   # Cron expression for scheduled backups
   # backup-utils team recommends hourly backups at the least
