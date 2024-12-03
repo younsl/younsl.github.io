@@ -1,7 +1,7 @@
 ---
 title: "Github Enterprise 백업 인스턴스 구성"
 date: 2023-06-16T10:51:15+09:00
-lastmod: 2023-07-29T18:50:25+09:00
+lastmod: 2024-12-03T21:36:25+09:00
 slug: ""
 description: "Github Enterprise 백업 구성"
 keywords: []
@@ -786,27 +786,52 @@ EC2 기반의 `backup-utils` 서버에서 사용하는 중요파일 경로는 �
 
 ### backup-utils
 
-아쉽게도 Github Enterprise 백업서버는 공식 헬름차트를 제공하지 않습니다.
+아쉽게도 Github Enterprise 백업서버는 공식 헬름차트를 제공하지 않습니다. GHE 서버는 쿠버네티스 클러스터 기반 설치 지원도 없습니다.
 
-제 경우는 되도록이면 대부분의 시스템을 쿠버네티스에 올리는 걸 선호하는데요, 시스템 운영이 자동화된다는 장점과 별도의 인스턴스 구동이 필요 없이 리소스를 절약할 수 있다는 장점 때문입니다.
+제 경우는 되도록이면 대부분의 시스템을 쿠버네티스에 올리는 걸 선호하는데요, 시스템 운영이 자동화된다는 장점과 별도의 인스턴스 구동이 필요 없이 컴퓨팅 자원을 절약할 수 있다는 장점 때문입니다.
 
 ![쿠버네티스 기반 backup-utils 아키텍처](./7.png)
 
 그래서 백업서버 인프라를 쿠버네티스 클러스터에 CronJob 형태로 운영하는 결정을 했습니다. gp3 타입의 EBS 볼륨에 백업 데이터를 증적하는 메커니즘은 동일합니다.  
 다만 백업을 수행하는 주체가 EC2 대신 `CronJob`이 주기적으로 스케줄링하는 `Pod`로 바뀐다는 점이 가장 큰 차이점입니다.
 
-backup-utils 설치는 SSH Key에 대한 Secret을 생성한 이후, 헬름 차트로 손쉽게 가능합니다.
+backup-utils는 SSH Key에 대한 Secret 리소스를 생성한 이후, 헬름 차트로 손쉽게 설치할 수 있습니다.
+
+&nbsp;
+
+다음은 EKS 클러스터에 [backup-utils](/charts)를 설치하는 절차입니다.
+
+`backup-utils` 차트가 저장된 [차트 레포지토리](https://github.com/younsl/charts)를 추가합니다.
+
+```bash
+helm repo add younsl https://younsl.github.io/
+helm search repo younsl
+```
+
+&nbsp;
+
+`values.yaml`의 세부 설정을 추가한 후, `helm` 명령어로 쿠버네티스 클러스터에 `backup-utils` 차트를 설치합니다.
 
 ```bash
 helm upgrade \
     --install \
     --namespace backup-utils \
     --create-namespace \
-    backup-utils . \
+    backup-utils younsl/backup-utils \
     -f values.yaml
 ```
 
-더 관심 있으신 분들은 제가 개발한 [backup-utils](https://github.com/younsl/charts/tree/main/charts/backup-utils) 헬름차트를 확인하세요.
+&nbsp;
+
+쿠버네티스 클러스터에 `cronJob` 리소스가 생성되며, 이를 통해 `backup-utils` 파드가 주기적으로 Github Enterprise Server의 백업 작업을 수행합니다.
+
+```bash
+$ kubectl get cronjob -n backup-utils
+NAME                  SCHEDULE       TIMEZONE     SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+github-backup-utils   */30 * * * *   Asia/Seoul   False     1        25m             25h
+```
+
+> Github Enterprise에서는 공식적으로 최소 백업 주기를 1시간으로 권장하고 있습니다. 그러나 제 경험상 30분 간격으로 백업을 찍는 것이 가장 안전한 것 같습니다.
 
 &nbsp;
 
