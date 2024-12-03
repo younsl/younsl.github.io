@@ -12,6 +12,11 @@ backupUtils:
   # This allows you to easily toggle the backup functionality without removing existing configurations
   enabled: true
 
+  # -- suspend
+  # Suspend or resume the backup utility scheduled by cronjob
+  # This allows you to easily toggle the backup functionality without removing existing configurations
+  suspend: false
+
   # -- podLabels
   # Labels to be added to the pod
   # This can be used to categorize and organize pods, such as by app or environment
