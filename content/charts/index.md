@@ -37,8 +37,14 @@ The `index.yaml` file contains the metadata of the repository and is used for ch
 
 | Chart name | Status | Chart version |
 | ---------- | ------ | ------------- |
-| **actions-runner** | maintained | 0.1.3 |
-| **argocd-apps** | maintained | 1.6.1 |
-| **backup-utils** | maintained | 0.3.2 |
-| **karpenter-nodepool** | maintained | 0.1.1 |
-| **rbac** | maintained | 0.2.0 |
+| [**actions-runner**][actions-runner] | Active | 0.1.3 |
+| [**argocd-apps**][argocd-apps] | Active | 1.6.1 |
+| [**backup-utils**][backup-utils] | Active | 0.3.2 |
+| [**karpenter-nodepool**][karpenter-nodepool] | Active | 0.1.1 |
+| [**rbac**][rbac] | Active | 0.2.0 |
+
+[actions-runner]: https://github.com/younsl/younsl.github.io/tree/main/content/charts/actions-runner
+[argocd-apps]: https://github.com/younsl/younsl.github.io/tree/main/content/charts/argocd-apps
+[backup-utils]: https://github.com/younsl/younsl.github.io/tree/main/content/charts/backup-utils
+[karpenter-nodepool]: https://github.com/younsl/younsl.github.io/tree/main/content/charts/karpenter-nodepool
+[rbac]: https://github.com/younsl/younsl.github.io/tree/main/content/charts/rbac
