@@ -330,11 +330,22 @@ fleunt-bit은 각 노드에 동작하고 있는 파드 로그를 수집한 후, 
 
 &nbsp;
 
+### 모범사례
+
+[권장하는 CloudWatch Metrics 수치](https://docs.aws.amazon.com/ko_kr/opensearch-service/latest/developerguide/cloudwatch-alarms.html)
+
+중요 메트릭:
+
+- **CPUUtilization** (Max) 메트릭: 80% 미만으로 유지 
+- **ThreadpoolWriteQueue** (Average) 메트릭: 100 미만으로 유지
+
+&nbsp;
+
 ### CPU 과부하 발생 대처
 
 데이터 노드에 CPU 과부하 발생할 경우, Kibana에서 인덱스 조회시 응답을 받지 못하는 영향이 있습니다.
 
-- CPU 사용량이 15분 동안 3회 연속 80% 이상으로 유지될 경우, 클러스터에 데이터 노드를 추가하거나 더 큰 사이즈의 인스턴스로 스케일링을 고려합니다.
+- CPU 사용량 메트릭 `CPUUtilization`이 15분 동안 3회 연속 80% 이상으로 유지될 경우, 클러스터에 데이터 노드를 추가하거나 더 큰 사이즈의 인스턴스로 스케일링을 고려합니다. 자세한 사항은 [모범사례 문서](https://docs.aws.amazon.com/ko_kr/opensearch-service/latest/developerguide/cloudwatch-alarms.html)를 참고합니다.
 - 프라이머리 노드의 JVM 메모리 압력 수치가 70~80%로 높은 경우에는 CPU 최적화 타입 보다는 `m5.large.search` 또는 `m6g.large.search`와 같은 메모리 최적화 타입으로 교체하면 문제를 해결할 수 있습니다.
 - 클러스터 인덱스의 `refresh_interval` 설정 값을 높이면 클러스터의 세그먼트 생성 속도를 늦출 수 있고 이슈를 완화할 수 있습니다. `refresh_interval`은 기본적으로 1초로 설정되어 있으며, 이는 대부분의 일반적인 사용 사례에 적합합니다. 그러나 특정 작업에서는 이 값을 30초나 그 이상으로 설정하여 인덱싱 작업 중에 더 적은 리소스를 사용하도록 조정할 수 있습니다. 이러한 변경을 통해 인덱스의 성능과 클러스터의 안정성을 향상시킬 수 있습니다. `refresh_interval` 값 설정을 변경하는 방법에 대해서는 [문서](https://opensearch.org/blog/optimize-refresh-interval/)를 참조합니다. 만약, 인덱스의 `refresh_interval` 설정값을 높였음에도 지속적으로 높은 CPU 사용률 경고가 발생한다면, 워크로드를 처리하기에 클러스터의 크기가 충분하지 않은 것이기 때문에 클러스터의 스케일링을 고려해야 합니다.
 - 장기적인 해결책으로는 데이터 노드의 타입을 고성능으로 변경(스케일 업) or 데이터 노드의 개수 추가가 있습니다.
