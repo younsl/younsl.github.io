@@ -33,6 +33,12 @@ Kafka UI는 Kubernetes 클러스터에 설치를 지원하며, [헬름차트](ht
 
 &nbsp;
 
+## 주의사항
+
+[#4502 이슈](https://github.com/provectus/kafka-ui/issues/4502)에서 언급된 것처럼, `kafka-ui` 레포지터리는 최근 업데이트나 기능 개선이 멈춘 상태입니다. [kafbat-ui 레포지터리](https://github.com/kafbat/kafka-ui)는 업데이트가 지속되고 있으므로 이 레포지터리를 사용하는 것을 권장합니다. 다행인 것은 기존 kafka-ui 차트의 `yamlApplicationConfig` 설정을 모두 동일하게 지원하고 있으므로 전환의 허들이 높지 않다는 점입니다. 제 경우 한 클러스터당 10분만에 `kafbat` 전환을 완료할 수 있었습니다. **현재 이 가이드에서는 `kafka-ui`를 기준으로 설명하고 있습니다.**
+
+&nbsp;
+
 ## 설정 가이드
 
 kafka-ui에 대한 모든 설정은 ConfigMap으로 관리할 수 있습니다.
