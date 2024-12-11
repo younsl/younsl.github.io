@@ -1,7 +1,7 @@
 ---
 title: "loki tuning"
 date: 2024-08-28T00:37:45+09:00
-lastmod: 2024-08-28T00:37:45+09:00
+lastmod: 2024-12-11T23:04:00+09:00
 slug: ""
 description: "best practices for loki tuning"
 keywords: []
