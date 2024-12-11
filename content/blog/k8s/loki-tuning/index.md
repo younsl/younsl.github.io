@@ -29,25 +29,57 @@ Loki 튜닝 가이드. `loki-distributed` 차트를 기준으로 설명합니다
 
 ### loki-distributed의 지원 중단(deprecated)
 
-`loki` 3.0.0부터는 `loki-distributed` 차트 없이도 자체적으로 분산 모드(마이크로서비스)를 지원합니다. `loki-distributed` 차트는 2.9.x에서 업데이트가 중단되며, 사용을 권장하지 않습니다. 대신, Grafana Labs와 Loki 커뮤니티가 유지 관리하는 [공식 권장 `loki` 차트](https://github.com/grafana/loki/tree/main/production/helm/loki)를 사용하는 것이 좋습니다. `loki` 차트 권장사항은 [여기](https://github.com/grafana/helm-charts/tree/main/charts/loki)에서 확인할 수 있습니다. 분산 모드(마이크로서비스) 지원에 대한 릴리즈 노트는 [여기](https://github.com/grafana/loki/releases/tag/v3.0.0)에서 직접 확인할 수 있습니다.
+`loki-distributed` 차트는 2.9.x에서 업데이트가 중단되며, 사용을 권장하지 않습니다. 대신, Grafana Labs와 Loki 커뮤니티가 유지 관리하는 [공식 권장 `loki` 차트](https://github.com/grafana/loki/tree/main/production/helm/loki)를 사용하는 것이 좋습니다. `loki` 차트 권장사항은 [여기](https://github.com/grafana/helm-charts/tree/main/charts/loki)에서 확인할 수 있습니다. 분산 모드(마이크로서비스) 지원에 대한 릴리즈 노트는 [여기](https://github.com/grafana/loki/releases/tag/v3.0.0)에서 직접 확인할 수 있습니다.
 
 아래는 [loki 3.0.0 릴리즈 노트](https://github.com/grafana/loki/releases/tag/v3.0.0)에서 언급된 내용 중 일부입니다.
 
 > Helm charts: A major upgrade to the Loki helm chart introduces support for Distributed mode (microservices), includes memcached by default, and includes several updates to configurations to improve Loki operations.
 
+`loki` 3.0.0 이상부터 분산(distributed) 모드로 `loki`를 운영하려면 `deploymentMode`를 `Distributed`로 설정합니다. 기본값은 `SimpleScalable` 입니다.
+
+```yaml
+# charts/loki/values.yaml (loki +3.0.0)
+deploymentMode: Distributed
+```
+
+`loki-distributed` 차트의 지원중단에 대한 자세한 내용은 [#3086 이슈](https://github.com/grafana/helm-charts/issues/3086)에서 확인할 수 있습니다.
+
 &nbsp;
 
 ## 필수 세팅
 
-### retention (compactor)
-
-Grafana Loki의 보존은 Table Manager 또는 Compactor라는 컴포넌트를 통해 수행됩니다.
-
-기본적으로, loki-distributed 차트에서 Compactor는 비활성화되어 있습니다. 이는 한 번 저장된 로그를 영구 보관<sup>live forever</sup>한다는 의미입니다.
+`loki-distributed` 차트는 `loki`를 여러 파드로 분산 배포하는 마이크로서비스 형태의 차트입니다. 이 때 각 컴포넌트별로 별도의 파드로 배포되며, 이 때 필수적으로 세팅해야 하는 설정들이 있습니다.
 
 &nbsp;
 
-로그 보관주기<sup>log retention</sup>을 설정하려면 loki-distributed 차트에서 `compactor`를 활성화합니다. `compactor` 파드는 statefulset에 의해 배포됩니다.
+### retention (compactor)
+
+Grafana Loki에서 로그 보관주기(log retention)은 `compactor` 컴포넌트 또는 `table-manager` 컴포넌트를 통해 수행됩니다.
+
+&nbsp;
+
+#### table-manager (Deprecated)
+
+`table-manager`는 사용 중단(deprecated)되었으며 조만간 loki에서 삭제될 예정이므로 레거시 인덱스 타입에 의해 불가피한 경우가 아닌 이상 `compactor`를 사용해야만 합니다.
+
+Loki v2.9.x 버전 기준으로 [레거시 인덱스 목록](https://grafana.com/docs/loki/v2.9.x/storage/#index-storage)은 다음과 같습니다.
+
+- Cassandra (Deprecated)
+- BigTable (Deprecated)
+- DynamoDB (Deprecated)
+- BoltDB (Deprecated)
+
+Loki가 위 목록의 인덱스 타입을 사용하는 경우, `compactor`는 레거시 인덱스 타입을 처리할 수 없기 때문에 `table-manager`를 사용해야 합니다.
+
+&nbsp;
+
+#### compactor
+
+기본적으로, `loki-distributed` 차트에서 `compactor` 컴포넌트(파드)는 비활성화되어 있습니다. 이는 한 번 저장된 로그를 영구 보관(live forever)한다는 의미입니다.
+
+&nbsp;
+
+로그 보관주기(log retention)을 설정하려면 `loki-distributed` 차트에서 `compactor`를 활성화합니다. `compactor` 파드는 statefulset에 의해 배포됩니다.
 
 ```yaml
 # charts/loki-distributed/values.yaml
@@ -57,7 +89,9 @@ compactor:
 
 &nbsp;
 
-[loki v2.9.x 공식문서](https://grafana.com/docs/loki/v2.9.x/operations/storage/table-manager/#retention)에 따르면 로그 보존기간<sup>Log retention</sup> 기능은 인덱스 기간이 `24h`인 경우에만 사용할 수 있습니다. 단일 저장소 TSDB 및 단일 저장소 BoltDB는 내부 구현으로 인해 24시간 인덱스 기간이 필요합니다.
+[loki v2.9.x 공식문서](https://grafana.com/docs/loki/v2.9.x/operations/storage/table-manager/#retention)에 따르면 로그 보존기간(log retention) 기능은 인덱스 기간이 `24h`인 경우에만 사용할 수 있습니다. 단일 저장소 TSDB 및 단일 저장소 BoltDB는 내부 구현으로 인해 24시간 인덱스 기간이 필요합니다.
+
+다음은 `loki-distributed` 차트에서 인덱스 기간을 `24h`로 설정한 예시로 이 경우에는 `compactor` 컴포넌트의 로그 보관주기를 설정할 수 있습니다.
 
 ```yaml
 # charts/loki-distributed/values.yaml
@@ -69,17 +103,16 @@ loki:
         period: 24h
 ```
 
-> **중요**: Loki에서 로그 보관주기<sup>log retention</sup> 기능은 인덱스 기간<sup>`period`</sup>이 `24h`인 경우에만 사용할 수 있습니다.
+> **중요**: Loki에서 로그 보관주기(log retention) 기능은 인덱스 기간(period)이 `24h`인 경우에만 사용할 수 있습니다.
 
 &nbsp;
 
-다음은 `compactor`에 로그 보존기간 설정이 적용된 `loki-distributed` 헬름차트 설정입니다.
+다음은 `compactor`에 로그 보존기간 7일로 설정한 `loki-distributed` 헬름차트 설정입니다.
 
-```yaml
+```yaml {hl_lines=[8]}
 # charts/loki-distributed/values.yaml
 loki:
   config: |
-    # ... truncated
     compactor:
       shared_store: s3
       working_directory: /var/loki/compactor
@@ -91,6 +124,9 @@ loki:
     
     limits_config:
       retention_period: 7d
+
+compactor:
+  enabled: true
 ```
 
 `retention_enabled`를 `true`로 설정합니다. 이 설정이 없는 경우 compactor는 테이블 압축만 `compaction_interval` 시간(위 설정의 경우는 10분)마다 수행합니다.
@@ -108,7 +144,7 @@ loki:
     compactor:
       retention_enabled: true
 
-    limits_ocnfig:
+    limits_config:
       retention_period: 7d
 ```
 
