@@ -25,6 +25,18 @@ Loki 튜닝 가이드. `loki-distributed` 차트를 기준으로 설명합니다
 
 &nbsp;
 
+## 주의사항
+
+### loki-distributed의 지원 중단(deprecated)
+
+`loki` 3.0.0부터는 `loki-distributed` 차트 없이도 자체적으로 분산 모드(마이크로서비스)를 지원합니다. `loki-distributed` 차트는 2.9.x에서 업데이트가 중단되며, 사용을 권장하지 않습니다. 대신, Grafana Labs와 Loki 커뮤니티가 유지 관리하는 [공식 권장 `loki` 차트](https://github.com/grafana/loki/tree/main/production/helm/loki)를 사용하는 것이 좋습니다. `loki` 차트 권장사항은 [여기](https://github.com/grafana/helm-charts/tree/main/charts/loki)에서 확인할 수 있습니다. 분산 모드(마이크로서비스) 지원에 대한 릴리즈 노트는 [여기](https://github.com/grafana/loki/releases/tag/v3.0.0)에서 직접 확인할 수 있습니다.
+
+아래는 [loki 3.0.0 릴리즈 노트](https://github.com/grafana/loki/releases/tag/v3.0.0)에서 언급된 내용 중 일부입니다.
+
+> Helm charts: A major upgrade to the Loki helm chart introduces support for Distributed mode (microservices), includes memcached by default, and includes several updates to configurations to improve Loki operations.
+
+&nbsp;
+
 ## 필수 세팅
 
 ### retention (compactor)
@@ -295,4 +307,5 @@ Rate Limit 관련한 자세한 사항은 아래 2개 Loki 공식문서를 참고
 [로그 시스템 Loki 도입을 위한 몇가지 운영 팁](https://nyyang.tistory.com/167)
 
 **Charts**  
-[loki-distributed](https://github.com/grafana/helm-charts/tree/main/charts/loki-distributed)
+[loki-distributed](https://github.com/grafana/helm-charts/tree/main/charts/loki-distributed)  
+[Recommendation for loki helm chart](https://github.com/grafana/loki/tree/main/production/helm/loki)
