@@ -546,7 +546,7 @@ spec:
 
 &nbsp;
 
-##### tGPS
+##### terminationGracePeriodSeconds (tGPS)
 
 `spec.terminationGracePeriodSeconds` 값
 
@@ -564,15 +564,31 @@ spec:
 
 `preStop`에서 50초의 유휴기간을 설정했다면, preStop 이후 애플리케이션이 SIGTERM 신호로 애플리케이션이 종료되는 시간까지 고려해서 `spec.terminationGracePeriodSeconds`을 세팅해야 파드가 안전하게 종료됩니다.
 
+```bash
+terminationGracePeriodSeconds > preStop sleep time + application shutdown time
+```
+
 &nbsp;
 
-예를 들어, 애플리케이션이 완전히 종료되는데 걸리는 시간이 5초라면 `preStop`에서 유휴기간을 50초로 설정, `spec.terminationGracePeriodSeconds` 옵션을 50초보다 긴 55초로 설정하는 등의 전략을 사용할 수 있습니다. 여러 가지 값들을 설정해 보고 파드를 종료하는 테스트를 통해 최적화하는 것이 좋습니다.
+예를 들어, 애플리케이션이 완전히 종료되는데 걸리는 시간이 5초라면 `preStop`에서 유휴기간을 50초로 설정, `spec.terminationGracePeriodSeconds` 옵션을 50초보다 긴 60초로 설정하는 등의 전략을 사용할 수 있습니다. 여러 가지 값들을 설정해 보고 파드를 종료하는 테스트를 통해 최적화하는 것이 좋습니다.
 
-![Graceful shutdown in container lifecycle](./4.png)
+![Graceful shutdown in container lifecycle](./4-0.png)
 
-```bash
-terminationGracePeriodSeconds > preStop 실행 시간 + 어플리케이션 종료 시간
-```
+&nbsp;
+
+**정상 종료 케이스**:
+
+![Good case for graceful shutdown](./4.png)
+
+`tGPS > preStop sleep time + application shutdown time`인 경우 파드는 정상적으로 종료됩니다.
+
+&nbsp;
+
+**비정상 종료 케이스**:
+
+![Base case for graceful shutdown](./5.png)
+
+`tGPS < preStop sleep time + application shutdown time`인 경우 파드는 안전하게 종료하던 과정에서 SIGKILL 신호로 즉시 종료되므로 커넥션 소실 문제가 발생할 수 있습니다.
 
 &nbsp;
 
@@ -580,7 +596,7 @@ terminationGracePeriodSeconds > preStop 실행 시간 + 어플리케이션 종�
 
 AWS ALB는 idle timeout 시간이 기본적으로 60초로 설정됩니다. 그러므로 EKS 클러스터 앞단의 로드밸런서로 ALB<sup>Application Load Balancer</sup>를 사용한다면 tGPS<sup>terminationGracePeriodSeconds</sup>을 `60`초 이상으로 설정해야 502 Bad Gateway 에러를 피할 수 있습니다.
 
-![Bad gateway 발생 시나리오](./5.png)
+![Bad gateway 발생 시나리오](./6.png)
 
 [ELB 공식문서](https://docs.aws.amazon.com/ko_kr/elasticloadbalancing/latest/application/application-load-balancers.html#connection-idle-timeout)에서도 애플리케이션의 유휴 제한 시간을 로드 밸런서에 구성된 유휴 제한 시간보다 크게 설정하는 것이 좋다고 가이드하고 있습니다.
 
@@ -598,38 +614,38 @@ terminationGracePeriodSeconds > ALB Idle timeout
 
 #### 파드 개수 변경에 의한 OutOfSync 발생시 해결방법
 
-**문제점**  
-KEDA(+ HPA)를 deployment에 붙이게 되면 파드 오토스케일링이 되어 파드 개수가 유동적으로 조절됩니다. 해당 Deployment가 ArgoCD에 의해 배포된 경우, ArgoCD는 deployment의 상태값이 일치하지 않은 걸로 인지하게 되어 해당 Application의 현재 Sync 상태<sup>Current Sync Status</sup>를 Synced가 아닌 OutOfSync로 표시합니다.
+KEDA(+ HPA)를 deployment에 붙이게 되면 파드 오토스케일링이 되어 파드 개수가 유동적으로 조절됩니다. 해당 Deployment가 ArgoCD에 의해 배포된 경우, ArgoCD는 deployment의 상태값이 일치하지 않은 걸로 인지하게 되어 해당 Application의 현재 Sync 상태(Current Sync Status)를 Synced가 아닌 OutOfSync로 표시합니다.
 
-![ArgoCD OutOfSync 시나리오](./6.png)
+![ArgoCD OutOfSync 시나리오](./7.png)
 
-이는 실제 Application의 문제를 일으키지는 않지만 클러스터 관리자나 ArgoCD 사용자가 볼 때 문제가 생긴 거라고 잘못 판단할 수 있는 오해의 소지가 있기 때문에 이를 예외처리하여 정상 상태로 표시시킬 필요가 있습니다.
+Autosync가 켜져있는 상태에서 파드 개수 플랩핑 현상은 다음 순서로 발생합니다.
+
+1. KEDA 설정이 적용된 Application에 Autosync가 켜져있음
+2. HPA가 메트릭 기준으로 deployment의 파드 개수를 조절함
+3. ArgoCD가 파드 개수의 차이점을 감지해 OutOfSync 상태로 표시함
+4. ArgoCD가 autosync를 수행해 파드 개수가 deployment의 파드 개수로 돌아감
+5. 2번 스탭으로 다시 돌아감
+
+비슷한 사례는 [ArgoCD and replicas HPA](https://www.reddit.com/r/GitOps/comments/13d1fac/argocd_and_replicas_hpa/?rdt=52063) 레딧 글에서 확인할 수 있습니다.
 
 &nbsp;
 
-**해결방법**  
-ArgoCD로 배포된 어플리케이션에서 deployment 리소스의 `/spec/replicas` 값의 비교를 하지 않도록 무시 처리해야만 합니다.
+이 문제를 해결하기 위해 ArgoCD Application의 `spec`에 `ignoreDifferences` 설정을 추가해서 `APIService` 리소스의 특정 필드 값 차이와 HPA에 의한 파드 개수 변동을 무시하도록 합니다.
 
-&nbsp;
+HPA는 메트릭에 따라 동적으로 `deployment`의 파드 개수를 조절하기 때문에, ArgoCD가 이를 변경사항으로 감지하지 않도록 무시처리합니다.
 
-**코드 예제**  
-ArgoCD Application 스펙에 아래와 같이 `ignoreDiffernces`를 추가합니다.  
-아래 예제 애플리케이션은 `example-app` 어플리케이션에 포함된 모든 Deployment 리소스에 대해 `spec.replicas` 값의 차이점을 무시하도록 설정합니다.
-
-```diff
+```yaml
 # argocd application CRD
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: example-app
-  ...
 spec:
-  ...
-+ ignoreDifferences:
-+ - group: apps
-+   kind: Deployment
-+   jsonPointers:
-+     - /spec/replicas
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+      - /spec/replicas
 ```
 
 자세한 해결방법은 ArgoCD 공식문서의 [Diffing Customization](https://argo-cd.readthedocs.io/en/release-1.8/user-guide/diffing/#application-level-configuration) 페이지를 참고합니다.
@@ -642,20 +658,22 @@ spec:
 
 `stabilizationWindowSeconds`는 KEDA(Kubernetes Event-driven Autoscaling)에서 사용되는 설정 항목으로, HPA(Horizontal Pod Autoscaler)의 동작을 조정하는 데 중요한 역할을 합니다.
 
-`stabilizationWindowSeconds`는 스케일 다운 동작이 너무 빈번하게 일어나는 것을 방지하기 위해 사용됩니다. 이 값은 HPA가 현재의 파드 수<sup>replicas</sup>를 줄이기 전에 기다리는 시간을 초(second) 단위로 지정합니다.
+`stabilizationWindowSeconds`는 HPA가 스케일 다운을 결정하기 전에 대기하는 시간(초)입니다. 트래픽이 급격하게 변동하는 환경에서 파드가 너무 빠르게 줄어드는 것을 방지하는 안전장치 역할을 합니다.
+
+파드 개수가 빈번하게 증감하는 플래핑(flapping) 현상을 방지하고 안정적인 운영을 위해서는 `stabilizationWindowSeconds` 설정을 추가하는 것을 권장합니다. 특히 트래픽 패턴이 불규칙하거나 급격한 변동이 있는 프로덕션 환경에서는 필수적인 설정입니다.
 
 ```yaml
 keda:
   enabled: true
   scaledObject:
-    - name: newrelic-throughput-scaler
-      # ... truncated ...
-      advanced:
-        restoreToOriginalReplicaCount: true
-        horizontalPodAutoscalerConfig:
-          behavior:
-            scaleDown:
-              stabilizationWindowSeconds: 600
+  - name: newrelic-throughput-scaler
+    # ... truncated ...
+    advanced:
+      restoreToOriginalReplicaCount: true
+      horizontalPodAutoscalerConfig:
+        behavior:
+          scaleDown:
+            stabilizationWindowSeconds: 600
 ```
 
 위 설정처럼 `stabilizationWindowSeconds`가 `600`초로 설정되어 있으면, KEDA는 마지막 스케일 다운이 발생한 이후 600초 동안 새로운 메트릭 데이터를 수집하면서 스케일 다운이 필요한지 여부를 평가합니다. 이 평가 기간 동안 메트릭이 변동하더라도, 600초가 지나기 전에는 스케일 다운이 발생하지 않습니다.
@@ -689,7 +707,7 @@ spec:
 
 사전에 미리 만들어진 [Grafana 대시보드](https://github.com/kedacore/keda/blob/main/config/grafana/keda-dashboard.json)를 사용하여 KEDA 측정항목 어댑터에서 노출된 메트릭 정보를 시각화할 수 있습니다.
 
-![Grafana Dashboard 전체](./7.png)
+![Grafana Dashboard 전체](./8.png)
 
 대시보드에는 두 개의 섹션이 있습니다.
 
@@ -698,7 +716,7 @@ spec:
 
 &nbsp;
 
-![Grafana Dashboard의 Changes in replicas](./8.png)
+![Grafana Dashboard의 Changes in replicas](./9.png)
 
 Changes in replicas 패널에서는 파드 개수 유지, 스케일 인/아웃이 발생한 타이밍들을 모아 색깔별로 표시해 보여줍니다.
 
@@ -708,9 +726,9 @@ Changes in replicas 패널에서는 파드 개수 유지, 스케일 인/아웃�
 
 ### ArgoCD 등록시 OutOfSync 문제 해결
 
-KEDA v2.12.x 버전 차트를 argocd의 application으로 등록하게 되면 OutOfSync 표시가 되는 버그가 있습니다.
+KEDA v2.12.x 버전 차트를 argocd의 application으로 등록하게 되면 OutOfSync 상태가 발생합니다.
 
-![argocd에서 OutOfSync된 KEDA](./9.png)
+![argocd에서 OutOfSync된 KEDA](./10.png)
 
 ```bash
 $ kubectl get application keda -n argocd -o wide
@@ -756,20 +774,20 @@ ArgoCD Application 스펙에 아래와 같이 `APIService`에 대한 변경사�
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
-...
+metadata:
+  name: keda
 spec:
-  # Relates to https://github.com/kedacore/keda/issues/4732
   ignoreDifferences:
-    - group: apiregistration.k8s.io
-      kind: APIService
-      name: v1beta1.external.metrics.k8s.io
-      jsonPointers:
-        - /spec/insecureSkipTLSVerify
+  - group: apiregistration.k8s.io
+    kind: APIService
+    name: v1beta1.external.metrics.k8s.io
+    jsonPointers:
+      - /spec/insecureSkipTLSVerify
 ```
 
-위 설정에 의해 ArgoCD는 `v1beta1.external.metrics.k8s.io` 리소스의 `/spec/insecureSkipTLSVerify` 값 차이점을 항상 무시합니다.
+`ignoreDifferences` 설정에 의해 ArgoCD는 `v1beta1.external.metrics.k8s.io` 리소스의 `/spec/insecureSkipTLSVerify` 값 차이점을 항상 무시합니다.
 
-자세한 사항은 ArgoCD 공식문서 [Diffing Customization](https://argo-cd.readthedocs.io/en/stable/user-guide/diffing/#application-level-configuration) 페이지를 참고합니다.
+자세한 사항은 ArgoCD 공식문서 [Diffing Customization](https://argo-cd.readthedocs.io/en/stable/user-guide/diffing/#application-level-configuration)와 [#4732](https://github.com/kedacore/keda/issues/4732#issuecomment-2082067738)를 참고합니다.
 
 &nbsp;
 
