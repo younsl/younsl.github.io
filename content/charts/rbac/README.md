@@ -3,6 +3,31 @@
 
 `rbac` helm chart allows you to manage Kubernetes RBAC<sup>Role-Based Access Control</sup> resources, including `ClusterRole` and `ClusterRoleBinding` definitions. By using this chart, you can maintain a single source of truth for your RBAC configurations, ensuring consistency and simplifying management across your Kubernetes clusters.
 
+For a developer or engineer to access internal resources within Kubernetes, need to perform configuration tasks in the following areas.
+
+```mermaid
+---
+title: EKS RBAC
+---
+flowchart LR
+  u("User")
+  subgraph "IAM"
+    ar("AWS SSO Role")
+  end
+  subgraph "EKS Cluster"
+    subgraph "RBAC sources"
+      cm("aws-auth configMap")
+      g("group")
+      rb("roleBinding")
+      r("role")
+    end
+    
+    resources
+  end
+  
+  u --> ar --> cm --> g --> rb --> r --get,list,watch--> resources
+```
+
 ## Configuration
 
 The `values.yaml` file defines the configuration for this chart. Below is a description of the available configuration options:
