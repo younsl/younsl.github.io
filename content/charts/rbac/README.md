@@ -5,28 +5,7 @@
 
 For a developer or engineer to access internal resources within Kubernetes, need to perform configuration tasks in the following areas.
 
-```mermaid
----
-title: EKS RBAC
----
-flowchart LR
-  u("User")
-  subgraph "IAM"
-    ar("AWS SSO Role")
-  end
-  subgraph "EKS Cluster"
-    subgraph "RBAC sources"
-      cm("aws-auth configMap")
-      g("group")
-      rb("roleBinding")
-      r("role")
-    end
-    
-    resources
-  end
-  
-  u --> ar --> cm --> g --> rb --> r --get,list,watch--> resources
-```
+<img width="729" alt="image" src="https://github.com/user-attachments/assets/0ca703e8-1156-4934-b503-3d694bba6b58" />
 
 ## Configuration
 
