@@ -61,11 +61,60 @@ deploymentMode: Distributed
 
 &nbsp;
 
-### 버킷 설정 (loki)
+### 오브젝트 스토리지 설정 (loki)
 
 > 관련 문서: [Configure storage](https://grafana.com/docs/loki/latest/setup/install/helm/configure-storage/)
 
-`loki` 파드들이 사용할 servie account 계정에 S3 버킷 접근 권한을 부여합니다.
+Loki의 설치 모드(`deploymentMode`)에 따라 사용할 수 있는 스토리지 유형이 다릅니다.
+
+`SimpleScalable` 또는 `Distributed` 모드에서는 AWS S3 또는 Google Cloud Storage와 같은 관리형 개체 저장소나 Minio와 같은 자체 호스팅 저장소가 필요합니다.
+
+`SingleBinary` 모드에서는 파일 시스템만 사용할 수 있습니다.
+
+각 설치모드별 사용 가능한 스토리지 유형은 다음과 같습니다.
+
+| 설치 모드 | 저장소 유형 |
+|--|--|
+| SingleBinary | 파일 시스템 |
+| SimpleScalable | 오브젝트 스토리지 (AWS S3, GCS 등) |
+| Distributed | 오브젝트 스토리지 (AWS S3, GCS 등) |
+
+&nbsp;
+
+[Storage](https://grafana.com/docs/loki/latest/configure/storage/#aws-deployment-s3-single-store) 문서를 참고하여 Loki에서 사용할 S3 버킷에 대한 접근 권한을 부여하는 IAM Policy를 생성하고 IAM Role에 연결합니다.
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "LokiStorage",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": [
+                    "arn:aws:iam::<ACCOUNT_ID>"
+                ]
+            },
+            "Action": [
+                "s3:ListBucket",
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::<BUCKET_NAME>",
+                "arn:aws:s3:::<BUCKET_NAME>/*"
+            ]
+        }
+    ]
+}
+```
+
+Loki를 구성하는 파드들이 S3 버킷에 오브젝트를 쓰고, 읽고, 삭제할 수 있는 권한을 부여합니다.
+
+&nbsp;
+
+`loki` 파드들이 사용할 service account 계정에 S3 버킷 접근 권한을 부여합니다.
 
 ```yaml
 # charts/loki/values.yaml (loki v3.3.1)
@@ -81,7 +130,7 @@ serviceAccount:
 
 &nbsp;
 
-기본적으로 `loki` 차트 이름과 동일한 이름의 `serviceAccount` 리소스가 생성됩니다.
+기본적으로 `serviceAccount.name` 값이 null인 경우, `loki` 차트 이름과 동일한 이름의 `serviceAccount` 리소스가 생성됩니다.
 
 ```bash
 $ kubectl get serviceaccount -n loki
@@ -126,7 +175,7 @@ Loki에서 로그 보관주기(log retention)은 `compactor` 컴포넌트 또는
 
 &nbsp;
 
-#### table-manager (Deprecated)
+#### table-manager (deprecated)
 
 table-manager는 사용 중단(deprecated)되었으며 조만간 loki에서 삭제될 예정이므로 레거시 인덱스 타입에 의해 불가피한 경우가 아닌 이상 compactor를 사용해야만 합니다.
 
@@ -378,7 +427,7 @@ ingester level=info ts=2024-12-11T04:54:52.61427673Z caller=table_manager.go:136
 
 &nbsp;
 
-#### heartbeat_timeout (ingester)
+#### `heartbeat_timeout` (ingester)
 
 `heartbeat_timeout` 설정은 ingester(로그 데이터를 처리하는 노드)가 일정 시간 동안 응답하지 않을 때, 더 이상 해당 노드로 로그 데이터를 보내지 않고 건너뛰는 시간을 의미합니다. 이 설정이 중요한 이유는, 링(ring)이라는 구조에서 모든 ingester가 일정 시간 동안 응답하지 않으면, 그 시간 이후에는 모든 노드가 건너뛰어져서 클러스터 전체에서 로그 데이터를 받을 수 없게 되어 데이터 수집이 중단될 수 있기 때문입니다.
 
@@ -408,7 +457,7 @@ loki:
 
 &nbsp;
 
-#### replication_factor (ingester)
+#### `replication_factor` (ingester)
 
 `ingester`의 RF(Replication Factor)는 기본값인 `3`을 권장합니다. 기본값이 이미 3이라 별도로 설정할 필요는 없지만, 명시적으로 선언하고 싶으면 아래와 같이 `ingester` 블록에 추가하세요.
 
@@ -423,7 +472,7 @@ loki:
 
 &nbsp;
 
-### loki의 rate limit (distributor)
+### Rate Limit (distributor)
 
 > 관련 문서: [Rate-Limit Errors](https://grafana.com/docs/loki/latest/operations/request-validation-rate-limits/#rate-limit-errors)
 
