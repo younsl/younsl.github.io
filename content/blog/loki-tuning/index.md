@@ -158,7 +158,7 @@ compactor:
 ```yaml
 # charts/loki/values.yaml (loki v3.3.1)
 compactor:
-  replica: 1
+  replicas: 1
 ```
 
 주의 할 점은 `compactor` 파드는 싱글톤(단일 인스턴스)으로 운영되어야 하므로 레플리카를 반드시 1로 설정해야 합니다.
