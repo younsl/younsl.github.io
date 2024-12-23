@@ -44,6 +44,12 @@ nri-bundle                            5.0.18   https://newrelic.github.io/nri-bu
 
 &nbsp;
 
+Newrelic Infrastructure agent의 [릴리즈 노트](https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/2/)에 따르면 3개월마다 업데이트하는 것을 권장하고 있습니다.
+
+> We recommend you upgrade the agent regularly and at a minimum every 3 months.
+
+&nbsp;
+
 #### nri-bundle로 배포시 장점
 
 nri-bundle 통합 차트를 사용하는 것에는 여러 가지 장점이 있습니다.
