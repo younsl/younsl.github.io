@@ -347,6 +347,34 @@ p, <role/user/group>, <resource>, <action>, <appproject>/<object>, allow
 
 &nbsp;
 
+`action` action은 [Argo CD 저장소에 정의된 기본 제공 리소스 사용자 지정](https://github.com/argoproj/argo-cd/tree/master/resource_customizations) 또는 사용자가 정의한 사용자 지정 리소스 작업에 해당합니다. action 경로는 `action/<api-group>/<Kind>/<action-name>` 형식입니다.
+
+아래는 Deployment, Rollout, StatefulSet 리소스의 재시작 권한을 부여하는 예제입니다.
+
+```yaml
+# charts/argocd/values.yaml
+configs:
+  rbac:
+    policy.csv: |
+      # StatefulSet 리소스 재시작 권한을 부여하는 예제입니다.
+      p, role:team_beta, applications, action/app/StatefulSet/restart, beta/app-backend, allow
+      p, role:team_beta, applications, action/app/StatefulSet/restart, beta/app-frontend, allow
+
+      # Rollout 리소스 재시작 권한을 부여하는 예제입니다.
+      p, role:team_beta, applications, action/argoproj.io/Rollout/restart, beta/app-backend, allow
+      p, role:team_beta, applications, action/argoproj.io/Rollout/restart, beta/app-frontend, allow
+
+      # Deployment 리소스 재시작 권한을 부여하는 예제입니다.
+      p, role:team_beta, applications, action/app/Deployment/restart, beta/app-backend, allow
+      p, role:team_beta, applications, action/app/Deployment/restart, beta/app-frontend, allow
+
+      g, team_beta@example.com, role:team_beta
+```
+
+자세한 사항은 [argoproj/argo-cd#2401](https://github.com/argoproj/argo-cd/issues/2401) 이슈와 [Argo CD RBAC Configuration](https://argo-cd.readthedocs.io/en/release-2.9/operator-manual/rbac/#application-resources) 공식 문서를 참고합니다.
+
+&nbsp;
+
 `role:team_beta`에 대해 `beta` 프로젝트의 모든 파드에 대해 터미널 접속 권한을 부여하기 위해서는 아래와 같은 설정을 `policy.csv` 파일에 추가합니다.
 
 ```yaml
