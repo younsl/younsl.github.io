@@ -347,9 +347,9 @@ p, <role/user/group>, <resource>, <action>, <appproject>/<object>, allow
 
 &nbsp;
 
-`action` action은 [Argo CD 저장소에 정의된 기본 제공 리소스 사용자 지정](https://github.com/argoproj/argo-cd/tree/master/resource_customizations) 또는 사용자가 정의한 사용자 지정 리소스 작업에 해당합니다. action 경로는 `action/<api-group>/<Kind>/<action-name>` 형식입니다.
+`action` 권한은 [Argo CD 저장소에 정의된 기본 제공 리소스 사용자 지정](https://github.com/argoproj/argo-cd/tree/master/resource_customizations) 또는 사용자가 정의한 사용자 지정 리소스 작업에 해당합니다. action 경로는 `action/<api-group>/<Kind>/<action-name>` 형식입니다.
 
-아래는 Deployment, Rollout, StatefulSet 리소스의 재시작 권한을 부여하는 예제입니다.
+아래는 `action` 권한을 사용해 특정 어플리케이션에 포함된 Deployment, Rollout, StatefulSet 리소스의 재시작 권한을 부여하는 예제입니다.
 
 ```yaml
 # charts/argocd/values.yaml
