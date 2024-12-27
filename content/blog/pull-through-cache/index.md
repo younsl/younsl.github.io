@@ -16,11 +16,19 @@ tags: ["aws", "ecr", "container"]
 
 ## 배경
 
-Docker Hub는 무료 계정에 대해 100시간 동안 최대 200번의 인증된 요청을 허용합니다. 이를 초과하면 429 Too Many Requests 에러를 반환합니다.
+Docker Hub는 이미지 다운로드에 대한 Rate Limit을 초과하면 429 Too Many Requests 에러를 반환합니다.
+
+각 사용자별 Rate Limit은 다음과 같습니다.
+
+- 익명 유저 : 6시간 동안 최대 100번 `docker pull` 요청
+- 로그인 계정 : 6시간 동안 최대 200번 `docker pull` 요청
+- 프로 이상 : 제한 없음 (No limit)
+
+&nbsp;
 
 이를 해결하기 위해 대안으로 사용할 수 있는 방법은 다음과 같습니다.
 
-1. imagePullSecret을 사용해서 파드에 이미지 저장소 인증정보(credential)를 전달
+1. 쿠버네티스 시크릿 기반의 [imagePullSecret](https://kubernetes.io/ko/docs/tasks/configure-pod-container/pull-image-private-registry/)을 파드에 설정해 퍼블릭 이미지를 받아오는 데 사용합니다.
 2. 수작업으로 이미지를 받아와 Private ECR에 저장
 3. Pull through cache 기능을 사용해서 퍼블릭 이미지를 Private ECR에 캐싱
 
