@@ -20,9 +20,11 @@ Docker Hub는 이미지 다운로드에 대한 Rate Limit을 초과하면 429 To
 
 [각 사용자 유형별 Pull rate limit](https://docs.docker.com/docker-hub/download-rate-limit/#pull-rate-limit)은 다음과 같습니다.
 
-- 익명 유저 : 6시간 동안 최대 100번 `docker pull` 요청
-- 로그인 계정 : 6시간 동안 최대 200번 `docker pull` 요청
-- 프로 이상 : 제한 없음 (No limit)
+| 사용자 유형 | Pull Rate Limit |
+|----------|-----------------|
+| 익명 유저 (로그인 안함) | 6시간 동안 최대 100번 `docker pull` 요청 |
+| 로그인 계정 (로그인 함) | 6시간 동안 최대 200번 `docker pull` 요청 |
+| 프로 이상 (로그인 함) | 제한 없음 (No limit) |
 
 &nbsp;
 
@@ -58,8 +60,8 @@ ECR의 Pull Through Cache 기능을 사용하면 아래와 같이 `pull` 절차 
 
 대신 아래와 같은 ECR 사전 설정이 필요합니다.
 
-- Registry Template 만들기 : Permission, Tag, Lifecycle Policy 정의
-- Pull Through Cache Rule 생성
+- **Registry Template 만들기** : Pull Through Cache에 의해 자동으로 만들어진 Private ECR에 대한 Permission, Tag, Lifecycle Policy 자동 정의
+- **Pull Through Cache Rule 생성** : 퍼블릭 이미지를 캐싱할 Private ECR 레지스트리의 인증 정보를 정의
 
 &nbsp;
 
