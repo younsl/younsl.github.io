@@ -18,7 +18,7 @@ tags: ["aws", "ecr", "container"]
 
 Docker Hub는 이미지 다운로드에 대한 Rate Limit을 초과하면 429 Too Many Requests 에러를 반환합니다.
 
-각 사용자별 Rate Limit은 다음과 같습니다.
+[각 사용자 유형별 Pull rate limit](https://docs.docker.com/docker-hub/download-rate-limit/#pull-rate-limit)은 다음과 같습니다.
 
 - 익명 유저 : 6시간 동안 최대 100번 `docker pull` 요청
 - 로그인 계정 : 6시간 동안 최대 200번 `docker pull` 요청
