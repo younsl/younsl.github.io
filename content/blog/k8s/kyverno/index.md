@@ -40,6 +40,26 @@ OPA와 Kyverno 둘다 사용해본 AWS Solutions Architect의 경우, OPA 보다
 
 &nbsp;
 
+## 주의사항
+
+### 쿠버네티스의 ValidatingAdmissionPolicy 지원
+
+Kubernetes v1.30부터는 ValidatingAdmissionPolicy가 GA(General Availability) 상태가 되었습니다. 대신 MutatingAdmissionPolicy는 아직 쿠버네티스 네이티브하게 지원하지 않아, 이 경우 정책 엔진인 Kyverno를 사용해서 API 리소스를 확장해야 합니다.
+
+```bash
+# Check api-resources on kubernetes cluster v1.30
+$ kubectl api-resources --api-group admissionregistration.k8s.io
+NAME                                SHORTNAMES   APIVERSION                        NAMESPACED   KIND
+mutatingwebhookconfigurations                    admissionregistration.k8s.io/v1   false        MutatingWebhookConfiguration
+validatingadmissionpolicies                      admissionregistration.k8s.io/v1   false        ValidatingAdmissionPolicy
+validatingadmissionpolicybindings                admissionregistration.k8s.io/v1   false        ValidatingAdmissionPolicyBinding
+validatingwebhookconfigurations                  admissionregistration.k8s.io/v1   false        ValidatingWebhookConfiguration
+```
+
+Validating Admission Policies는 쿠버네티스 클러스터에서 리소스 생성 및 업데이트 시 정책을 적용하여 보안을 강화하는 데 유용합니다. 이 기능은 기존의 Validating Webhook과 비교하여 더 간단한 설정과 관리가 가능하며, 정책을 코드로 관리할 수 있는 장점이 있습니다. Mutating 정책은 아직 쿠버네티스가 네이티브하게 지원하지 않기 때문에, Kyverno와 같은 정책 엔진이 필요하며, [이는 Kyverno를 완벽하게 대체할 수 없다는 점을 의미](https://www.reddit.com/r/kubernetes/comments/1gpvk95/so_are_validating_admission_policies_a/)합니다. 자세한 사항은 Kubernetes 공식 블로그의 [Kubernetes 1.30: Validating Admission Policy Is Generally Available](https://kubernetes.io/blog/2024/04/24/validating-admission-policy-ga/) 페이지를 참고합니다.
+
+&nbsp;
+
 ## Kyverno 운영 가이드
 
 ### 버전 호환성 표
