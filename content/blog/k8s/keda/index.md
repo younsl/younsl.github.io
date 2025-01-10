@@ -564,6 +564,8 @@ spec:
 
 `preStop`에서 50초의 유휴기간을 설정했다면, preStop 이후 애플리케이션이 SIGTERM 신호로 애플리케이션이 종료되는 시간까지 고려해서 `spec.terminationGracePeriodSeconds`을 세팅해야 파드가 안전하게 종료됩니다.
 
+kubelet은 컨테이너 런타임을 트리거하여 각 컨테이너 내부의 프로세스 ID 1에 TERM 신호를 보냅니다. 즉, 정상적으로 SIGTERM 신호를 받으려면 컨테이너 내부 프로세스의 PID가 1이어야 합니다. 자세한 사항은 쿠버네티스 공식문서 [Termination of Pods](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination) 페이지를 참고합니다.
+
 ```bash
 terminationGracePeriodSeconds > preStop sleep time + application shutdown time
 ```
