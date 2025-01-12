@@ -9,9 +9,11 @@ tags: ["bio", "profile"]
 showAdvertisement: false
 ---
 
-**Younsung Lee**
+### Younsung Lee
 
-DevOps Engineer. [Github](https://github.com/younsl).
+DevOps Engineer. I work in cloud-based distributed systems like kubernetes. I also have a general interest in cloud native technologies including Kubernetes, Observability, and Infrastructure Ops.
+
+[Github](https://github.com/younsl)
 
 &nbsp;
 
