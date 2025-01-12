@@ -39,7 +39,7 @@ The `index.yaml` file contains the metadata of the repository and is used for ch
 | ---------- | ------ | ------------- |
 | [**actions-runner**][actions-runner] | Active | 0.1.3 |
 | [**argocd-apps**][argocd-apps] | Active | 1.6.1 |
-| [**backup-utils**][backup-utils] | Active | 0.3.2 |
+| [**backup-utils**][backup-utils] | Active | 0.3.3 |
 | [**karpenter-nodepool**][karpenter-nodepool] | Active | 0.1.1 |
 | [**rbac**][rbac] | Active | 0.2.0 |
 
