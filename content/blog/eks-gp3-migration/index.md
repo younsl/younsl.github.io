@@ -243,7 +243,7 @@ EBS Snapshot 생성 시 `ec2:ResourceTag/ebs.csi.aws.com/cluster` 태그를 추�
     "State": "pending",
     "StartTime": "2025-01-16T08:54:04.990000+00:00",
     "Progress": "",
-    "OwnerId": "883976656071",
+    "OwnerId": "111122223333",
     "Description": "",
     "VolumeSize": 10,
     "Encrypted": false
