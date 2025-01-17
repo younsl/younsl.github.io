@@ -251,6 +251,55 @@ brew uninstall docker
 
 &nbsp;
 
+### minikube 사용시
+
+minikube에서는 다양한 드라이버를 사용할 수 있습니다. 이 중에서도 `podman` 드라이버를 사용하면 Docker Desktop 없이 Podman 만으로 minikube를 사용할 수 있습니다.
+
+> minikube에서 podman은 실험(Experimental) 상태의 드라이버입니다. 성숙해질 때까지 실험적인 이유로만 사용하는 걸 권장합니다. 더 안정적인 minikube 경험을 원하신다면, Docker와 같은 비실험적인 드라이버를 사용하세요. 자세한 사항은 [minikube podman 드라이버 문서](https://minikube.sigs.k8s.io/docs/drivers/podman/)를 참고하세요.
+
+&nbsp;
+
+Podman 머신이 구동중인 상태를 확인합니다.
+
+```bash
+$ podman machine ls
+NAME                     VM TYPE     CREATED       LAST UP            CPUS        MEMORY      DISK SIZE
+podman-machine-default*  applehv     40 hours ago  Currently running  4           2GiB        100GiB
+```
+
+&nbsp;
+
+`minikube start` 명령어를 실행해 로컬 환경에 minikube 클러스터를 구성합니다.
+
+```bash
+minikube start \
+  --driver='podman' \
+  --container-runtime='containerd' \
+  --kubernetes-version='stable' \
+  --nodes=2
+```
+
+&nbsp;
+
+드라이버로 Docker Desktop 대신 `podman`을 사용해 로컬 클러스터를 구성했습니다.
+
+```bash
+$ kubectl get node
+NAME           STATUS   ROLES           AGE   VERSION
+minikube       Ready    control-plane   31s   v1.31.0
+minikube-m02   Ready    <none>          2s    v1.31.0
+```
+
+&nbsp;
+
+## 마치며
+
+쿠버네티스 클러스터 환경과 클러스터 운영자의 로컬 환경 런타임을 완전 똑같이 맞추기는 어렵겠지만, 최대한 비슷하게 맞추는 것이 좋습니다.
+
+클러스터 관리자는 일관된 환경에서의 개발과 테스트가 가능해지며, 문제 발생 시 원인 분석이 용이해지기 때문입니다. 또한, 운영 환경과 유사한 설정을 통해 배포 시 발생할 수 있는 예기치 않은 오류를 줄일 수 있습니다.
+
+&nbsp;
+
 ## 관련자료
 
 - [Podman Installation Instructions](https://podman.io/docs/installation)

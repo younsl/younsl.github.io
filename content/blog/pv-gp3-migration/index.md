@@ -125,9 +125,9 @@ kubectl apply -f snapshot.storage.k8s.io_volumesnapshotcontents.yaml
 
 총 3개의 Custom Resource가 설치되었습니다.
 
-- `volumesnapshots`
-- `volumesnapshotclasses`
-- `volumesnapshotcontents`
+- `volumesnapshots` (Namespaced)
+- `volumesnapshotclasses` (Cluster-scoped)
+- `volumesnapshotcontents` (Cluster-scoped)
 
 ```bash
 customresourcedefinition.apiextensions.k8s.io/volumesnapshots.snapshot.storage.k8s.io created
@@ -152,7 +152,7 @@ volumesnapshots          vs                  snapshot.storage.k8s.io/v1   true  
 
 &nbsp;
 
-EBS CSI Snapshot Controller를 설치합니다.
+EBS CSI Snapshot Controller를 설치합니다. 기본적으로 `kube-system` 네임스페이스에 설치됩니다.
 
 ```bash
 curl -s -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/master/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
@@ -178,12 +178,14 @@ deployment.apps/snapshot-controller created
 EBS CSI Snapshot Controller가 정상적으로 설치되었는지 확인합니다.
 
 ```bash
-kubectl get pod -n kube-system -l app.kubernetes.io/name=snapshot-controller
+kubectl get pod \
+  -n kube-system \
+  -l app.kubernetes.io/name=snapshot-controller
 ```
 
 &nbsp;
 
-기본적으로 고가용성을 위해 `snapshot-controller`는 2개의 파드로 구성되어 있습니다. 시스템 관련 에드온이기 때문에 `kube-system` 네임스페이스에 설치됩니다.
+기본적으로 고가용성을 위해 `snapshot-controller`는 2개의 파드로 구성되어 있습니다.
 
 ```bash
 NAME                                   READY   STATUS    RESTARTS   AGE
