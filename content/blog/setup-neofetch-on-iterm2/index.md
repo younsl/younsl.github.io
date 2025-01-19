@@ -36,6 +36,12 @@ neofetch를 사용하면 자신이 좋아하는 이미지를 걸어서 터미널
 
 &nbsp;
 
+## 주의사항
+
+[neofetch 프로젝트](https://github.com/dylanaraps/neofetch)는 2024년 4월부로 아카이빙되었으며 더 이상 유지보수가 이루어지지 않습니다. [fastfetch](https://github.com/fastfetch-cli/fastfetch)는 neofetch를 대체하는 프로젝트이므로 fastfetch를 사용하는 것을 권장합니다.
+
+&nbsp;
+
 ## 준비사항
 
 ### 사용자 로컬 환경
