@@ -276,18 +276,61 @@ sum(avg_over_time(websocket_active_connection_count{app_kubernetes_io_name="samp
 PromQL / Current Pod Count = Average Target Value
 ```
 
-예를 들어 Threshold가 50이고, PromQL로 조회한 쿼리 결과값이 140이라면 다음과 같이 파드 개수가 계산됩니다.
+&nbsp;
+
+### 스케일아웃의 예시
+
+예를 들어 타겟 Deployment의 현재 파드 개수가 2개이고, PromQL로 조회한 쿼리 결과값(Current)이 140이라면 HPA는 다음과 같이 필요한(Desired) 파드 개수를 계산합니다.
+
+> 아래 공식에서 `ceil()` 함수는 소수점 이하를 올림하는 함수입니다.
 
 ```bash
-PromQL / Current Pod Count = Average Target Value
-140 / 50 = 2.8
+desiredReplicas = ceil(Query Result / Threshold)
+                = ceil(140 / 50)
+                = ceil(2.8)
+                = 3
 ```
 
-HPA는 필요한 파드 수를 다음과 같이 올림으로 계산하고 이를 최종적으로 대상 Deployment의 파드 수로 설정해 스케일아웃을 수행합니다.
+HPA는 위 계산식에 의해 파드 개수를 3개로 늘리게 됩니다.
+
+&nbsp;
+
+HPA가 필요한 파드 개수를 구하는 공식은 다음과 같습니다.
 
 ```bash
-Desired Pod = ceil(Average Target Value) = ceil(2.8) = 3
+desiredReplicas = ceil[currentReplicas * ( currentMetricValue / desiredMetricValue )])
 ```
+
+여기서 `currentMetricValue`를 구하는 공식은 다음과 같습니다.
+
+```bash
+targetAverageValue = Query Result / Current Pod Count
+                   = 140 / 2
+                   = 70
+```
+
+HPA에서 사용하는 `targetAverageValue`는 계산된 메트릭 결과(이 예시에서는 PromQL 쿼리 결과값)을 현재 파드 개수로 나눈 **평균값**입니다.
+
+&nbsp;
+
+`targetAverageValue`를 사용해서 파드 개수를 구하는 공식은 다음과 같습니다. `currentMetricValue`에는 위에서 구한 targetAverageValue 값을 대입합니다.
+
+```bash
+currentMetricValue = targetAverageValue
+                   = 70
+```
+
+```bash
+desiredReplicas = ceil[currentReplicas * ( currentMetricValue / desiredMetricValue )]
+                = ceil[2 * ( 70 / 50 )]
+                = ceil[2 * 1.4]
+                = ceil[2.8]
+                = 3
+```
+
+위 두 공식은 결과적으로 동일한 파드 개수를 도출합니다.
+
+> ⚠️ **참고**: `scaledObject` 리소스에서 설정 가능한 메트릭 유형에는 총 3가지가 있습니다: AverageValue (기본값), Value, Utilization. CPU와 Memory를 제외한 모든 스케일러는 AverageValue 및 Value 메트릭 유형을 지원하는 반면 CPU와 메모리 스케일러는 모두 AverageValue 및 Utilization을 지원합니다. 자세한 사항은 [KEDA 공식문서](https://keda.sh/docs/2.14/concepts/scaling-deployments/#triggers)를 참고해주세요.
 
 &nbsp;
 
