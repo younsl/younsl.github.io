@@ -296,7 +296,7 @@ HPA는 위 계산식에 의해 파드 개수를 3개로 늘리게 됩니다.
 
 &nbsp;
 
-HPA가 필요한 파드 개수를 구하는 공식은 다음과 같습니다.
+HPA가 필요한 파드 개수를 계산하는 공식은 다음과 같습니다. 이는 [쿠버네티스 HPA 공식문서에 표기된](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details) 공식입니다.
 
 ```bash
 desiredReplicas = ceil[currentReplicas * ( currentMetricValue / desiredMetricValue )])
@@ -330,7 +330,7 @@ desiredReplicas = ceil[currentReplicas * ( currentMetricValue / desiredMetricVal
                 = 3
 ```
 
-위 두 HPA 공식은 결과적으로 동일한 파드 개수를 도출합니다. 첫 번째 공식은 메트릭의 직접적인 쿼리 결과를 사용하여 계산하고, [쿠버네티스 HPA 공식문서에 표기된](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details) 두 번째 공식은 현재 파드 수와 메트릭의 평균값을 기반으로 계산합니다. 두 공식 모두 최종적으로 필요한 파드 수를 도출하지만, 계산의 출발점이 다를 뿐입니다.
+위 두 HPA 공식은 결과적으로 동일한 파드 개수를 도출합니다. 첫 번째 공식은 메트릭의 직접적인 쿼리 결과를 사용하여 계산하고, 두 번째 공식은 현재 파드 수와 메트릭의 평균값을 기반으로 계산합니다. 두 공식 모두 최종적으로 필요한 파드 수를 도출하지만, 계산의 출발점이 다를 뿐입니다.
 
 > ⚠️ **참고**: `scaledObject` 리소스에서 설정 가능한 메트릭 유형에는 총 3가지가 있습니다: AverageValue (기본값), Value, Utilization. CPU와 Memory를 제외한 모든 스케일러는 AverageValue 및 Value 메트릭 유형을 지원하는 반면 CPU와 메모리 스케일러는 모두 AverageValue 및 Utilization을 지원합니다. 자세한 사항은 [KEDA 공식문서](https://keda.sh/docs/2.14/concepts/scaling-deployments/#triggers)를 참고해주세요.
 
