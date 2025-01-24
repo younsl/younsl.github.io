@@ -20,10 +20,24 @@ hugo version
 
 Add `nostyleplease` theme as a submodule using `git` command.
 
+> [!TIP]
+> Adding the theme as a submodule allows you to easily update it in the future and keep your blog's design consistent with the latest features and fixes.
+
 ```bash
 git submodule init
 git submodule add https://github.com/hanwenguo/hugo-theme-nostyleplease themes/nostyleplease
 git submodule update themes/nostyleplease
+```
+
+Theme folders like nostyleplease must be under `themes/` directory for the hugo server to find it when running.
+
+```bash
+younsl.github.io
+├── content
+├── config.toml
+├── ... more directories ...
+└── themes
+    └── nostyleplease
 ```
 
 Check the submodule status.
@@ -35,31 +49,35 @@ $ git submodule status
 
 ### Running hugo server
 
-Generate your blog site using [nostyleplease](https://github.com/hanwenguo/hugo-theme-nostyleplease) theme.
+Create your blog site using the [nostyleplease](https://github.com/hanwenguo/hugo-theme-nostyleplease) theme.
 
 ```bash
+cd younsl.github.io
 hugo server -t nostyleplease
 open http://localhost:1313
 ```
 
-If you want to run hugo server locally using the container, use this [dockerfile](https://github.com/younsl/bucket/tree/main/bucket/dockerfiles/hugo) with bootstrap script.
+If you're familiar with container environments, you can run hugo server in a container for local development. Use this [dockerfile](https://github.com/younsl/box/tree/main/box/dockerfiles/hugo) to build the image and then run the container.
 
 ```bash
 # Build blog container
 docker build -t hugo:dev .
 
-# Run blog container with local blog files mounted
-export LOCAL_REPO_PATH=$HOME/github/younsl/younsl.github.io
-docker run -d --name hugo -p 1313:1313 -v ${LOCAL_REPO_PATH}:/app hugo:dev
+# Run blog container mounting local blog directory to /app directory
+cd younsl.github.io
+SOURCE=$(pwd)
+docker run -d --name hugo -p 1313:1313 -v ${SOURCE}:/app hugo:dev
 ```
 
-Verify the blog container is running.
+Verify hugo container is running.
 
 ```console
 $ docker ps
 CONTAINER ID   IMAGE         COMMAND                  CREATED        STATUS        PORTS                    NAMES
 5fc4d6457641   hugo:latest   "hugo server -t nost…"   12 hours ago   Up 12 hours   0.0.0.0:1313->1313/tcp   hugo
 ```
+
+Now, open your browser and go to [http://localhost:1313](http://localhost:1313) to view your hugo blog in real-time and start local development.
 
 ## Deployment
 
