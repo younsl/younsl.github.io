@@ -92,7 +92,9 @@ Podman `5.3.1` 버전을 설치했습니다.
 
 &nbsp;
 
-podman 명령어를 사용하기 위해서는 기본적으로 가상머신을 생성해야 합니다. 이를 위해 `podman machine init` 명령어를 실행합니다.
+podman 명령어를 사용하기 위해서는 기본적으로 가상머신을 생성해야 합니다. Podman Machine을 생성하기 위해 [podman machine init](https://docs.podman.io/en/latest/markdown/podman-machine-init.1.html) 명령어를 실행합니다.
+
+> MacOS 및 Windows 운영체제에서 Podman을 사용하려면 가상 머신이 필요합니다. 컨테이너는 Linux이기 때문입니다. 컨테이너는 다른 OS에서 실행되지 않습니다. 컨테이너를 구현하는 핵심 기능들인 Cgroup, Namespace, UFS(Union File System)는 Linux 커널에 의존하기 때문입니다.
 
 ```bash
 podman machine init \
@@ -118,6 +120,20 @@ To start your machine run:
 
 &nbsp;
 
+`podman machine init` 명령어를 실행하면 Podman은 최신 버전의 FCOS(Fedora CoreOS)를 확인하고, 해당 버전이 로컬에 없으면 다운로드합니다.
+
+Podman Machine이 생성되면 `podman machine ssh` 명령어를 실행하여 SSH에 접속하고 명령어를 실행할 수 있습니다. 다음 명령어는 FCOS 버전을 확인하는 명령어입니다.
+
+```bash
+podman machine ssh cat /etc/os-release | grep PRETTY_NAME
+```
+
+```bash
+PRETTY_NAME="Fedora CoreOS 40.20241019.3.0"
+```
+
+&nbsp;
+
 가상머신이 생성되었는지 확인하기 위해 `podman machine list` 명령어를 실행합니다.
 
 ```bash
@@ -125,6 +141,8 @@ $ podman machine list
 NAME                     VM TYPE     CREATED         LAST UP     CPUS        MEMORY      DISK SIZE
 podman-machine-default*  applehv     38 seconds ago  Never       4           2GiB        100GiB
 ```
+
+[Podman 5.0.0 버전](https://blog.podman.io/2024/03/podman-5-0-has-been-released/)부터는 Apple에서 네이티브하게 지원하는 하이퍼바이저인 [Apple Hypervisor Framework](https://developer.apple.com/documentation/hypervisor)를 지원하므로 가상머신 구현을 위해 QEMU를 사용할 필요가 없습니다. Podman Machine의 `VM TYPE`이 `applehv`인 것은 Apple Hypervisor Framework를 사용하여 가상머신이 실행되는 것을 의미합니다.
 
 &nbsp;
 
@@ -165,6 +183,10 @@ Machine "podman-machine-default" started successfully
 
 &nbsp;
 
+Podman Machine이 VM 형태로 실행되면 호스트 운영 체제의 Podman 클라이언트(CLI)를 사용할 준비가 됩니다. Podman 클라이언트는 SSH 및 머신 init 중에 생성된 SSH 키를 사용하여 호스트 VM의 소켓 활성화 서비스(socket-activated services)와 상호 작용합니다.
+
+&nbsp;
+
 `podman`의 명령어 체계는 `docker` 명령어와 동일하기 때문에 `docker` 명령어를 `podman`으로 대체할 수 있습니다. 이를 위해 쉘 프로파일에 다음 `alias` 설정을 추가합니다.
 
 아래는 zsh 프로파일에 추가하는 예시입니다.
@@ -175,7 +197,11 @@ echo "alias docker=podman" >> ~/.zshrc
 
 &nbsp;
 
-`docker` 명령어를 사용하기 위해 다음 명령어를 실행합니다. 실제로는 `podman` 명령어가 실행되는 점을 명심해야 합니다.
+### 컨테이너 실행
+
+이제 Podman을 사용해 컨테이너를 실행해보려 합니다.
+
+`nginx:latest` 이미지를 다운로드하고 컨테이너를 실행하는 명령어입니다. `docker` 명령어를 사용하기 위해 `alias` 설정을 추가했기 때문에 실제로는 `podman` 명령어가 실행됩니다.
 
 ```bash
 docker pull nginx:latest
@@ -305,3 +331,4 @@ minikube-m02   Ready    <none>          2s    v1.31.0
 - [Podman Installation Instructions](https://podman.io/docs/installation)
 - [Podman official page](https://podman.io/)
 - [Docker Desktop Alternatives for M1 Mac](https://alex-moss.medium.com/docker-desktop-alternatives-for-m1-mac-918a2dcda10)
+- [How Podman runs on Macs and other container FAQs](https://www.redhat.com/en/blog/podman-mac-machine-architecture)
