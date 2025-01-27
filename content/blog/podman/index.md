@@ -122,6 +122,8 @@ To start your machine run:
 
 `podman machine init` 명령어를 실행하면 Podman은 최신 버전의 FCOS(Fedora CoreOS)를 확인하고, 해당 버전이 로컬에 없으면 다운로드합니다.
 
+![podman machine init](./2.png)
+
 Podman Machine이 생성되면 `podman machine ssh` 명령어를 실행하여 SSH에 접속하고 명령어를 실행할 수 있습니다. 다음 명령어는 FCOS 버전을 확인하는 명령어입니다.
 
 ```bash
