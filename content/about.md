@@ -20,7 +20,7 @@ DevOps Engineer. I work in cloud-based distributed systems like kubernetes. I al
 ### Work Experience
 
 **DevOps Engineer** @ [Coinone](https://coinone.co.kr)  
-May 30, 2023 ― Present <small>(1 yr 9 mo)</small>
+May 30, 2023 ― Present <small>(1 yr 10 mo)</small>
 
 AWS, GCP, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops
 
