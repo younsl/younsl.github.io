@@ -60,13 +60,12 @@ open http://localhost:1313
 If you're familiar with container environments, you can run hugo server in a container for local development. Use this [dockerfile](https://github.com/younsl/box/tree/main/box/dockerfiles/hugo) to build the image and then run the container.
 
 ```bash
-# Build blog container
+# Build blog container using the dockerfile
 docker build -t hugo:dev .
 
-# Run blog container mounting local blog directory to /app directory
+# Run blog container in background mode (-d) mounting local blog directory to /app directory
 cd younsl.github.io
-SOURCE=$(pwd)
-docker run -d --name hugo -p 1313:1313 -v ${SOURCE}:/app hugo:dev
+docker run -d --name hugo -p 1313:1313 -v ${PWD}:/app hugo:dev
 ```
 
 Verify hugo container is running.
