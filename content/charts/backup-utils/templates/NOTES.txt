@@ -1,0 +1,10 @@
+
+{{ .Chart.Name }} {{ .Chart.AppVersion }} has been deployed successfully!
+
+  Storage Requirement:
+  Github backup-utils team recommends allocating at least 5x the amount of storage allocated
+  to the primary GitHub appliance for historical snapshots and growth over time.
+  - https://github.com/github/backup-utils/blob/v{{ .Chart.AppVersion }}/docs/requirements.md#storage-requirements
+
+  Helm Chart:
+  This chart is NOT OFFICIAL backup-utils chart.
