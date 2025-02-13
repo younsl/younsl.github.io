@@ -12,7 +12,7 @@ tags: ["kubernetes", "actions-runner", "finops"]
 
 Actions Runner Controller를 사용해서 Scale Zero 환경을 구성하는 방법을 설명합니다.
 
-Actions Runner Controller의 Scale Zero는 웹훅 이벤트가 발생할 때만 러너가 스케일링되는 환경으로 평상시에는 러너가 0개로 유지됩니다. 이를 통해 컴퓨팅 비용을 획기적으로 절감할 수 있습니다.
+Actions Runner Controller의 Scale Zero는 웹훅 이벤트가 발생할 때만 러너가 스케일링되는 환경으로 평상시에는 러너가 0개로 유지됩니다. 이를 통해 러너 파드가 구동되는 워커노드(EC2)의 컴퓨팅 비용을 획기적으로 절감할 수 있습니다.
 
 &nbsp;
 
@@ -36,26 +36,42 @@ Actions Runner Controller는 쿠버네티스 클러스터에서 GitHub Actions R
 
 Actions Runner Controller는 두 가지 스케일링 방식을 지원합니다.
 
-![Pull-driven scaling vs Webhook-driven scaling](./1.png)
+![Webhook-driven scaling is recommended](./1.png)
 
-각 방식별로 스케일링 기준이 다릅니다. 러너의 스케일링은 HorizontalRunnerAutoscaler 리소스가 runnerdeployment 리소스를 참조하여 스케일링을 진행합니다.
+Pull-driven scaling과 Webhook-driven scaling를 구분하는 결정적 차이는 스케일링 트리거를 발생시키는 주체와 방식입니다:
 
-#### Pull-driven scaling
+- Pull-driven scaling은 Actions Runner Controller가 주기적으로 Github API를 폴링하여 스케일링을 결정합니다.
+- Webhook-driven scaling은 Github이 이벤트 발생 시 즉시 웹훅으로 Actions Runner Controller에 알려 스케일링을 트리거합니다.
 
-- **PercentageRunnersBusy** : 현재 실행중인 Runner의 비율을 기준으로 스케일링을 진행함. 최소 1개의 러너를 반드시 유지해야 함.
-- **TotalNumberOfQueuedAndInProgressWorkflowRuns** : 현재 대기중이거나 실행중인 워크플로우의 총 개수를 기준으로 스케일링을 진행함. 스케일 제로는 가능하지만 Pull 기반이므로 속도가 느림.
-
-#### Webhook-driven scaling
-
-웹훅 기반 스케일링. 웹훅 이벤트를 받자마자 ARC 웹훅 서버가 스케일링을 진행하므로 반응 속도가 빠름. ARC가 웹훅 이벤트를 수신받아 스케일링을 진행하므로 Github API의 Rate Limit의 영향을 받지 않아 더 안전합니다.
-
-![Webhook-driven scaling is recommended](./1-1.png)
-
-> ARC 공식문서에서는 웹훅 기반 스케일링(Webhook-driven scaling) 방식을 권장하고 있습니다.
+Actions Runner Controller 공식문서에서는 웹훅 기반 스케일링(Webhook-driven scaling) 방식을 권장하고 있습니다.
 
 &nbsp;
 
-## 설정
+#### Pull-driven scaling
+
+![Pull-driven scaling](./2-p.png)
+
+Actions Runner Controller가 Github API를 통해 러너의 스케일링을 진행하는 방식을 Pull-driven scaling이라고 합니다. 이 방식은 웹훅 이벤트를 받자마자 스케일링을 진행하는 Webhook-driven scaling과 달리 일정 시간마다 스케일링을 진행합니다. 따라서 반응 속도가 느리고, Github API의 Rate Limit 영향을 받아 스케일링을 진행하는 시간이 길어질 수 있습니다.
+
+크게 2가지 스케일링 기준이 있습니다.
+- **PercentageRunnersBusy** : 현재 실행중인 Runner의 비율을 기준으로 스케일링을 진행합니다. 최소 1개의 러너를 반드시 유지해야 한다는 제약이 있습니다.
+- **TotalNumberOfQueuedAndInProgressWorkflowRuns** : 현재 대기중이거나 실행중인 워크플로우의 총 개수를 기준으로 스케일링을 진행합니다. Scale to zero는 가능하지만 Pull 기반이므로 Actions Runner Controller가 주기적으로 Github API를 호출하여 Queued 상태의 워크플로우를 확인하고 스케일링을 진행합니다.
+
+&nbsp;
+
+#### Webhook-driven scaling
+
+![Webhook-driven scaling](./2-w.png)
+
+[웹훅 기반 스케일링][wds]은 Github 서버가 웹훅 이벤트를 발생시키면 Actions Runner Controller가 웹훅 이벤트를 수신받아 스케일링을 진행하는 방식입니다. 이 방식은 웹훅 이벤트를 받자마자 스케일링을 진행하므로 반응 속도가 빠릅니다. 크게 3가지 장점이 있습니다.
+
+- 웹훅 이벤트를 받자마자 ARC 웹훅 서버가 스케일링을 진행하므로 반응 속도가 빠릅니다.
+- Actions Runner Controller 웹훅 서버 파드가 GHES가 보낸 웹훅 이벤트를 수신받아 스케일링을 수행하는 방식이기 때문에 Github API의 Rate Limit의 영향을 받지 않아 더 안전합니다.
+- Scale to zero 설정이 가능하므로 평상시에는 러너가 0개로 유지되어 컴퓨팅 비용을 획기적으로 절감할 수 있습니다.
+
+&nbsp;
+
+## 설정 가이드
 
 이 시나리오에서는 Webhook-driven scaling을 사용해서 Workflow Jobs 이벤트가 발생할 때만 러너가 스케일링되는 scale zero 환경을 구성합니다.
 
@@ -65,7 +81,7 @@ Actions Runner Controller는 두 가지 스케일링 방식을 지원합니다.
 
 웹훅 기반 스케일링을 사용하려면 먼저 Actions Runner Controller 파드와 별개로 `githubWebhookServer` 파드를 추가적으로 배포해야 합니다. 또한 Ingress를 통해 GHES가 웹훅 서버 파드에 접근할 수 있도록 해야 합니다.
 
-![System Architecture](./2.png)
+![System Architecture](./3.png)
 
 &nbsp;
 
@@ -122,11 +138,13 @@ githubWebhookServer:
 
 &nbsp;
 
-Webhook-driven scaling의 경우 Github Enterprise Server는 Actions Runner Controller와 별개인 ARC Webhook 서버 파드에 도달해야 합니다.
+Webhook-driven scaling의 경우 Github Enterprise Server는 Actions Runner Controller와 별개인 ARC Webhook 서버 파드에 웹훅을 전달해야 하므로 별도의 Ingress를 설정해서 외부에서 접근할 수 있도록 구성해야 합니다.
 
-![Architecture](./3.png)
+![Architecture](./4.png)
 
-사용자의 로컬 환경이나 Github Enterprise Server에서 다음 명령을 실행하여 네트워크 연결을 확인할 수 있습니다. 여기서 `your.domain.com`은 사용자의 ARC 웹훅 서버의 도메인이며, 사용자의 환경에 맞게 변경해야 합니다.
+&nbsp;
+
+사용자의 로컬 환경이나 Github Enterprise Server에서 다음 명령을 실행해 웹훅 서버까지의 네트워크 연결을 확인할 수 있습니다. 여기서 `your.domain.com`은 사용자의 ARC 웹훅 서버의 도메인이며, 사용자의 환경에 맞게 변경해야 합니다.
 
 ```bash
 nc -zv your.domain.com 443
@@ -160,7 +178,9 @@ spec:
       workflowJob: {}
 ```
 
-`scaleUpTriggers`는 웹훅 이벤트가 발생했을 때 러너가 증가하는 방식을 결정합니다. 이 시나리오에서는 웹훅 이벤트가 발생했을 때 러너가 `amount: 1`개씩 증가하도록 설정합니다.
+HRA의 `spec.scaleUpTriggers`는 웹훅 이벤트가 발생했을 때 러너가 증가하는 방식을 결정합니다. 이 시나리오에서는 웹훅 이벤트가 발생했을 때 러너가 1개씩 증가하도록 설정합니다. 한 번 생성된 러너는 duration 기간동안 유지되며, 이 기간이 지나면 러너가 삭제됩니다.
+
+runner를 scale zero로 설정하려면 `spec.minReplicas`를 0으로 설정해야 합니다. 이 설정은 웹훅 이벤트가 발생했을 때만 러너를 생성하므로 평상시에는 러너가 0개로 유지됩니다. 이 방식을 사용하면 러너 컴퓨팅 비용을 획기적으로 절감할 수 있습니다.
 
 &nbsp;
 
@@ -208,11 +228,11 @@ Github 레포지터리에 웹훅을 설정하는 방법은 다음과 같습니�
    - Events: "Let me select individual events" → "Workflow Jobs" 선택: Workflow job queued, waiting, in progress, or completed on a repository 이벤트가 발생하면 웹훅을 발송
 3. Active 체크박스 체크 후 Add Webhook 클릭
 
-![Github Webhook 설정](./4.png)
+![Github Webhook 설정](./5.png)
 
 4. GitHub에서 ping 이벤트 발송 → Webhooks 페이지에서 초록색 V 표시로 정상 작동 확인
 
-![Github Webhook 설정](./5.png)
+![Github Webhook 설정](./6.png)
 
 5. 확인 완료 후 HorizontalRunnerAutoscaler 리소스 생성/업데이트 진행
 
@@ -220,5 +240,7 @@ Github 레포지터리에 웹훅을 설정하는 방법은 다음과 같습니�
 
 ## 관련자료
 
-- [ARC: Webhook-driven scaling](https://github.com/actions/actions-runner-controller/blob/master/docs/automatically-scaling-runners.md#webhook-driven-scaling)
+- [ARC: Webhook-driven scaling][wds]
 - [Cannot scale from zero with TotalNumberOfQueuedAndInProgressWorkflowRuns metric #2850](https://github.com/actions/actions-runner-controller/issues/2850#issuecomment-2657143900)
+
+[wds]: https://github.com/actions/actions-runner-controller/blob/master/docs/automatically-scaling-runners.md#webhook-driven-scaling
