@@ -13,7 +13,7 @@ showAdvertisement: false
 
 DevOps Engineer. I work in cloud-based distributed systems like kubernetes. I also have a general interest in cloud native technologies including Kubernetes, Observability, and Infrastructure Ops.
 
-[Github](https://github.com/younsl), [Slides](https://github.com/younsl/box/tree/main/box/slides)
+[Github](https://github.com/younsl)
 
 &nbsp;
 
@@ -95,3 +95,10 @@ Mar 2018 ― Feb 2022
 - AWS Certified Cloud Practitioner: 2023.05.04 - 2026.05.04
 - Certified Kubernetes Administrator: 2022.09.13 ― 2025.09.13
 - AWS Certified Solutions Architect - Associate: 2020.06.26 - 2026.05.21
+
+&nbsp;
+
+### Projects
+
+- [Charts](https://younsl.github.io/charts/)
+- [GSS](https://github.com/younsl/gss)
