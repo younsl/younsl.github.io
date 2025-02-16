@@ -136,7 +136,7 @@ $ brew bundle install --file Brewfile_20220724
 
 ### dotfile로 관리하기
 
-제 경우는 개인 맥북과 업무용 맥북에서 동일한 Brew 패키지 환경을 유지하기 위해 Brewfile을 [dotfile](https://github.com/younsl/dotfiles/tree/main/brew)로 관리하고 있습니다.
+제 경우는 개인 맥북과 업무용 맥북에서 동일한 Brew 패키지 환경을 유지하기 위해 Brewfile을 [dotfile](https://github.com/younsl/dotfiles/tree/main/configs/brew)로 관리하고 있습니다. dotfile이란 개인 설정 파일을 모아두는 레포지터리로, 여러 머신에서 동일한 설정을 유지하기 위해 사용합니다.
 
 ![Brewfile dotfile 다운로드하는 경우 동작방식](./2.png)
 
