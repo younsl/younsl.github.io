@@ -1,0 +1,10 @@
+apiVersion: v2
+name: actions-runner
+description: A Helm chart for Kubernetes to deploy GitHub Actions runners include horizontalRunnerAutoscaler and serviceAccount
+version: 0.1.3
+sources:
+  - https://github.com/younsl/charts/
+maintainers:
+  - name: younsl
+    email: cysl@kakao.com
+    url: younsl.github.io

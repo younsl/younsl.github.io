@@ -1,0 +1,80 @@
+{{- range $key, $value := .Values.ec2NodeClass }}
+---
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: {{ $key }}
+spec:
+  amiFamily: {{ .amiFamily }}             
+  
+  {{- with .subnetSelectorTermsTags }}
+  subnetSelectorTerms:
+    - tags:
+        {{- toYaml . | nindent 8 }}
+  {{- end }}
+
+  {{- with .securityGroupSelectorTermsTags }}
+  securityGroupSelectorTerms:   
+    - tags:
+        {{- toYaml . | nindent 8 }}
+   {{- end }}
+  
+  {{- if .role }}
+  role: {{ .role }} 
+  {{- end }}
+
+  {{- if .instanceProfile }}
+  instanceProfile: {{ .instanceProfile }}
+  {{- end }}
+
+  {{- with .amiSelectorTerms }}
+  amiSelectorTerms:
+    {{- if .armAMIid }}
+    - id: {{ .armAMIid }}
+    {{- end }}
+    {{- if .amdAMIid }}
+    - id: {{ .amdAMIid }}
+    {{- end }}
+    {{- if .gpuAMIid }}
+    - id: {{ .gpuAMIid }}
+    {{- end }}
+    {{- if .name }}
+    - name: {{ .name | quote }}
+    {{- end }}
+    {{- if .tags }}
+    - tags:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+  {{- end }}
+
+  {{- with .tags }}
+  tags:                
+    {{- toYaml . | nindent 4 }} 
+  {{- end }}
+
+  {{- with .metadataOptions }}
+  metadataOptions:
+    httpEndpoint: {{ .httpEndpoint }}
+    httpProtocolIPv6: {{ .httpProtocolIPv6 }}
+    httpPutResponseHopLimit: {{ .httpPutResponseHopLimit }}
+    httpTokens: {{ .httpTokens }}
+  {{- end }}
+  
+  {{- with .blockDeviceMappings }}
+  blockDeviceMappings:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- if .userData }} 
+  userData: |
+    {{- toYaml .userData | nindent 4 }}
+  {{- end }}
+
+  {{- if .detailedMonitoring }}
+  detailedMonitoring: {{ default "false" .detailedMonitoring }}
+  {{- end }}
+
+  {{- if .associatePublicIPAddress }}
+  associatePublicIPAddress: {{ default "false" .associatePublicIPAddress }}
+  {{- end }}
+{{- end }}

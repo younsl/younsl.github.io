@@ -1,0 +1,23 @@
+apiVersion: v2
+name: github-backup-utils
+description: GitHub Enterprise Backup Utilities
+keywords:
+- github-enterprise-server
+- github-enterprise
+- backup-utils
+- backup
+- disaster-recovery
+type: application
+version: 0.4.0
+appVersion: 3.13.3
+home: https://github.com/github/backup-utils
+sources:
+- https://github.com/github/backup-utils
+maintainers:
+- name: younsl
+  email: cysl@kakao.com
+  url: https://github.com/younsl
+annotations:
+  "artifacthub.io/links": |
+    - name: Chart Source
+      url: https://github.com/younsl/github-backup-utils
