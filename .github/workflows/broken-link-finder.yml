@@ -1,0 +1,24 @@
+name: Find broken links on a website
+run-name: 🔬 Find broken links on a website
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+  # Runs at 9:00 AM KST every day
+  schedule:
+    - cron: '0 0 * * *' # 9:00 AM KST is 0:00 AM UTC
+
+jobs:
+  deadfinder:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Run DeadFinder
+      uses: hahwul/deadfinder@1.6.1
+      id: broken-link
+      with:
+        command: sitemap
+        target: https://younsl.github.io/sitemap.xml
+    
+    - name: Output Handling
+      run: echo '${{ steps.broken-link.outputs.output }}'

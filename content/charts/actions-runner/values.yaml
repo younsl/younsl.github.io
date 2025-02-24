@@ -1,0 +1,141 @@
+# Default values for github-actions-runners.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# (string) Override the name of the chart
+nameOverride: ~
+
+# (string) Override the expanded name of the chart
+fullnameOverride: ~
+
+# Multiple runnerDeployments can be declared.
+runnerDeployments:
+  # The name of the runnerDeployment.
+  - runnerName: doge-basic-runner
+
+    # The name of the enterprise in the Github Enterprise Server.
+    enterprise: "doge-company"
+
+    # The name of the Runner Group.
+    group: ""
+
+    # Labels for the runner pod.
+    podLabels: {}
+      # app: actions-runner
+
+    # Annotations to be added to the pod
+    # This can be used to add metadata to pods, such as for configuration or tool integrations
+    podAnnotations: {}
+      # linkerd.io/inject: enabled
+      # config.linkerd.io/proxy-await: enabled
+
+    # Labels assigned to the runner.
+    # In Actions Workflow, this label specifies which runner to run on, such as runs-on: [self-hosted, linux, build].
+    labels:
+      - DOGE-EKS-CLUSTER
+      - m6i.xlarge
+      - ubuntu-22.04
+      - v2.311.0
+      - build
+
+    securityContext:
+      fsGroup: 1001
+    
+    # VolumeMounts settings for the dind container in the runner pod.
+    dockerVolumeMounts:
+      - mountPath: /tmp
+        name: tmp
+    
+    # VolumeMounts settings for the runner container in the runner pod.
+    volumeMounts:
+      - mountPath: /tmp
+        name: tmp
+    
+    # Volumes settings for the runner container in the runner pod.
+    volumes:
+      - name: tmp
+        emptyDir: {}
+    
+    # Resource limit, request settings for the runner pod.
+    resources:
+      limits:
+        cpu: "1.5"
+        memory: "6Gi"
+      requests:
+        cpu: "0.5"
+        memory: "1Gi"
+    
+    nodeSelector:
+      node.kubernetes.io/name: basic
+    
+    # HRA (horizontal runner autoscaler) settings connected to the runner deployment.
+    autoscaling:
+      # Whether to enable the horizontalRunnerAutoscaler.
+      enabled: true
+
+      scaleDownDelaySecondsAfterScaleOut: 300
+
+      # Minimum number of runner pods for the horizontalRunnerAutoscaler.
+      minReplicas: 2
+
+      # Maximum number of runner pods for the horizontalRunnerAutoscaler.
+      maxReplicas: 16
+
+      # Scheduled overrides for runner autoscaling. Allows you to set custom scaling rules for specific time periods.
+      # Useful for adjusting the number of replicas during known peak or low usage times, such as weekends or holidays.
+      # Each override specifies a time range and recurrence pattern for applying the custom scaling settings.
+      # Reference: https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/autoscaling-with-self-hosted-runners
+      scheduledOverrides:
+      - startTime: "2023-07-15T00:00:00+09:00"
+        endTime: "2023-07-17T00:00:00+09:00"
+        recurrenceRule:
+          frequency: Weekly
+        minReplicas: 1
+
+      # Metrics for autoscaling decisions. This section specifies the metrics used by the Horizontal Runner Autoscaler (HRA) to make
+      # scaling decisions. The metrics define how the autoscaler should react to the current state of the runners to adjust the
+      # number of replicas accordingly. These metrics are crucial for ensuring that the number of runner pods scales appropriately
+      # based on the actual workload and utilization.
+      metrics:
+      - type: PercentageRunnersBusy
+        # Increase the number of runners when the percentage of busy runners exceeds this threshold. This helps to handle
+        # increased load by adding more runner pods to manage the workload effectively.
+        scaleUpThreshold: '0.75'
+
+        # Decrease the number of runners when the percentage of busy runners falls below this threshold. This helps to reduce
+        # resource usage by scaling down the number of runner pods when the load decreases.
+        scaleDownThreshold: '0.25'
+
+        # When scaling up, the number of runners will be multiplied by this factor. For example, a factor of '2' means the number
+        # of runners will double when scaling up.
+        scaleUpFactor: '2'
+        
+        # When scaling down, the number of runners will be multiplied by this factor. For example, a factor of '0.5' means the
+        # number of runners will be halved when scaling down.
+        scaleDownFactor: '0.5'
+    
+    automountServiceAccountToken: true
+
+    # Kubernetes service account configuration.
+    # A service account provides authentication information used by pods to interact with the Kubernetes API server within the cluster.
+    # This configuration allows the runner pod to access necessary cluster resources by assigning appropriate permissions. 
+    # Using a service account enhances cluster security and allows for the association with specific IAM roles to access AWS resources.
+    serviceAccount:
+
+      # Determines whether to create a new service account. Setting this to 'true' will create a new service account.
+      create: true
+
+      # Annotation for linking an IAM role with the service account. This annotation associates the service account with an AWS IAM role,
+      # allowing the service account to obtain permissions to access AWS resources (e.g. S3 buckets).
+      # By using IRSA (IAM Role for Service Account), you can securely access AWS resources.
+      annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::111122223333:role/doge-eks-cluster-actions-build-runner-s3-access-irsa-role
+
+    # Topology Spread Constraints for the runner. This setting defines how pods should be spread across different topology domains,
+    # such as nodes or availability zones, to ensure high availability and fault tolerance. It helps to distribute the pods evenly
+    # across the specified topology domains to avoid overloading a single domain and to improve resiliency.
+    # Reference: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+    topologySpreadConstraints: {}
+      # - maxSkew: 1
+      #   topologyKey: topology.kubernetes.io/zone
+      #   whenUnsatisfiable: ScheduleAnyway

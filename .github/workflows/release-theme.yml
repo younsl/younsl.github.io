@@ -1,0 +1,62 @@
+name: Release void theme
+run-name: 📦 Release void theme ${{ github.event.inputs.release_version }}
+
+on:
+  push:
+    tags:
+      - 'void/[0-9].[0-9].[0-9]'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        id: checkout
+
+      - name: Pin version
+        id: version
+        run: |
+          RELEASE_VERSION=${GITHUB_REF#refs/tags/void/}
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
+
+      - name: Compress theme files
+        id: compress
+        run: |
+          mv .github/docs docs
+          zip -r void-theme-${{ env.RELEASE_VERSION }}.zip \
+            assets/ \
+            layouts/ \
+            docs/
+
+      - name: Release
+        uses: softprops/action-gh-release@v2.2.1
+        id: release
+        with:
+          files: void-theme-${{ env.RELEASE_VERSION }}.zip
+          tag_name: ${{ env.RELEASE_VERSION }}
+          name: Void theme ${{ env.RELEASE_VERSION }}
+          body: |
+            ## Summary
+
+            Void theme ${{ env.RELEASE_VERSION }} has been released.
+
+            Void is a minimal, clean, and responsive theme for [Hugo](https://gohugo.io/). Please refer to [docs](https://github.com/younsl/younsl.github.io/tree/main/.github/docs) for installation and usage.
+            
+            ## Assets
+
+            `void-theme-${{ env.RELEASE_VERSION }}.zip` file is a zip archive of the following files:
+
+            ```bash
+            void-theme-${{ env.RELEASE_VERSION }}/
+            ├── assets/
+            ├── layouts/
+            └── docs/
+            ```
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true
