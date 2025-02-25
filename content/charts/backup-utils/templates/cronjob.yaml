@@ -1,0 +1,112 @@
+{{- if .Values.backupUtils.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: github-backup-utils
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "github-backup-utils.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.backupUtils }}
+  suspend: {{ .suspend | default false }}
+  timeZone: {{ .timeZone | quote }}
+  schedule: {{ .schedule | quote }}
+  concurrencyPolicy: {{ .concurrencyPolicy }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          {{- if .podLabels }}
+          labels:
+            {{- toYaml .podLabels | nindent 12 }}
+          {{- end }}
+          {{- if .podAnnotations }}
+          annotations:
+            {{- toYaml .podAnnotations | nindent 12 }}
+          {{- end }}
+        spec:
+          containers:
+          - name: backup-utils
+            {{- with .image }}
+            image: "{{ .repository }}:{{ .tag | default (printf "v%s" $.Chart.AppVersion) }}"
+            imagePullPolicy: {{ .pullPolicy }}
+            {{- end }}
+            {{- with .command }}
+            command:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+            {{- with .env }}
+            env:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+            volumeMounts:
+            - name: backup-script
+              mountPath: /backup-utils/backup.sh
+              subPath: backup.sh
+            - name: data
+              mountPath: /data
+            - name: known-hosts
+              mountPath: /ghe-ssh/known_hosts
+              subPath: known_hosts
+              readOnly: true
+            - name: backup-config
+              mountPath: /backup-utils/backup.config
+              subPath: backup.config
+              readOnly: true
+            - name: ssh-private-key
+              mountPath: /ghe-ssh/id_ed25519
+              subPath: id_ed25519
+              readOnly: true
+            {{- if .backupConfig.stagingInstance }}
+            - name: ssh-private-key-staging
+              mountPath: /ghe-ssh/id_ed25519.staging
+              subPath: id_ed25519
+              readOnly: true
+            {{- end }}
+            resources:
+              {{- toYaml .resources | nindent 14 }}
+          restartPolicy: OnFailure
+          volumes:
+          - name: backup-script
+            configMap:
+              name: github-backup-utils-script
+              items:
+              - key: backup.sh
+                path: backup.sh
+              defaultMode: 0775
+          - name: data
+            persistentVolumeClaim:
+              claimName: github-backup-utils-pvc
+          - name: known-hosts
+            configMap:
+              name: github-backup-utils-config
+              items:
+              - key: known_hosts
+                path: known_hosts			
+          - name: backup-config
+            configMap:
+              name: github-backup-utils-config
+              items:
+              - key: backup.config
+                path: backup.config
+          - name: ssh-private-key
+            secret:
+              secretName: github-backup-utils-ssh-private-key
+              defaultMode: 0400
+          {{- if .backupConfig.stagingInstance }}
+          - name: ssh-private-key-staging
+            secret:
+              secretName: github-backup-utils-ssh-private-key-staging
+              defaultMode: 0400
+          {{- end }}
+          {{- if .nodeSelector }}
+          nodeSelector:
+            {{- toYaml .nodeSelector | nindent 12 }}
+          {{- end }}
+          {{- if .affinity }}
+          affinity:
+            {{- toYaml .affinity | nindent 12 }}
+          {{- end }}
+  {{- end }}
+{{- end }}

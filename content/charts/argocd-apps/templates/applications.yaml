@@ -1,0 +1,69 @@
+{{/* Helm template environments by default */}}
+{{- $defaultNamespace := "argocd" }}
+{{- $defaultRepoURL := "https://github.example.com/dogecompany/charts.git" }}
+{{- $defaultTargetRevision := "HEAD" }}
+{{- $defaultServer := "https://kubernetes.default.svc" }}
+{{- $env := .Values.global.environment }}
+{{- range .Values.applications }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  {{- with .additionalAnnotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+  {{- with .additionalLabels }}
+  labels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  name: {{ .name }}
+  namespace: {{ default $defaultNamespace .namespace }}
+  {{- with .finalizers }}
+  finalizers:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  project: {{ tpl .project $ }}
+  {{- with .source }}
+  source:
+    repoURL: {{ default $defaultRepoURL .repoURL }}
+    targetRevision: {{ default $defaultTargetRevision .targetRevision }}
+    path: {{ .path }}
+    {{- if .helm }}
+    helm:
+      valueFiles:
+        {{- toYaml .helm.valueFiles | nindent 8 }}
+    {{- else }}
+    helm:
+      valueFiles:
+        - "values_{{ $env }}.yaml"
+    {{- end }}
+  {{- end }}
+  {{- with .sources }}
+  sources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .destination }}
+  destination:
+    server: {{ default $defaultServer .server }}
+    namespace: {{ .namespace }}
+  {{- end }}
+  {{- with .syncPolicy }}
+  syncPolicy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .revisionHistoryLimit }}
+  revisionHistoryLimit: {{ . }}
+  {{- end }}
+  {{- with .ignoreDifferences }}
+  ignoreDifferences:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .info }}
+  info:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

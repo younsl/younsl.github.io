@@ -1,0 +1,33 @@
+{{ define "main" }}
+{{ partial "back_link.html" .}}
+
+<article>
+    <p class="post-meta">
+        <time datetime="{{ .Date }}">
+            {{ .Date | time.Format site.Params.theme_config.date_format }}
+        </time>
+    </p>
+
+    <h1>{{ .Title }}</h1>
+
+    {{ if .Params.toc }}
+        <aside {{ if .Params.tocBorder }} class="toc" {{ end }}>
+            {{ .TableOfContents }}
+        </aside>
+    {{ end }}
+
+    <!-- [Partial] Google Adsense -->
+    {{ if .Params.showAdvertisement | default (.Site.Params.article.showAdvertisement | default true) }}
+        {{ if templates.Exists "partials/adsense.html" }}
+            {{- partial "adsense.html" . -}}
+            {{- .Content -}}
+            {{- partial "adsense.html" . -}}
+        {{ else }}
+            {{ warnf "[ETCH] Adsense is enabled for %s but no google adsense partial exists." .File.Path }}
+        {{ end }}
+    {{ else }}
+        <!-- Main content per post -->
+        {{- .Content -}}
+    {{ end }}
+</article>
+{{ end }}
