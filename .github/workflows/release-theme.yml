@@ -27,7 +27,7 @@ jobs:
         id: branch-name
         run: |
           BRANCH_NAME=$(git branch -r --contains ${{ github.ref }} | grep -v HEAD | head -n 1 | sed 's/^[[:space:]]*origin\///')
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_ENV
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
       - name: Compress theme files
         id: compress
