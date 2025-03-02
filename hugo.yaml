@@ -1,0 +1,59 @@
+baseURL: https://younsl.xyz
+title: younsl
+theme: void
+languageCode: en-US
+disableKinds: 
+  - taxonomy
+  - term
+ignoreLogs: 
+  - warning-goldmark-raw-html
+
+module:
+  hugoVersion:
+    extended: true
+    min: 0.144.0
+
+markup:
+  goldmark:
+    parser:
+      attribute:
+        block: true
+        title: true
+  
+  highlight:
+    anchorLineNos: true
+    codeFences: true
+    guessSyntax: true
+    hl_Lines: ''
+    hl_inline: false
+    lineAnchors: ''
+    lineNoStart: 1
+    lineNos: false
+    lineNumbersInTable: true
+    noClasses: true
+    noHl: false
+    style: rrt
+    tabWidth: 4
+  
+  tableOfContents:
+    startLevel: 2
+    endLevel: 3
+    ordered: false
+
+params:
+  theme_config:
+    appearance: dark
+    back_home_text: ".."
+    date_format: 2006-01-02
+    isListGroupByDate: false
+    isShowFooter: false
+    titleLinkEnable: true
+    titleLink: /about
+  
+  entries:
+  - post_list:
+      limit: 0
+      section: blog
+      show_more: false
+      show_more_text: null
+      show_more_url: null

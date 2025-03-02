@@ -1,0 +1,24 @@
+apiVersion: v2
+name: rbac
+description: Helm chart to define RBAC resources in the gitops way
+keywords:
+- cluster-security
+- rbac
+- clusterRole
+- clusterRoleBinding
+- role
+- roleBinding
+type: application
+version: 0.2.1
+appVersion: 0.2.1
+home: https://github.com/younsl/charts
+sources:
+- https://github.com/younsl/charts
+maintainers:
+- name: younsl
+  email: cysl@kakao.com
+  url: https://github.com/younsl
+annotations:
+  "artifacthub.io/links": |
+    - name: Chart Source
+      url: https://github.com/younsl/charts

@@ -1,0 +1,33 @@
+{{/*
+Expand the name of the chart.
+*/}}
+{{- define "name" -}}
+{{- default $.Chart.Name $.Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create chart name by the chart label.
+*/}}
+{{- define "chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Return labels, including name and globalLabels 
+*/}}
+{{- define "labels" -}}
+helm.sh/chart: {{ include "chart" . | quote }}
+{{- if .globalLabels }}
+{{ toYaml .globalLabels }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return NodePool labels.
+*/}}
+{{- define "nodePool.labels" -}}
+{{ include "labels" . | indent 8}}
+{{- if .labels }}
+{{ toYaml .labels | indent 8 }}
+{{- end -}}
+{{- end -}}

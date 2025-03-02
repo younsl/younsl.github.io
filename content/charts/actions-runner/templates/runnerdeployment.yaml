@@ -1,0 +1,139 @@
+{{/*
+Helm template for "runnerDeployment" custom resource
+*/}}
+
+{{- range .Values.runnerDeployments }}
+---
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: {{ .runnerName }}
+  labels:
+    {{- include "actions-runner.labels" $ | nindent 4 }}
+spec:
+  {{- if not .autoscaling.enabled }}
+  replicas: {{ .replicaCount }}
+  {{- end }}
+  template:
+    metadata:
+      {{- with .podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .podLabels }}
+      labels:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .enterprise }}
+      enterprise: {{ . }}
+      {{- end }}
+      {{- with .repository }}
+      repository: {{ . }}
+      {{- end }}
+      {{- with .organization }}
+      organization: {{ . }}
+      {{- end }}
+      {{- with .group }}
+      group: {{ . }}
+      {{- end }}
+      {{- with .labels }}
+      labels:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .autoscaling.enabled }}
+        - support-horizontal-runner-autoscaling
+      {{- end }}
+      dockerEnabled: {{ .dockerEnabled }}
+      {{- with .dockerEnv }}
+      dockerEnv:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .dockerRegistryMirror }}
+      dockerRegistryMirror: {{ . }}
+      {{- end }}
+      {{- with .dockerVolumeMounts }}
+      dockerVolumeMounts:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .dockerdContainerResources }}
+      dockerdContainerResources:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      dockerdWithinRunnerContainer: {{ .dockerdWithinRunnerContainer }}
+      {{- with .env }}
+      env:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .envFrom }}
+      envFrom:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      ephemeral: {{ .ephemeral }}
+      {{- with .envFrom }}
+      ephemeralContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .image }}
+      image: {{ . }}
+      {{- end }}
+      {{- with .imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: {{ .automountServiceAccountToken }}
+      {{- if .serviceAccount.create }}
+      serviceAccountName: {{ .runnerName }}
+      {{- else }}
+      serviceAccountName: default
+      {{- end }}
+      {{- with .dnsConfig }}
+      dnsConfig:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .containers }}
+      containers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .sidecarContainers }}
+      sidecarContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds }}
+      {{- with .resources }}
+      resources:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .volumeMounts }}
+      volumeMounts:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
