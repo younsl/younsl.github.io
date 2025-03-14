@@ -1,0 +1,207 @@
+# -- labels
+# Global labels for all resources
+labels: {}
+  # app: github-backup-utils
+  # environment: prd
+
+# -- backupUtils
+# Spec configuration for the backup utility
+backupUtils:
+  # -- enabled
+  # Enable or disable the backup utility
+  # This allows you to easily toggle the backup functionality without removing existing configurations
+  enabled: true
+
+  # -- suspend
+  # Suspend or resume deploying the backup utility by cronjob
+  # Suspending the cronjob will not stop jobs that have already been deployed.
+  # `spec.suspend` allows you to easily pause the backup functionality without removing existing configurations
+  suspend: false
+
+  # -- podLabels
+  # Labels to be added to the pod
+  # This can be used to categorize and organize pods, such as by app or environment
+  podLabels: {}
+    # environment: dev
+    # key: value
+
+  # -- podAnnotations
+  # Annotations to be added to the pod
+  # This can be used to add metadata to pods, such as for configuration or tool integrations
+  podAnnotations: {}
+    # linkerd.io/inject: enabled
+
+  # -- timeZone
+  # Timezone for scheduled backups executed by cronjob
+  # ref: https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#time-zones
+  timeZone: "Asia/Seoul"
+
+  # -- schedule
+  # Cron expression for scheduled backups
+  # backup-utils team recommends hourly backups at the least
+  # ref: https://github.com/github/backup-utils/blob/master/docs/scheduling-backups.md#scheduling-backups
+  schedule: "*/30 * * * *"
+
+  # -- concurrencyPolicy
+  # Specifies how to treat concurrent executions of a Job
+  # Valid values: Allow, Forbid, Replace
+  # Allow: allows CronJobs to run concurrently
+  # Forbid: forbids concurrent runs, skipping the next run if the previous hasn't finished yet
+  # Replace: cancels the currently running job and replaces it with a new one
+  concurrencyPolicy: Forbid
+
+  # -- known_hosts data
+  # "[github.example.com]:122 ecdsa-sha2-nistp256 AAA............I="
+  #   ------------------      ------------------- -----------------
+  #    GHES Hostname or          Host key type     Host public key
+  #    IP Address
+  knownHosts: "[github.example.com]:122 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBPHiBn7ko/8AE2Mwa01HB3Ef+ZZ92fg2PDjM/180eAXCYo0II9JeUVJO1hFXk6W10WfsHPabQgx8zV0ddaL9RzI="
+
+  backupConfig:
+    # -- githubEnterpriseHostname
+    # IP address or hostname of Github Enterprise server
+    githubEnterpriseHostname: "github.example.com"
+
+    # -- snapshotRententionNumber
+    # Maximum number of snapshots to keep
+    snapshotRententionNumber: 72
+
+    # -- verboseLogFile
+    # Absolute path where detailed backup logs are stored
+    verboseLogFile: "/data/backup-verbose.log"
+
+    # -- extraCommandOptions
+    # Extra SSH options for backup-utils pod to connect to GHE instances
+    # We usually recommend not to modify the default value for stability reasons
+    extraCommandOptions: "-i /ghe-ssh/id_ed25519 -o UserKnownHostsFile=/ghe-ssh/known_hosts"
+
+    # -- stagingInstance
+    # If true, the backup utility will mount the staging instance's SSH private key
+    stagingInstance: false
+
+  image:
+    repository: ghcr.io/younsl/backup-utils
+
+    # -- tag
+    # Image tag for backup-utils cronjob
+    # If not specified or set to null, reference chart appVersion to set the image tag
+    tag: null
+
+    # -- pullPolicy
+    # Image pull policy (Always, Never, IfNotPresent)
+    pullPolicy: IfNotPresent
+
+  # -- command
+  # Command to execute within the backup-utils container
+  # Use an array format for command to ensure proper handling of arguments
+  command: ["/bin/bash", "-c", /backup-utils/backup.sh]
+
+  # -- env
+  # Environment variables for the application
+  # If you need to specify a configuration file for backup utility commands,
+  # modify the `GHE_BACKUP_CONFIG` environment variable.
+  env:
+  - name: GHE_BACKUP_CONFIG
+    value: /backup-utils/backup.config
+
+  persistentVolume:
+    # -- storageClass
+    # If EKS cluster does not have the EBS CSI Driver installed, use gp2 instead of gp3.
+    # Check whether gp3 is installed by using `kubectl get storageclass -A` command.
+    storageClass: gp3
+    # storageClass: gp2
+
+    # -- size
+    # Volume size where snapshot backups are stored
+    # volume size vary based on current Git repository disk usage and growth patterns of your GitHub appliance
+    # at least 5x the amount of storage allocated to the primary GitHub appliance for historical snapshots and growth over time
+    # ref: https://github.com/github/backup-utils/blob/master/docs/requirements.md#storage-requirements
+    size: 500Gi
+
+    accessModes:
+      # -- ReadWriteOnce
+      # The volume can be mounted as read-write by a single node
+      - ReadWriteOnce
+
+      # -- ReadOnlyMany
+      # The volume can be mounted read-only by many nodes
+      # - ReadOnlyMany
+
+      # -- ReadWriteMany
+      # The volume can be mounted as read-write by many nodes
+      # (not supported by all storage providers)
+      # - ReadWriteMany
+
+      # -- ReadWriteOncePod
+      # The volume can be mounted as read-write by a single Pod.
+      # Unique to Kubernetes, useful for some high-availability setups
+      # - ReadWriteOncePod
+
+    # -- labels
+    # Extra labels for persistentVolumeClaim
+    labels: {}
+      # app: github-backup-utils
+      # environment: prd
+
+    # -- annotations
+    # Extra annotations for persistentVolumeClaim
+    annotations: {}
+      # kubernetes.io/createdby: vsphere-volume-dynamic-provisioner
+      # maintainer: jonh.doe
+
+    # -- finalizers
+    # Extra finalizers to protect deletion persistentVolumeClaim
+    # ref: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolume-deletion-protection-finalizer
+    finalizers:
+      - kubernetes.io/pvc-protection
+
+  # -- resources
+  # Resource requests and limits for github-backup-utils container
+  # ref: https://github.com/github/backup-utils/blob/master/docs/requirements.md#backup-host-requirements
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+  # -- nodeSelector
+  # Node selector to specify on which nodes the job should run
+  # If not declared, the job can run on any node
+  nodeSelector: {}
+    # node.kubernetes.io/name: basic
+    #   ## This will ensure the job runs only on nodes with the label 'node.kubernetes.io/name: basic'.
+    # topology.ebs.csi.aws.com/zone: ap-northeast-2c    
+    #   ## This can be used to ensure the job runs on nodes within a specific availability zone.
+
+  # -- affinity
+  # Affinity rules to specify on which nodes the job should run
+  # Node affinity allows for more complex node selection criteria than nodeSelector
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/arch
+            operator: In
+            values:
+            - amd64
+          - key: kubernetes.io/os
+            operator: In
+            values:
+            - linux
+    # nodeAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #     nodeSelectorTerms:
+    #     - matchExpressions:
+    #       - key: node.kubernetes.io/name
+    #         operator: In
+    #         values:
+    #         - basic
+    #         ## This rule ensures the job runs only on nodes with the label 'node.kubernetes.io/name: basic'.
+    #       - key: topology.ebs.csi.aws.com/zone
+    #         operator: In
+    #         values:
+    #         - ap-northeast-2c
+    #         ## This rule ensures the job runs only on nodes within the specified availability zone.

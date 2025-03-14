@@ -1,0 +1,207 @@
+// -------------- THEME SWITCHER -------------- //
+@mixin theme($--bg-color, $--primary-text-color, $--secondary-text-color, $--highlight) {
+  background-color: $--bg-color;
+
+  color: $--primary-text-color;
+
+  a {
+    color: $--primary-text-color;
+    text-decoration: underline;
+    text-decoration-color: $--highlight;
+    &:hover {
+      color: $--highlight;
+      text-decoration-color: $--highlight;
+    }
+  }
+
+  // Post links in the main page
+  a.main {
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+      text-decoration-color: $--highlight;
+    }
+  }
+
+  span {
+    color: $--highlight;
+  }
+
+  pre span {
+    color: inherit;
+  }
+
+  details {
+    border: thin solid $--primary-text-color;
+  }
+
+  details summary {
+    color: $--primary-text-color;
+  }
+
+  details[open] summary {
+    border-bottom: 1px solid $--primary-text-color;
+  }
+
+  pre {
+    background: $--bg-color;
+  }
+
+  code:not(pre > code) {
+    background-color: $--primary-text-color;
+    color: $--bg-color;
+  }
+
+  *:target {
+    background: $--highlight;
+    color: $--primary-text-color;
+   }
+
+  table, th, td {
+    border: thin solid $--primary-text-color;
+  }
+
+  .toc {
+    border: thin solid $--primary-text-color;
+    padding: 1rem;
+  }
+
+  figcaption { color: $--secondary-text-color; }
+
+  blockquote {
+    border: thin solid $--primary-text-color;
+  }
+}
+
+@mixin dark-appearance {
+  @include theme(#0f0e0e, #fafafa, #000000, #999999);
+}
+
+@mixin light-appearance {
+  @include theme(#ffffff, #212121, #666666, #999999);
+}
+
+body[a="dark"] { @include dark-appearance; }
+body[a="light"] { @include light-appearance; }
+
+@media (prefers-color-scheme: dark) {
+  body[a="auto"] { @include dark-appearance; }
+}
+
+@media (prefers-color-scheme: light) {
+  body[a="auto"] { @include light-appearance; }
+}
+
+// -------------------------------------------- //
+
+html { height: 100%; }
+
+body {
+  font-family: monospace;
+  font-size: 16px;
+  line-height: 1.4;
+  margin: 0;
+  min-height: 100%;
+  overflow-wrap: break-word;
+}
+
+h2, h3, h4, h5, h6 { margin-top: 1.5rem; }
+
+p { margin: 1rem 0; }
+
+li { margin: 0.4rem 0; }
+
+a {
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+hr {
+  text-align: center;
+  border: 0;
+  margin: 2rem 0;
+
+  &:before { content: '/////' }
+  &:after { content: attr(data-content) '/////' }
+}
+
+pre {
+  padding: 1em;
+  overflow-x: auto; /* Fix pre content overflowing parent without scroll bar */
+}
+
+table { width: 100%; }
+
+table, th, td {
+  border-collapse: collapse;
+  padding: 0.4rem;
+}
+
+code {
+  text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+code:not(pre > code) {
+  padding: 0.1em 0.2em;
+  font-size: 90%;
+}
+
+code.has-jax {
+  -webkit-font-smoothing: antialiased;
+  background: inherit !important;
+  border: none !important;
+  font-size: 100%;
+}
+
+blockquote {
+  padding: 1rem;
+
+  p { margin: 0; }
+}
+
+img {
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
+
+figcaption {
+  text-align: center;
+  opacity: 0.5;
+}
+
+details {
+  padding: 1rem;
+}
+
+details summary {
+  text-decoration: none;
+}
+
+details[open] summary {
+  margin-bottom: 0.5em;
+  padding-bottom: 0.5em;
+}
+
+.post-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.post-item {
+  margin-bottom: 0.4rem;
+}
+
+.w {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+}
+
+.toc {
+  padding: 1rem;
+}
