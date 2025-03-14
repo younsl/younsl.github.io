@@ -11,3 +11,4 @@ Hugo theme for content-first and minimalistic blog.
 - [Installation](./installation.md)
 - [Configuration](./configuration.md)
 - [Demo](./demo.md)
+- [How to deploy your Hugo site](./deployment.md)
