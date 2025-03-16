@@ -1,7 +1,7 @@
 ---
 title: "필수 쿠버네티스 관리 툴"
 date: 2022-03-21T23:34:40+09:00
-lastmod: 2023-06-01T22:01:40+09:00
+lastmod: 2025-03-17T08:33:00+09:00
 slug: ""
 description: "쿠버네티스를 쉽고 효율적으로 관리하기 위해 k9s, kubecolor 등의 유틸리티 툴을 설치하고 사용하는 방법을 안내합니다."
 keywords: []
@@ -114,34 +114,64 @@ $ k9s
 k9s 스킨을 적용하려면 `k9s info` 명령어를 사용 후 설정파일 경로인 `Configuration`을 확인합니다.  
 
 ```bash
-$ k9s info
- ____  __.________
-|    |/ _/   __   \______
-|      < \____    /  ___/
-|    |  \   /    /\___ \
-|____|__ \ /____//____  >
-        \/            \/
+k9s info
+```
 
-Configuration:   /Users/younsl/Library/Application Support/k9s/config.yml
-Logs:            /var/folders/_x/sngy0t4546q0d3h5mvybr9dc0000gn/T/k9s-younsl.log
-Screen Dumps:    /var/folders/_x/sngy0t4546q0d3h5mvybr9dc0000gn/T/k9s-screens-younsl
+```bash
+ ____  __ ________
+|    |/  /   __   \______
+|       /\____    /  ___/
+|    \   \  /    /\___  \
+|____|\__ \/____//____  /
+         \/           \/
+
+Version:           0.40.9
+Config:            /Users/younsung.lee/.config/k9s/config.yaml
+Custom Views:      /Users/younsung.lee/.config/k9s/views.yaml
+Plugins:           /Users/younsung.lee/.config/k9s/plugins.yaml
+Hotkeys:           /Users/younsung.lee/.config/k9s/hotkeys.yaml
+Aliases:           /Users/younsung.lee/.config/k9s/aliases.yaml
+Skins:             /Users/younsung.lee/.config/k9s/skins
+Context Configs:   /Users/younsung.lee/Library/Application Support/k9s/clusters
+Logs:              /Users/younsung.lee/Library/Application Support/k9s/k9s.log
+Benchmarks:        /Users/younsung.lee/Library/Application Support/k9s/benchmarks
+ScreenDumps:       /Users/younsung.lee/Library/Application Support/k9s/screen-dumps
 ```
 
 k9s는 기본적으로 Configuration 경로에 위치한 `skin.yml` 파일을 기본 스킨으로 참조합니다.
 
-[k9s 공식 스킨들](https://github.com/derailed/k9s/tree/master/skins) 중에서 원하는 스킨을 복사해서 `skin.yml` 파일을 작성합니다.
+[k9s 공식 스킨들](https://github.com/derailed/k9s/tree/master/skins)을 복사해서 `$XDG_CONFIG_HOME/k9s/skins` 경로에 위치시킵니다.
 
 ```bash
-$ touch skin.yml
-$ tree "/Users/younsl/Library/Application Support/k9s/"
-/Users/younsl/Library/Application Support/k9s/
-├── config.yml
-└── skin.yml
+$XDG_CONFIG_HOME/
+└── k9s/
+    └── skins/
+        ├── nightfox.yaml
+        ├── ... other skins ...
+        └── transparent.yaml
 ```
 
-`skin.yml` 파일을 세팅한 후 `k9s` 명령어를 다시 실행하면 스킨이 적용된 걸 확인할 수 있습니다.
+그 다음, k9s 설정파일 config.yaml에 k9s.ui.skin 항목을 추가합니다.
 
-자세한 사항은 k9s 공식문서의 [Skins](https://k9scli.io/topics/skins/) 페이지 혹은 제가 사용중인 [k9s 설정파일](https://github.com/younsl/dotfiles/tree/main/k9s)을 참고합니다.
+config.yaml도 $XDG_CONFIG_HOME/k9s/ 경로에 위치합니다.
+
+```bash
+$XDG_CONFIG_HOME/
+└── k9s/
+    ├── config.yaml
+    └── skins/
+```
+
+config.yaml 파일을 열어 k9s.ui.skin 항목에 사용할 스킨 이름을 추가합니다.
+
+```yaml
+# $XDG_CONFIG_HOME/k9s/config.yaml
+k9s:
+  ui:
+    skin: nightfox
+```
+
+자세한 사항은 k9s 공식문서의 [Skins](https://k9scli.io/topics/skins/) 페이지에서 확인할 수 있습니다.
 
 &nbsp;
 
@@ -172,20 +202,34 @@ export XDG_CONFIG_HOME="$HOME/.config"
 
 ```bash
 $ k9s info
- ____  __.________
-|    |/ _/   __   \______
-|      < \____    /  ___/
-|    |  \   /    /\___ \
-|____|__ \ /____//____  >
-        \/            \/
+ ____  __ ________
+|    |/  /   __   \______
+|       /\____    /  ___/
+|    \   \  /    /\___  \
+|____|\__ \/____//____  /
+         \/           \/
 
-Configuration:   /Users/younsl/.config/k9s/config.yml
+Version:           0.40.9
+Config:            /Users/younsung.lee/.config/k9s/config.yaml
 ...
 ```
 
 설정파일 경로가 `/Users/younsl/Library/Application Support/k9s/config.yml`에서 `/Users/younsl/.config/k9s/config.yml`로 변경된 걸 확인할 수 있습니다.
 
 자세한 사항은 k9s 공식문서의 [Configuration](https://k9scli.io/topics/config/) 페이지 혹은 제가 사용중인 [k9s 설정파일](https://github.com/younsl/dotfiles/tree/main/k9s)을 참고합니다.
+
+&nbsp;
+
+**글로벌 노드쉘 기능**  
+글로벌하게 노드쉘 기능을 활성화하려면 쉘 설정파일에 아래 명령어를 추가합니다.
+
+zsh을 사용하는 경우 .zshrc 설정파일에 K9S_FEATURE_GATE_NODE_SHELL 환경변수를 추가하면 됩니다.
+
+```bash
+echo 'export K9S_FEATURE_GATE_NODE_SHELL=true' | tee -a ~/.zshrc
+```
+
+여러 Kubernetes 클러스터에서 nodeShell 기능을 전역적으로 활성화하는 간결하고 효율적인 방법입니다. 이 설정을 추가하면 k9s에서 s 키를 눌러 노드쉘 기능을 사용할 수 있습니다. 이 설정은 잘 알려지지 않아서 찾기 어려운 기능으로, [#1011](https://github.com/derailed/k9s/issues/1001#issuecomment-2447445306) 이슈에서 더 자세한 내용을 확인할 수 있습니다.
 
 &nbsp;
 
