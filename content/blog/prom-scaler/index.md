@@ -258,6 +258,50 @@ spec:
     type: prometheus
 ```
 
+query에 들어가는 값은 사전에 Prometheus UI에서 정상적으로 조회가 되는지 더블체크를 해야합니다.
+
+&nbsp;
+
+Prometheus 서버는 단일 시점에서 [즉시 쿼리(Instant Query)](https://prometheus.io/docs/prometheus/latest/querying/api/?utm_source=chatgpt.com#instant-queries)를 조회할 수 있게 아래 2개 엔드포인트를 제공합니다.
+
+```bash
+GET /api/v1/query
+POST /api/v1/query
+```
+
+&nbsp;
+
+제 경우 노드포트로 9090 포트를 열어서 Prometheus 서버에 Query API로 GET 요청을 보내서 테스트했습니다. query=<VALUE> 형식으로 요청을 보내야하고, 제 경우에는 당연히 KEDA의 `query`로 작성한 PromQL 문을 넣어서 호출했습니다.
+
+> `--data-urlencode` 옵션을 사용하면 쿼리 파라미터를 인코딩(URL-encoding)해서 보낼 수 있기 때문에 특수문자가 포함된 복잡한 쿼리 문을 사용할 때 더 범용성 있게 요청을 보낼 수 있습니다.
+
+```bash
+curl \
+  -s -G \
+  --data-urlencode 'query=sum(avg_over_time(websocket_active_connection_count{app_kubernetes_io_name="sample-app"}[1m]))' \
+  http://localhost:9090/api/v1/query
+```
+
+```json
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {},
+        "value": [
+          1742212516.480,
+          "2289"
+        ]
+      }
+    ]
+  }
+}
+```
+
+정상적으로 호출이 되면 위와 같은 결과가 나옵니다. 이제 KEDA에서 사용할 수 있는 쿼리 값이 정상적으로 조회가 되는 것을 확인했습니다.
+
 &nbsp;
 
 [Prometheus 쿼리 결과값 데이터 타입](https://prometheus.io/docs/prometheus/latest/querying/basics/#expression-language-data-types)은 크게 4가지로 구분됩니다.
