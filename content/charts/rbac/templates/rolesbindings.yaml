@@ -1,0 +1,33 @@
+{{/*
+roleBinding resources with range loop
+*/}}
+
+{{- range $namespace, $roleBindings := .Values.roleBindings }}
+{{- range $name, $roleBinding := $roleBindings }}
+{{- if $roleBinding.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "rbac.labels" $ | nindent 4 }}
+    {{- with $roleBinding.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+roleRef:
+  {{- with $roleBinding.roleRef }}
+  apiGroup: {{ .apiGroup | default "rbac.authorization.k8s.io" }}
+  kind: {{ .kind }}
+  name: {{ .name }}
+  {{- end }}
+subjects:
+  {{- range $subject := $roleBinding.subjects }}
+  - apiGroup: {{ $subject.apiGroup | default "rbac.authorization.k8s.io" }}
+    kind: {{ $subject.kind }}
+    name: {{ $subject.name }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
