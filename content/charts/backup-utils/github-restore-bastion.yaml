@@ -1,0 +1,100 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-restore-bastion
+  namespace: github-backup-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-restore-bastion
+  template:
+    metadata:
+      labels:
+        app: github-restore-bastion
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+      containers:
+      - command:
+        - sh
+        - -c
+        - |
+          /bin/bash
+          sleep 500000000
+        image: ghcr.io/younsl/backup-utils:v3.11.4
+        imagePullPolicy: IfNotPresent
+        name: backup-utils
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 512Mi
+        env:
+        - name: GHE_BACKUP_CONFIG
+          value: /backup-utils/backup.config
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - name: backup-script
+          mountPath: /backup-utils/backup.sh
+          subPath: backup.sh
+        - name: data
+          mountPath: /data
+        - name: known-hosts
+          mountPath: /ghe-ssh/known_hosts
+          readOnly: true
+          subPath: known_hosts
+        - name: backup-config
+          mountPath: /backup-utils/backup.config
+          readOnly: true
+          subPath: backup.config
+        - name: ssh-private-key
+          mountPath: /ghe-ssh/id_ed25519
+          readOnly: true
+          subPath: id_ed25519
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: backup-script
+        configMap:
+          name: github-backup-utils-script
+          items:
+          - key: backup.sh
+            path: backup.sh
+          defaultMode: 509
+      - name: data
+        persistentVolumeClaim:
+          claimName: github-backup-utils-pvc
+      - name: known-hosts
+        configMap:
+          defaultMode: 420
+          items:
+          - key: known_hosts
+            path: known_hosts
+          name: github-backup-utils-config
+      - name: backup-config
+        configMap:
+          defaultMode: 420
+          items:
+          - key: backup.config
+            path: backup.config
+          name: github-backup-utils-config
+      - name: ssh-private-key
+        secret:
+          defaultMode: 256
+          secretName: github-backup-utils-ssh-private-key

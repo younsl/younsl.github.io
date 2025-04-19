@@ -1,0 +1,64 @@
+{{/*
+ec2nodeclass custom resource template (compatible with karpenter v1.3.0)
+*/}}
+
+{{- range $key, $value := .Values.ec2NodeClass }}
+---
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: {{ $key }}
+  {{- with $.Values.globalLabels }}
+  labels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $.Values.globalAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  amiFamily: {{ .amiFamily | default "AL2023" }}
+  {{- with .subnetSelectorTerms }}
+  subnetSelectorTerms:
+    {{- include "ec2NodeClass.commonSelectorTerms" . | nindent 4 }}
+  {{- end }}
+  {{- with .securityGroupSelectorTerms }}
+  securityGroupSelectorTerms:
+    {{- include "ec2NodeClass.commonSelectorTerms" . | nindent 4 }}
+  {{- end }}
+  {{- if .role }}
+  role: {{ .role }} 
+  {{- end }}
+  {{- if .instanceProfile }}
+  instanceProfile: {{ .instanceProfile }}
+  {{- end }}
+  {{- with .amiSelectorTerms }}
+  amiSelectorTerms:
+    {{- include "ec2NodeClass.commonSelectorTerms" . | nindent 4 }}
+  {{- end }}
+  {{- with .tags }}
+  tags:                
+    {{- toYaml . | nindent 4 }} 
+  {{- end }}
+  {{- with .metadataOptions }}
+  metadataOptions:
+    httpEndpoint: {{ .httpEndpoint }}
+    httpProtocolIPv6: {{ .httpProtocolIPv6 }}
+    httpPutResponseHopLimit: {{ .httpPutResponseHopLimit }}
+    httpTokens: {{ .httpTokens }}
+  {{- end }}
+  {{- with .blockDeviceMappings }}
+  blockDeviceMappings:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .userData }} 
+  userData: |
+    {{- toYaml .userData | nindent 4 }}
+  {{- end }}
+  {{- if .detailedMonitoring }}
+  detailedMonitoring: {{ default "false" .detailedMonitoring }}
+  {{- end }}
+  {{- if .associatePublicIPAddress }}
+  associatePublicIPAddress: {{ default "false" .associatePublicIPAddress }}
+  {{- end }}
+{{- end }}
