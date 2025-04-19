@@ -23,7 +23,7 @@ CoreDNS I/O Timeout에 영향을 받았던 어플리케이션이 일전에 있�
 ## 환경
 
 - **쿠버네티스 클러스터**: EKS v1.30
-- **헬름 차트**: litmus-core 3.18.0 (litmus 앱 버전 3.18.0)
+- **헬름 차트**: [litmus-core](https://github.com/litmuschaos/litmus-helm/tree/master/charts/litmus-core) 3.18.0 (litmus 앱 버전 3.18.0)
 
 &nbsp;
 
@@ -31,7 +31,7 @@ CoreDNS I/O Timeout에 영향을 받았던 어플리케이션이 일전에 있�
 
 ### 실험 목적
 
-어플리케이션 파드가 CoreDNS에 접근할 수 없는 경우 어떻게 DNS 폴백이 동작하는지 확인하기 위함
+어플리케이션 파드가 클러스터 내부 DNS(CoreDNS)에 접근할 수 없는 경우, 어플리케이션 코드에 구현된 DNS 폴백 기능이 동작하는지 확인하기 위함이었습니다.
 
 ![DNS Timeout Scenario](./1.png)
 
@@ -43,7 +43,7 @@ CoreDNS I/O Timeout에 영향을 받았던 어플리케이션이 일전에 있�
 
 Litmus 차트에는 여러 종류가 있는데 크게 litmus 차트와 litmus-core 차트가 있습니다. UI 환경이 필요하다면 litmus 차트를 설치하고, 그렇지 않고 실제 커스텀 리소스를 사용한 실험만 수행하고 싶은 간단한 용도의 경우 litmus-core 차트를 설치합니다.
 
-두 차트의 가장 큰 차이점은 litmus-core 차트는 litmus-operator 컨트롤러만 설치하고 UI는 제공되지 않습니다. litmus 차트는 litmus-operator 컨트롤러와 함께 litmus-ui와 기본적인 ChaosEngine과 ChaosExperiment 커스텀 리소스를 설치합니다.
+두 차트의 가장 큰 차이점은 litmus-core 차트는 chaos-operator 컨트롤러만 설치하고 UI는 제공되지 않습니다. litmus 차트는 chaos-operator 컨트롤러와 함께 UI와 기본적인 ChaosEngine과 ChaosExperiment 커스텀 리소스를 설치합니다.
 
 ![litmus-core](./2.png)
 
@@ -107,7 +107,7 @@ litmus-core 3.18.0이 litmus 네임스페이스에 설치되었습니다.
 
 &nbsp;
 
-litmus-operator 파드 상태를 확인합니다.
+chaos-operator 파드 상태를 확인합니다.
 
 ```bash
 $ kubectl get pod -n litmus
@@ -115,13 +115,25 @@ NAME                      READY   STATUS    RESTARTS   AGE
 litmus-6bf57bb645-mfnnf   1/1     Running   0          38m
 ```
 
-litmus operator는 가장 중요한 파드로 클러스터 관리자가 선언한 ChaosEngine과 ChaosExperiment 커스텀 리소스를 읽어 실제 시험을 수행할 Runner를 만들고 전체적으로 관리하는 컨트롤 타워 역할을 합니다.
+Chaos operator는 litmus에서 가장 중요한 파드로 클러스터 관리자가 선언한 ChaosEngine과 ChaosExperiment 커스텀 리소스를 읽어 실제 시험을 수행할 Runner를 만들고 전체적으로 관리하는 컨트롤 타워 역할을 합니다.
+
+&nbsp;
+
+Litmus에서 사용하는 커스텀 리소스들의 목록을 다음 명령어로 조회할 수 있습니다.
+
+```bash
+$ kubectl api-resources --api-group litmuschaos.io
+NAME               SHORTNAMES   APIVERSION                NAMESPACED   KIND
+chaosengines                    litmuschaos.io/v1alpha1   true         ChaosEngine
+chaosexperiments                litmuschaos.io/v1alpha1   true         ChaosExperiment
+chaosresults                    litmuschaos.io/v1alpha1   true         ChaosResult
+```
 
 &nbsp;
 
 ### 파드 네트워크 장애 발생의 원리
 
-대부분의 실험, 특히 pod-network-loss는 실험 대상 Pod와 같은 노드에 Helper Pod를 생성합니다. 이 Helper Pod는 privileged 권한을 가진 상태에서, 같은 노드에 있는 대상 컨테이너의 network namespace에 진입해 tc(Traffic Control) 명령어를 실행합니다.
+대부분의 실험(Experiment), 특히 pod-network-loss는 실험 대상 Pod와 같은 노드에 Helper Pod를 생성합니다. 이 Helper Pod는 막강한 권한(Privileged)을 가진 상태에서, 같은 노드에 있는 대상 컨테이너의 network namespace에 진입해 tc(Traffic Control) 명령어를 실행합니다.
 
 ![pod-network-loss](./3.png)
 
@@ -246,7 +258,39 @@ CoreDNS로 질의가 불가능한 상태이므로 파드에 들어가서 `nslook
 
 ![connection timed out](./6.png)
 
-DNS Timeout에 대한 실험이 이제 가능해졌습니다. Litmus를 사용해서 파드를 실험하면 정확히 얼마만큼 개선되었는지 증상과 지표를 관측할 수 있습니다.
+&nbsp;
+
+만약 다시 실험을 실행하고 싶은 경우, ChaosEngine 리소스의 .spec.engineState 값을 stop에서 active로 다시 바꿉니다.
+
+```bash
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: dns-fallback-test
+  namespace: litmus
+spec:
+  engineState: stop
+```
+
+&nbsp;
+
+kubectl patch 명령어로도 다음과 같이 spec.engineState를 다시 active로 바꾸는 것도 동일한 효과를 가집니다.
+
+```bash
+kubectl patch chaosengine dns-fallback-test -n litmus --type='merge' -p '{"spec": {"engineState": "active"}}'
+```
+
+```bash
+chaosengine.litmuschaos.io/dns-fallback-test patched
+```
+
+ChaosEngine 리소스의 상태가 다시 active로 변경되면 다시 chaos-runner, helper pod 들이 생성되어 일련의 실험을 다시 수행합니다. 실험이 끝나면 다시 stop 됩니다.
+
+&nbsp;
+
+## 마치며
+
+litmus를 사용하면 자유롭게 DNS Timeout에 대한 실험이 가능합니다. Litmus를 사용해서 파드를 실험하면 정확히 얼마만큼 개선되었는지 증상과 지표를 관측할 수 있습니다.
 
 &nbsp;
 
@@ -255,5 +299,6 @@ DNS Timeout에 대한 실험이 이제 가능해졌습니다. Litmus를 사용�
 Litmus:
 
 - [litmus github](https://github.com/litmuschaos/litmus)
+- [litmus-helm github](https://github.com/litmuschaos/litmus-helm): litmus 차트 레포지터리
 - [Experiments](https://litmuschaos.github.io/litmus/experiments/categories/contents/)
 - [pod-network-loss](https://litmuschaos.github.io/litmus/experiments/categories/pods/pod-network-loss/): pod-network-loss 실험에 대한 상세 설명
