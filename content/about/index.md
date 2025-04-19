@@ -26,10 +26,11 @@ DevOps Engineer and [Gopher](https://go.dev/blog/gopher), surfing the waves of c
 
 Slides I've created and presented on Site Reliability Engineering, Kubernetes, and Cloud Native technologies using [marp](https://marp.app/).
 
-- [Infrastructure for Sales](/slides/infrastructure-for-sales.pdf)
-- [Actions Runner Controller Scaling](/slides/arc-scale-zero.pdf)
-- [EKS Security Enhancements](/slides/eks-security-enhancement.pdf)
-- [GSS](/slides/gss.pdf)
-- [No cache S3 with CloudFront](/slides/no-cache-s3-with-cdn.pdf)
-- [Gateway API Inference Extension](/slides/gateway-api-inference.pdf)
+- [Loki zstd](/slides/loki-zstd.pdf)
 - [Kubernetes native admission policy](/slides/admission-policy.pdf)
+- [Gateway API Inference Extension](/slides/gateway-api-inference.pdf)
+- [No cache S3 with CloudFront](/slides/no-cache-s3-with-cdn.pdf)
+- [GSS](/slides/gss.pdf)
+- [EKS Security Enhancements](/slides/eks-security-enhancement.pdf)
+- [Actions Runner Controller Scaling](/slides/arc-scale-zero.pdf)
+- [Infrastructure for Sales](/slides/infrastructure-for-sales.pdf)
