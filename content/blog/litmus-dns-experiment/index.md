@@ -196,6 +196,8 @@ spec:
               value: "53"
             - name: DESTINATION_PROTOCOL
               value: "udp"
+            - name: NETWORK_PACKET_LOSS_PERCENTAGE
+              value: "100"
             - name: TOTAL_CHAOS_DURATION
               value: "10"
 ---
@@ -226,6 +228,8 @@ spec:
         value: "53"
       - name: DESTINATION_PROTOCOL
         value: "udp"
+      - name: NETWORK_PACKET_LOSS_PERCENTAGE
+        value: "100"
       - name: TOTAL_CHAOS_DURATION
         value: "10"
     labels:
