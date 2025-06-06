@@ -1,0 +1,37 @@
+{{- $posts := "" -}}
+
+{{- if .section -}}
+    {{- $posts = (where site.RegularPages "Section" .section) -}}
+{{- else -}}
+    {{- if (eq .context.Kind "taxonomy") -}}
+        {{- $posts = .context.Pages -}}
+    {{- else -}}
+        {{- if (eq .context.Kind "term") -}}
+            {{- $posts = .context.Data.Pages -}}
+	{{- else -}}
+            {{- $posts = site.RegularPages }}
+	{{- end -}}
+    {{- end -}}
+{{- end -}}
+
+{{- $limit_exceeded:= "" -}}
+{{- if (and .limit (gt (len $posts) .limit)) -}}
+    {{- $limit_exceeded = true -}}
+{{- else -}}
+    {{- $limit_exceeded = false -}}
+{{ end }}
+
+{{- if (gt (len $posts) 0) }}
+    {{- if .limit }}
+        {{ $posts = (first .limit $posts ) }}
+    {{ end }}
+        {{- range $post := $posts -}}
+        <div class="post-item">
+            <span>{{- ($post.Date | time.Format site.Params.theme_config.date_format) }}</span>
+            <a class="main" href="{{ $post.Permalink | relURL }}">{{ $post.Title }}</a>
+        </div>
+        {{ end }}
+        {{- if and .show_more $limit_exceeded }}
+            <li><a class="main" href="{{ .show_more_url | relURL }}">{{ .show_more_text | default "Show more..." }}</a></li>
+        {{ end }}
+{{ end }}

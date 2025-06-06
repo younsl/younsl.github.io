@@ -1,0 +1,38 @@
+nameOverride: ~
+fullnameOverride: ~
+
+commonLabels: []
+  ## Add common labels to all sleepinfos
+  # app: kube-green-sleepinfos
+  # environment: dev
+
+commonAnnotations: []
+  ## Add common annotations to all sleepinfos
+  # my-common-annotation: my-common-value
+
+sleepInfos: {}
+  ## Create multiple sleepinfos per namespace
+  # default:
+  #   - name: "sleepinfo-example-1"
+  #     weekdays: "1-5"
+  #     sleepAt: "20:00"
+  #     wakeUpAt: "08:00"
+  #     timeZone: "Europe/Rome"
+  #     resources:
+  #       - kind: Deployment
+  #         labelSelector:
+  #           matchLabels:
+  #             kube-green.dev/weekday-only: "true"
+  #       - kind: StatefulSet
+  #         labelSelector:
+  #           matchLabels:
+
+  ## Create multiple sleepinfos per namespace
+  # app-namespace:
+  #   - name: "sleepinfo-example-1"
+  #     annotations:
+  #       my-annotation: "my-value"
+  #     weekdays: "1-5"
+  #     sleepAt: "20:00"
+  #     wakeUpAt: "08:00"
+  #     timeZone: "Europe/Rome"
