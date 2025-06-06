@@ -266,7 +266,18 @@ TriggerAuthentication 리소스는 Kubernetes Secret, Hashicorp Vault, AWS Secre
 ---
 title: KEDA architecture
 ---
-%%{init: {"flowchart": {"nodeSpacing": 20, "rankSpacing": 20}}}%%
+%% Style %%
+%%{
+    init: {
+        "flowchart": {
+            "nodeSpacing": 15,
+            "rankSpacing": 15,
+            "padding": 0
+        }
+    }
+}%%
+
+%% Main Diagram %%
 flowchart LR
   subgraph "Kubernetes Cluster"
     direction LR
@@ -274,7 +285,7 @@ flowchart LR
         keda["`**Pod**
         KEDA Operator`"]
     end
-    subgraph "Namespace"
+    subgraph "Namespace application"
       direction LR
       subgraph kedacr["KEDA Custom Resources"]
         so["ScaledObject"]
@@ -289,7 +300,8 @@ flowchart LR
     end
   end
 
-  keda e1@--Reconcile--> hpa --> d --> r --> p1 & p2 & p3
+  keda e1@--Reconcile--> hpa 
+  hpa --Scale in/out--> d --> r --> p1 & p2 & p3
   keda --Watch--> kedacr 
 
   style so fill:darkblue,stroke:#333,stroke-width:2px
