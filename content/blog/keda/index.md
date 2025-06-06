@@ -89,7 +89,7 @@ cd charts/keda/
 고가용성<sup>High Availability</sup>을 위해 `operator.replicaCount`를 기본값 `1`에서 `2`로 수정합니다. KEDA Operator 파드가 2개로 배포됩니다.
 
 ```diff
-# values.yaml
+# keda/values.yaml
 ...
 operator:
   # -- Name of the KEDA operator
@@ -261,6 +261,40 @@ TriggerAuthentication 리소스는 Kubernetes Secret, Hashicorp Vault, AWS Secre
 &nbsp;
 
 이 두 커스텀 리소스를 통해 KEDA는 Kubernetes에서의 이벤트 기반 스케일링을 매우 유연하고 효과적으로 구현할 수 있습니다.
+
+```mermaid
+---
+title: KEDA architecture
+---
+%%{init: {"flowchart": {"nodeSpacing": 20, "rankSpacing": 20}}}%%
+flowchart LR
+  subgraph "Kubernetes Cluster"
+    direction LR
+    subgraph "Namespace keda"
+        keda["`**Pod**
+        KEDA Operator`"]
+    end
+    subgraph "Namespace"
+      direction LR
+      subgraph kedacr["KEDA Custom Resources"]
+        so["ScaledObject"]
+        ta["TriggerAuthentication"]
+      end
+      hpa["HorizontalPodAutoscaler"]
+      d["Deployment"]
+      r["ReplicaSet"]
+      p1["Pod"]
+      p2["Pod"]
+      p3["Pod"]
+    end
+  end
+
+  keda e1@--Reconcile--> hpa --> d --> r --> p1 & p2 & p3
+  keda --Watch--> kedacr 
+
+  style so fill:darkblue,stroke:#333,stroke-width:2px
+  e1@{ animate: true }
+```
 
 &nbsp;
 
