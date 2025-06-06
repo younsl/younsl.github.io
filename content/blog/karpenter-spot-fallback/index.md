@@ -33,6 +33,18 @@ Karpenter와 Karpenter의 [Fallback 기능](https://karpenter.sh/docs/concepts/s
 Karpenter가 노드 프로비저닝하는 과정의 트리거는 Pending 상태의 파드가 있는 시점
 
 ```mermaid
+%% Style %%
+%%{
+    init: {
+        "flowchart": {
+            "nodeSpacing": 20,
+            "rankSpacing": 20,
+            "padding": 0,
+            "curve": "basis"
+        }
+    }
+}%%
+
 flowchart LR
   p["`Pods
   Pending`"]
@@ -69,7 +81,20 @@ flowchart LR
 Karpenter 설치는 [공식 헬름 차트](https://github.com/aws/karpenter-provider-aws/tree/main/charts)로 쉽게 진행할 수 있습니다.
 
 ```mermaid
+%% Style %%
+%%{
+    init: {
+        "flowchart": {
+            "nodeSpacing": 25,
+            "rankSpacing": 25,
+            "padding": 10,
+            "curve": "basis"
+        }
+    }
+}%%
+
 flowchart LR
+
   admin["👨🏻‍💼 Cluster Admin"]
   admin --helm install--> Main["`**Chart**
   karpenter`"]
@@ -117,6 +142,17 @@ Karpenter 공식문서의 [FAQ 페이지](https://karpenter.sh/docs/faq/#interru
 Karpenter가 노드 프로비저닝하며 NTH(Node Termination Handler)가 Spot 중단신호 감지 및 파드 Eviction 담당
 
 ```mermaid
+%% Style %%
+%%{
+    init: {
+        "flowchart": {
+            "nodeSpacing": 15,
+            "rankSpacing": 15,
+            "padding": 10,
+        }
+    }
+}%%
+
 flowchart LR
   spotitn["Spot Interruption Notice"]
   subgraph k8s[Kubernetes Cluster]
@@ -217,6 +253,17 @@ Karpenter 노드는 생성될 떄 자동으로 자신의 노드풀 이름이 담
 시스템 아키텍처:
 
 ```mermaid
+%% Style %%
+%%{
+    init: {
+        "flowchart": {
+            "nodeSpacing": 5,
+            "rankSpacing": 5,
+            "padding": 5,
+        }
+    }
+}%%
+
 flowchart LR
   subgraph k8s[Kubernetes Cluster]
     direction LR
@@ -277,6 +324,17 @@ serviceMonitor:
 메트릭 수집 과정
 
 ```mermaid
+%% Style %%
+%%{
+    init: {
+        "flowchart": {
+            "nodeSpacing": 5,
+            "rankSpacing": 5,
+            "padding": 5,
+        }
+    }
+}%%
+
 flowchart LR
   subgraph k8s[Kubernetes Cluster]
     direction LR
