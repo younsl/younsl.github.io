@@ -266,18 +266,6 @@ TriggerAuthentication 리소스는 Kubernetes Secret, Hashicorp Vault, AWS Secre
 ---
 title: KEDA architecture
 ---
-%% Style %%
-%%{
-    init: {
-        "flowchart": {
-            "nodeSpacing": 15,
-            "rankSpacing": 15,
-            "padding": 0
-        }
-    }
-}%%
-
-%% Main Diagram %%
 flowchart LR
   subgraph "Kubernetes Cluster"
     direction LR
@@ -288,8 +276,10 @@ flowchart LR
     subgraph "Namespace application"
       direction LR
       subgraph kedacr["KEDA Custom Resources"]
+        direction LR 
         so["ScaledObject"]
         ta["TriggerAuthentication"]
+        so --secretTargetRef--> ta
       end
       hpa["HorizontalPodAutoscaler"]
       d["Deployment"]
@@ -302,7 +292,7 @@ flowchart LR
 
   keda e1@--Reconcile--> hpa 
   hpa --Scale in/out--> d --> r --> p1 & p2 & p3
-  keda --Watch--> kedacr 
+  keda --Watch--> so 
 
   style so fill:darkblue,stroke:#333,stroke-width:2px
   e1@{ animate: true }
@@ -699,7 +689,49 @@ KEDA(+ HPA)를 deployment에 붙이게 되면 파드 오토스케일링이 되�
 
 ![ArgoCD OutOfSync 시나리오](./9.png)
 
+&nbsp;
+
 Autosync가 켜져있는 상태에서 파드 개수 플랩핑 현상은 다음 순서로 발생합니다.
+
+```mermaid
+---
+title: "Figure 2. Spec confliction between KEDA and ArgoCD"
+---
+flowchart LR
+  subgraph sk["Kubernetes Cluster"]
+    direction LR
+    subgraph "Namespace"
+      so["ScaledObject"]
+      hpa["HorizontalPodAutoscaler"]
+      d["`**Deployment**
+      _Conflicted_`"]
+      r["ReplicaSet"]
+      p1["Pod"]
+      p2["Pod"]
+      p3["Pod"]
+    end
+
+    subgraph "Namespace argocd"
+      argo["`**Pod**
+      ArgoCD`"]
+    end
+
+    note1["**Solution**: Add ignoreDifferences to argocd application to ignore the spec.replicas diff"]
+    note2["ScaledObject is a custom resource controlled by KEDA"]
+  end
+
+  so --Reconcile--> hpa e1@--Update spec.replicas--> d --> r --> p1 & p2 & p3
+  argo e2@--Autosync spec.replicas--> d
+
+  sk ~~~ note1
+  note1 ~~~ note2
+
+  style so fill:darkblue,stroke:#333,stroke-width:2px
+  style d fill:darkred,color:white,stroke:#333,stroke-width:2px
+
+  e1@{ animate: true }
+  e2@{ animate: true }
+```
 
 1. KEDA 설정이 적용된 Application에 Autosync가 켜져있음
 2. HPA가 메트릭 기준으로 deployment의 파드 개수를 조절함
@@ -879,12 +911,14 @@ spec:
 
 &nbsp;
 
-## 참고자료
+## 관련자료
 
-**KEDA**  
-[KEDA 홈페이지](https://keda.sh/)  
-[KEDA scaledOjbect spec](https://keda.sh/docs/2.13/concepts/scaling-deployments/)  
-[KEDA charts](https://github.com/kedacore/charts)
+KEDA:
 
-**Graceful Shutdown**  
-[Kubernetes Graceful Shutdown](https://www.allssu.com/blog/kubernetes-graceful-shutdown/)
+- [KEDA 홈페이지](https://keda.sh/)  
+- [KEDA scaledOjbect spec](https://keda.sh/docs/2.13/concepts/scaling-deployments/)  
+- [KEDA charts](https://github.com/kedacore/charts)
+
+Graceful Shutdown:
+
+- [Kubernetes Graceful Shutdown](https://www.allssu.com/blog/kubernetes-graceful-shutdown/)

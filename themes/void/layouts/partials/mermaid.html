@@ -7,10 +7,12 @@
       theme: mermaidTheme,
       flowchart: {
         useMaxWidth: true,
-        htmlLabels: false, // Disable HTML labels to increase rendering speed
-        padding: 0,
-        nodeSpacing: 0,
-      },
+        htmlLabels: false,
+        padding: 5,
+        nodeSpacing: 15,
+        rankSpacing: 15,
+        curve: 'basis'
+      }
     });
   </script>
 {{ end }}
