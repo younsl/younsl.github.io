@@ -25,4 +25,3 @@ Slides I've created and presented on Site Reliability Engineering, Kubernetes, a
 - [EKS Security Enhancements](/slides/eks-security-enhancement.pdf)
 - [Actions Runner Controller Scaling](/slides/arc-scale-zero.pdf)
 - [Infrastructure for Sales](/slides/infrastructure-for-sales.pdf)
-- [Karpenter Nodepool Strategy](/slides/karpenter-nodepool-strategy.pdf)
