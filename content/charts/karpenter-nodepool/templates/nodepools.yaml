@@ -12,10 +12,16 @@ spec:
   template:
     metadata:
       labels:
-        {{ template "nodePool.labels" (dict "labels" .labels "Release" $.Release "Chart" $.Chart "globalLabels" $.Values.globalLabels) }}
-      {{- with (merge .annotations $.Values.globalAnnotations) }}
+        {{- include "labels" $ | nindent 8 }}
+        {{- with .labels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if or .annotations $.Values.globalAnnotations }}
       annotations:
-        {{ toYaml . | nindent 8 }}
+        {{- include "annotations" $ | nindent 8 }}
+        {{- with .annotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
     spec:
       {{- with .nodeClassRef }}

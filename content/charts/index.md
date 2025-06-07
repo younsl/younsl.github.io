@@ -46,7 +46,7 @@ The `index.yaml` file contains the metadata of the repository and is used for ch
 | [**actions-runner**][actions-runner] | Active | 0.1.4 | N/A |
 | [**argocd-apps**][argocd-apps] | Active | 1.7.0 | N/A |
 | [**backup-utils**][backup-utils] | Active | 0.4.2 | 3.15.1 |
-| [**karpenter-nodepool**][karpenter-nodepool] | Active | 1.5.0 | N/A |
+| [**karpenter-nodepool**][karpenter-nodepool] | Active | 1.5.1 | N/A |
 | [**rbac**][rbac] | Active | 0.2.1 | N/A |
 | [**kube-green-sleepinfos**][kube-green-sleepinfos] | Active | 0.1.0 | N/A |
 | [**squid**][squid] | Active | 0.1.0 | 6.10-24.10_beta |

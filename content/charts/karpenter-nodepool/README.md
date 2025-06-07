@@ -1,5 +1,9 @@
 # karpenter-nodepool
 
+## 문서
+
+- [Overprovisioning](./docs/overprovisioning.md)
+
 ## 사용법
 
 ### 설치
@@ -153,5 +157,6 @@ karpenter-nodepool chart version depends on [karpenter app version](https://gith
 
 | karpenter-nodepool version | karpenter version |
 | -------------------------- | ----------------- |
+| 1.5.1                      | 1.5.0             |
 | 1.5.0                      | 1.5.0             |
 | 1.3.0                      | 1.3.0             |

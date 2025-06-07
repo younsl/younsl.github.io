@@ -8,13 +8,11 @@ apiVersion: karpenter.k8s.aws/v1
 kind: EC2NodeClass
 metadata:
   name: {{ $key }}
-  {{- with $.Values.globalLabels }}
   labels:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-  {{- with $.Values.globalAnnotations }}
+    {{- include "labels" $ | nindent 4 }}
+  {{- if $.Values.globalAnnotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
+    {{- include "annotations" $ | nindent 4 }}
   {{- end }}
 spec:
   amiFamily: {{ .amiFamily | default "AL2023" }}

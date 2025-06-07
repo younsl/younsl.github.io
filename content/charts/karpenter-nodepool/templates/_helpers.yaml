@@ -2,7 +2,7 @@
 Expand the name of the chart.
 */}}
 {{- define "name" -}}
-{{- default $.Chart.Name $.Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -13,23 +13,26 @@ Create chart name by the chart label.
 {{- end -}}
 
 {{/*
-Return labels, including name and globalLabels 
+Return standard labels
 */}}
 {{- define "labels" -}}
+app.kubernetes.io/name: {{ include "name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ include "chart" . | quote }}
-{{- if .globalLabels }}
-{{ toYaml .globalLabels }}
-{{- end -}}
+{{- with .Values.globalLabels }}
+{{ toYaml . }}
+{{- end }}
 {{- end -}}
 
 {{/*
-Return NodePool labels.
+Return merged annotations
 */}}
-{{- define "nodePool.labels" -}}
-{{ include "labels" . | indent 8}}
-{{- if .labels }}
-{{ toYaml .labels | indent 8 }}
-{{- end -}}
+{{- define "annotations" -}}
+{{- with .Values.globalAnnotations }}
+{{- toYaml . }}
+{{- end }}
 {{- end -}}
 
 {{/*

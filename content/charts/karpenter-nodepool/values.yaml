@@ -126,6 +126,61 @@ nodePool:
     
     # Priority given to the NodePool when the scheduler considers which NodePool
     # weight: ""
+    
+    # Overprovisioning configuration for pre-scaling nodes
+    # This helps reduce pod startup time by keeping spare capacity available
+    overprovisioning:
+      # Enable overprovisioning for this nodepool
+      enabled: false
+      
+      # Number of nodes to keep as spare capacity
+      nodes: 1
+      
+      # Resource requests for overprovisioning pods
+      # These pods will consume resources to maintain spare capacity
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+      
+      # Affinity rules for overprovisioning pods
+      affinity: {}
+        # nodeAffinity:
+        #   requiredDuringSchedulingIgnoredDuringExecution:
+        #     nodeSelectorTerms:
+        #     - matchExpressions:
+        #       - key: karpenter.sh/nodepool
+        #         operator: In
+        #         values: [default]
+      
+      # Topology spread constraints for overprovisioning pods
+      # Ensures dummy pods are spread across different nodes
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: overprovisioning
+      
+      # Tolerations for overprovisioning pods
+      tolerations: []
+        # - key: example.com/special-taint
+        #   operator: Equal
+        #   value: "true"
+        #   effect: NoSchedule
+      
+      # Additional labels for overprovisioning pods
+      podLabels: {}
+        # app: overprovisioning
+        # nodepool: default
+      
+      # Additional annotations for overprovisioning pods
+      podAnnotations: {}
+        # description: "Overprovisioning pod for maintaining spare capacity"
 
 ec2NodeClass:
   default:
