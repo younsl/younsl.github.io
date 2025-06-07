@@ -140,21 +140,11 @@ nodePool:
       # These pods will consume resources to maintain spare capacity
       resources:
         requests:
-          cpu: 100m
-          memory: 128Mi
+          cpu: 3500m
+          memory: 7000Mi
         limits:
-          cpu: 100m
-          memory: 128Mi
-      
-      # Affinity rules for overprovisioning pods
-      affinity: {}
-        # nodeAffinity:
-        #   requiredDuringSchedulingIgnoredDuringExecution:
-        #     nodeSelectorTerms:
-        #     - matchExpressions:
-        #       - key: karpenter.sh/nodepool
-        #         operator: In
-        #         values: [default]
+          cpu: 3500m
+          memory: 7000Mi
       
       # Topology spread constraints for overprovisioning pods
       # Ensures dummy pods are spread across different nodes
@@ -179,8 +169,8 @@ nodePool:
         # nodepool: default
       
       # Additional annotations for overprovisioning pods
-      podAnnotations: {}
-        # description: "Overprovisioning pod for maintaining spare capacity"
+      podAnnotations:
+        description: "Overprovisioning pod for maintaining spare capacity"
 
 ec2NodeClass:
   default:

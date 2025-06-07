@@ -3,12 +3,12 @@ Overprovisioning deployment template for maintaining spare capacity
 */}}
 
 {{- range $nodePoolName, $nodePoolConfig := .Values.nodePool }}
-{{- if $nodePoolConfig.overprovisioning.enabled }}
+{{- if and $nodePoolConfig.overprovisioning $nodePoolConfig.overprovisioning.enabled }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $nodePoolName }}-dummy
+  name: overprovisioning-dummy-{{ $nodePoolName }}
   namespace: {{ $.Release.Namespace }}
   labels:
     {{- include "labels" $ | nindent 4 }}
@@ -40,11 +40,22 @@ spec:
         {{- end }}
       {{- end }}
     spec:
+      containers:
+      - name: overprovisioning-dummy
+        image: registry.k8s.io/pause:3.9
+        {{- with $nodePoolConfig.overprovisioning.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
       priorityClassName: overprovisioning-low-priority
-      {{- with $nodePoolConfig.overprovisioning.affinity }}
       affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: karpenter.sh/nodepool
+                operator: In
+                values: [{{ $nodePoolName }}]
       {{- with $nodePoolConfig.overprovisioning.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
@@ -53,12 +64,5 @@ spec:
       topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      containers:
-      - name: pause
-        image: registry.k8s.io/pause:3.9
-        {{- with $nodePoolConfig.overprovisioning.resources }}
-        resources:
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
 {{- end }}
 {{- end }}

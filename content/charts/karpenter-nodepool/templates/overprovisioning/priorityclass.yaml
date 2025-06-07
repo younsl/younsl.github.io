@@ -4,7 +4,7 @@ This PriorityClass is created when at least one nodepool has overprovisioning en
 */}}
 {{- $hasOverprovisioning := false }}
 {{- range $nodePoolName, $nodePoolConfig := .Values.nodePool }}
-{{- if $nodePoolConfig.overprovisioning.enabled }}
+{{- if and $nodePoolConfig.overprovisioning $nodePoolConfig.overprovisioning.enabled }}
 {{- $hasOverprovisioning = true }}
 {{- end }}
 {{- end }}

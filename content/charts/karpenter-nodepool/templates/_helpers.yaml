@@ -27,6 +27,15 @@ helm.sh/chart: {{ include "chart" . | quote }}
 {{- end -}}
 
 {{/*
+Return labels for NodePool template metadata (excludes kubernetes.io domain labels)
+*/}}
+{{- define "nodepool.labels" -}}
+{{- with .Values.globalLabels }}
+{{ toYaml . }}
+{{- end }}
+{{- end -}}
+
+{{/*
 Return merged annotations
 */}}
 {{- define "annotations" -}}
