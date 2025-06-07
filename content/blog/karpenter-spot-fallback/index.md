@@ -38,6 +38,9 @@ flowchart LR
   Pending`"]
   subgraph k8s[Kubernetes Cluster]
     direction LR
+    subgraph cp["Control Plane"]
+        kas["kube-apiserver"]
+    end
     subgraph kube-system
       k["`**Pod**
       karpenter`"]
@@ -47,10 +50,13 @@ flowchart LR
     k e1@--Create nodeclaim--> nodeclaim
     np[nodepool] --> ec2nc[ec2nodeclass]
   end
-  nodeclaim e2@--Create EC2 via IAM Role--> wn["`**EC2**
-  Worker Node`"]
+  subgraph wn["Wokrer Node (EC2)"]
+    kubelet["`**kubelet**
+    controlled by systemd`"]
+  end
+  nodeclaim e2@--Create EC2 via IAM Role--> wn 
 
-  wn --Join cluster--> k8s
+  kubelet --Join cluster--> kas
 
   style np fill:darkorange,color:#fff,stroke:#333
   style ec2nc fill:darkorange,color:#fff,stroke:#333
@@ -119,11 +125,12 @@ Karpenter가 노드 프로비저닝하며 NTH(Node Termination Handler)가 Spot 
 
 ```mermaid
 flowchart LR
-  spotitn["Spot Interruption Notice"]
   subgraph k8s[Kubernetes Cluster]
     direction LR
     k["`**Pod**
     karpenter`"]
+    note1["Node Termination Handler is running on IMDS mode"]
+    note2["`⚠️ Karpenter 공식문서 페이지[1]에서는 Node Termination Handler를 같이 사용하지 않는 것을 권장하고 있음`"]
     subgraph node1["Karpenter Node (Spot)"]
       direction LR
       nth1["`**DaemonSet Pod**
@@ -139,21 +146,22 @@ flowchart LR
       169.254.169.254`"]
     end
   end
+  spotitn["Spot Interruption Notice"]
 
-  k --Provisioning--> node1
-  k --Provisioning--> node2
-  nth1 --Handling Spot ITN--> imds1
-  nth2 --Handling Spot ITN--> imds2
-  spotitn -.->|Send Spot ITN| imds1 & imds2
+  k --Node provisioning--> node1
+  k --Node provisioning--> node2
+  nth1 e1@--Handling Spot ITN--> imds1
+  nth2 e2@--Handling Spot ITN--> imds2
+  spotitn -.->|Send Spot ITN| imds1
+  spotitn -.->|Send Spot ITN| imds2
 
-  note1["Node Termination Handler is running on IMDS mode"]
-  note2["`⚠️ Karpenter 공식문서 페이지[1]에서는 Node Termination Handler를 같이 사용하지 않는 것을 권장하고 있음`"]
-
-  note2 ~~~ spotitn
+  note1 ~~~ note2
 
   style k fill:darkorange,color:#fff,stroke:#333
   style note1 fill:transparent,color:#fff,stroke:#333
   style note2 fill:transparent,color:#fff,stroke:#333
+  e1@{ animate: true }
+  e2@{ animate: true }
 ```
 
 1: https://karpenter.sh/docs/faq/#interruption-handling
@@ -311,6 +319,32 @@ Prometheus Server가 Karpenter 서비스의 `/metrics` 엔드포인트에 접근
 &nbsp;
 
 ### Grafana 대시보드
+
+가시성(Observability)을 높이기 위해 Grafana 대시보드와 Prometheus 메트릭을 연동하여 Karpenter의 성능과 상태를 실시간으로 모니터링할 수 있습니다.
+
+```mermaid
+flowchart LR
+    user["Users"]
+    subgraph k8s[Kubernetes Cluster]
+        direction LR
+        kp["`**Pod**
+        karpenter`"]
+        ks["`**Service**
+        ClusterIP`"]
+        dash["`**Grafana**
+        Dashboard`"]
+        prom["`**Pod**
+        prometheus-server`"]
+    end
+    
+    user --View--> dash
+    prom --Scrape /metrics--> ks --> kp
+    dash --Query--> prom
+    
+    style kp fill:darkorange,color:#fff,stroke:#333
+```
+
+&nbsp;
 
 Grafana 대시보드 [ID 20398](https://grafana.com/grafana/dashboards/20398-karpenter/)를 통해 노드풀, 스팟 현황 및 비중, 노드 레벨의 리소스 사용률을 확인할 수 있습니다.
 
