@@ -1,0 +1,23 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "squid.fullname" . }}
+  labels:
+    {{- include "squid.labels" . | nindent 4 }}
+  {{- with include "squid.mergedAnnotations" (dict "common" .Values.commonAnnotations "resource" .Values.podDisruptionBudget.annotations) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  {{- else if .Values.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+  {{- else }}
+  {{- fail "Either podDisruptionBudget.minAvailable or podDisruptionBudget.maxUnavailable must be set when PDB is enabled." }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "squid.selectorLabels" . | nindent 6 }}
+{{- end }}
