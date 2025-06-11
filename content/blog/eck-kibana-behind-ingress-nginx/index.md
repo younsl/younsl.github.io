@@ -115,7 +115,7 @@ eck-kibana:
 
 ```mermaid
 ---
-title: Bad Gataway response from ECK Kibana pod
+title: Bad Gateway response from ECK Kibana pod
 ---
 flowchart LR
     Client([Client]) 
