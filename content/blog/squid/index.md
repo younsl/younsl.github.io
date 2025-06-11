@@ -10,13 +10,13 @@ tags: ["kubernetes", "forward-proxy", "proxy", "squid"]
 
 ## 개요
 
-레거시 포워드 프록시 서버였던 EC2 기반의 Tinyproxy를 Kubernetes 클러스터에서 구동되는 squid로 마이그레이션한 여정을 소개합니다.
+레거시 포워드 프록시 서버였던 EC2 기반의 [Tinyproxy](https://github.com/tinyproxy/tinyproxy)를 Kubernetes 클러스터에서 구동되는 squid로 마이그레이션한 여정을 소개합니다.
 
 ## TLDR
 
 - **대상 독자**: DevOps 엔지니어, SRE, 쿠버네티스 운영자
 - **얻을 수 있는 점**: 
-EC2 기반 Tinyproxy를 K8s Squid로 마이그레이션하여 운영 효율성과 모니터링 가시성을 크게 개선한 경험담입니다. 레거시 인프라의 컨테이너화 과정과 헬름 차트 개발을 통한 자동화 구현 방법을 다룹니다.
+EC2 기반 [Tinyproxy](https://github.com/tinyproxy/tinyproxy)를 K8s Squid로 마이그레이션하여 운영 효율성과 모니터링 가시성을 크게 개선한 경험담입니다. 레거시 인프라의 컨테이너화 과정과 헬름 차트 개발을 통한 자동화 구현 방법을 다룹니다.
 
 ## 환경
 
@@ -236,5 +236,6 @@ Envoy나 HAProxy처럼 좀 더 기능이 다양하고 대중적인 프록시 서
 
 Github:
 
+- [tinyproxy](https://github.com/tinyproxy/tinyproxy)
 - [squid](https://github.com/squid-cache/squid)
 - [squid-exporter](https://github.com/boynux/squid-exporter)
