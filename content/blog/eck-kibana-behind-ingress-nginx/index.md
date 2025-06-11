@@ -113,7 +113,50 @@ eck-kibana:
 
 이 502 에러는 ingress-nginx 컨트롤러가 기본적으로 백엔드 서비스와 HTTP로 통신하려고 시도하지만, ECK Kibana는 HTTPS 연결을 기대하기 때문에 발생하는 프로토콜 불일치 문제입니다.
 
-![502 error](./2.png)
+```mermaid
+---
+title: Bad Gataway response from ECK Kibana pod
+---
+flowchart LR
+    Client([Client]) 
+    NLB["`**NLB**
+    Internal`"]
+    
+    subgraph K8S["Kubernetes Cluster"]
+        Service["`**Service**
+        LoadBalancer`"]
+        IngressPod["`**Pod**
+        ingress-nginx`"]
+        KibanaPod["`**Pod**
+        Kibana`"]
+        
+        IngressPod --HTTP--> KibanaPod
+        KibanaPod --"`Verify
+        HTTPS?`"--> KibanaPod
+        KibanaPod -.Bad Gateway.-> IngressPod
+    end
+
+    Service --Reconcile--> NLB
+    
+    Client -->|HTTPS| NLB
+    NLB --Route--> IngressPod
+    IngressPod -.Bad Gateway.-> NLB
+    NLB -.Bad Gateway.-> Client
+    
+    style Client fill:#333,stroke:#fff,color:#fff
+    style NLB fill:#333,stroke:#fff,color:#fff
+    style IngressPod fill:#333,stroke:#fff,color:#fff
+    style KibanaPod fill:#333,stroke:#fff,color:#fff
+    style K8S fill:#1a1a1a,stroke:#666,stroke-width:2px,color:#fff
+
+    linkStyle 7 stroke:#ff8c00,stroke-width:1px
+    linkStyle 6 stroke:#ff8c00,stroke-width:1px
+    linkStyle 2 stroke:#ff8c00,stroke-width:1px
+
+    note1["**Note**: In this diagram, kubernetes service resources was omitted in front of pods for brevity"]
+    note1 ~~~ NLB 
+    style note1 fill:transparent,color:gray,stroke-width:0px
+```
 
 즉, 게이트웨이(ingress-nginx)가 업스트림 서버(Kibana)로부터 유효한 응답을 받지 못해 사용자에게 502 Bad Gateway 에러를 반환하는 것입니다.
 
