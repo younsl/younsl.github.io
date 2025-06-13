@@ -20,9 +20,55 @@ tags: ["devops", "kubernetes", "coredns"]
 
 ### CoreDNS의 파드 오토스케일링
 
-EKS 에드온으로 설치한 `coredns`에 오토스케일링이 적용하면 [CPA](https://github.com/kubernetes-sigs/cluster-proportional-autoscaler)<sup>Cluster Proportional Autoscaler</sup>에 의해 `coredns` 파드 개수가 조절됩니다.
+EKS 에드온으로 설치한 `coredns`에 오토스케일링이 적용하면 [CPA](https://github.com/kubernetes-sigs/cluster-proportional-autoscaler)(Cluster Proportional Autoscaler)에 의해 `coredns` 파드 개수가 조절됩니다.
 
-CPA 파드는 HPA와 다르게 컨트롤플레인에 포함되어 있기 때문에 일반적인 `kubectl` 명령어로 조회 및 관리할 수 없습니다.
+쿠버네티스 아키텍처로 표현하면 다음과 같습니다:
+
+```mermaid
+---
+title: Cluster Proportional Autoscaler for CoreDNS 
+---
+graph LR
+    subgraph CP ["Control Plane"]
+        CPA["`**Pod**
+        CPA`"]
+    end
+    
+    subgraph WN ["Data Plane (Worker Nodes)"]
+        subgraph K8S ["Kubernetes Resources"]
+            DEP["`**Deployment**
+            coredns`"]
+            RS[ReplicaSet]
+            P1[Pod<br/>coredns]
+            P2[Pod<br/>coredns]
+            P3[Pod<br/>coredns]
+        end
+    end
+    
+    subgraph CONFIG ["Configuration"]
+        CM["`**configMap**
+        nodesPerReplica: 16
+        coresPerReplica: 256
+        min: 1, max: 6`"]
+    end
+    
+    %% CPA reads config and modifies deployment
+    CPA -->|Read configMap| CM
+    CPA --Update .spec.replicas--> DEP
+    
+    %% Standard Kubernetes resource hierarchy
+    DEP --> RS
+    RS --Manage--> P1 & P2 & P3
+    
+    %% Monitoring
+    CPA e1@-.->|Monitors nodes and cores num| WN
+
+    %% Styling
+    style CPA fill:darkorange, color:white
+    e1@{ animate: true }
+```
+
+CPA(Cluster Proportional Autoscaler) 파드는 HPA(HorizontalPodAutoscaler), VPA(VerticalPodAutoscaler)와 다르게 컨트롤플레인에 포함되어 있기 때문에 일반적인 `kubectl` 명령어로 조회 및 관리할 수 없다는 차이점이 있습니다.
 
 &nbsp;
 
