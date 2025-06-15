@@ -20,7 +20,6 @@ Slides I've created and presented on Site Reliability Engineering, Kubernetes, a
 - [Loki zstd](/slides/loki-zstd.pdf)
 - [Kubernetes native admission policy](/slides/admission-policy.pdf)
 - [Gateway API Inference Extension](/slides/gateway-api-inference.pdf)
-- [No cache S3 with CloudFront](/slides/no-cache-s3-with-cdn.pdf)
 - [GSS](/slides/gss.pdf)
 - [EKS Security Enhancements](/slides/eks-security-enhancement.pdf)
 - [Actions Runner Controller Scaling](/slides/arc-scale-zero.pdf)
