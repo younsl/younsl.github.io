@@ -11,7 +11,7 @@ showAdvertisement: false
 
 Younsung Lee is a DevOps Engineer at Coinone, Gopher and Vim user.
 
-[Github](https://github.com/younsl), [Resume](/about/assets/resume-en.pdf), [Charts](/charts/)
+[Github](https://github.com/younsl), [Resume](/about/assets/younsung-lee_devops.pdf), [Charts](/charts/)
 
 ### Slide
 
