@@ -37,7 +37,7 @@ EC2 기반 [Tinyproxy](https://github.com/tinyproxy/tinyproxy)를 K8s Squid로 �
 
 ```mermaid
 ---
-title: Legacy squid architecture
+title: Legacy forward proxy server architecture
 ---
 flowchart LR
     c(["`Client
@@ -52,30 +52,37 @@ flowchart LR
             nlb["`**NLB**
             Internal`"]
         end
-        subgraph TG["Target Group"]
+        subgraph pub["Public Subnet"]
             tp1["`EC2
             tinyproxy`"]
             tp2["`EC2
-            tiynproxy`"]
+            tinyproxy`"]
         end
-
-        ngw["NAT Gateway"]
-        igw["Internet Gateway"]
+        eip1(["Elastic IP"])
+        eip2(["Elastic IP"])
+        igw["`Internet
+        Gateway`"]
     end
 
     c --> nlb
     nlb --> tp1
     nlb --> tp2
 
-    tp1 & tp2 --> ngw --> igw --> s
+    tp1 --Rotate EIP--> eip1 --> igw
+    tp2 --Rotate EIP--> eip2 --> igw
+    igw --> s
+
+    style tp1 fill:darkorange, color: white
+    style tp2 fill:darkorange, color: white
 ```
 
 프록시 서버 운영 중에 여러가지 어려움이 있었습니다.
 
-- Tinyproxy 서버 설정 파일 변경과 같은 작업시 유지보수 절차가 번거로웠습니다.
-- 서버의 확장과 축소가 유연하지 못하고, 해당 EC2에 tinyproxy만 달랑 하나 떠있어서 컴퓨팅 리소스가 낭비되었습니다.
-- 간헐적으로 tinyproxy 버그([#383](https://github.com/tinyproxy/tinyproxy/issues/383#issuecomment-2411862355))로 행이 걸려 주기적으로 저를 포함한 DevOps Engineer들이 재부팅을 해줘야했습니다. 우여곡절 끝에 tinyproxy 1.11.2로 버전 업그레이드를 해서 문제는 해결했지만 설치와 업그레이드 절차는 복잡했습니다. 더 심각한 건 GitOps로 설정파일과 모든 EC2 형상을 관리할 수 없는 환경이 DR 측면에서 매우 취약했습니다. 
-- NLB나 타겟그룹의 상태에 대한 기존 메트릭 알람은 걸려 있었지만 세부적인 Squid 메트릭, 로그 등 운영 가시성이 전무했기 때문에 블랙박스 영역이었습니다.
+- **유지보수 어려움**: Tinyproxy 서버 설정 파일 변경과 같은 작업시 유지보수 절차가 번거로웠습니다.
+- **확장성**: ASG 기반이 아닌 직접 구축이라 서버의 확장과 축소가 유연하지 못함
+- **비용**: 해당 EC2에 tinyproxy만 달랑 하나 떠있어서 컴퓨팅 리소스가 낭비되었으며, Elastic IP, NLB 등의 부가 리소스들의 비용이 부과되었습니다.
+- **버그**: 간헐적으로 tinyproxy 버그([#383](https://github.com/tinyproxy/tinyproxy/issues/383#issuecomment-2411862355))로 행이 걸려 주기적으로 저를 포함한 DevOps Engineer들이 재부팅을 해줘야했습니다. 우여곡절 끝에 tinyproxy 1.11.2로 버전 업그레이드를 해서 문제는 해결했지만 설치와 업그레이드 절차는 복잡했습니다. 더 심각한 건 GitOps로 설정파일과 모든 EC2 형상을 관리할 수 없는 환경이 DR 측면에서 매우 취약했습니다. 
+- **가시성 문제**: NLB나 타겟그룹의 상태에 대한 기존 메트릭 알람은 걸려 있었지만 세부적인 Squid 메트릭, 로그 등 운영 가시성이 전무했기 때문에 블랙박스 영역이었습니다.
 
 이런 여러가지 운영의 한계점 때문에 저는 이 Tinyproxy 서버들을 쿠버네티스 위에 squid로 옮기기로 결심합니다.
 
@@ -160,12 +167,15 @@ flowchart LR
 
         subgraph "Network Infrastructure"
             subgraph "AZ-A Network"
-                ngwA["NAT Gateway AZ-A"]
+                ngwA["`NAT
+                Gateway`"]
             end
             subgraph "AZ-C Network" 
-                ngwC["NAT Gateway AZ-C"]
+                ngwC["`NAT
+                Gateway`"]
             end
-            igw["Internet Gateway"]
+            igw["`Internet
+            Gateway`"]
         end
     end
     
@@ -203,13 +213,15 @@ flowchart LR
             c2["`**Container**
             squid-exporter`"]
         end
-        svc["`Service
+        svc["`**Service**
         ClusterIP`"]
         deploy["`**Deployment**
         squid`"]
     end
-    prom["`Pod
-    prometheus-server`"]
+    subgraph ns2["Namespace monitoring"]
+        prom["`**Pod**
+        prometheus-server`"]
+    end
 
     deploy --Control replicas--> p
     c2 --Scrape--> c1
