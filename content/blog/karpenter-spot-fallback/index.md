@@ -14,8 +14,6 @@ tags: ["devops", "kubernetes", "karpenter"]
 
 Karpenter와 Karpenter의 [Fallback 기능](https://karpenter.sh/docs/concepts/scheduling/#fallback)을 사용하면 스팟 인스턴스를 중단 없이 사용할 수 있습니다.
 
-&nbsp;
-
 ## 환경
 
 헬름 차트:
@@ -24,8 +22,6 @@ Karpenter와 Karpenter의 [Fallback 기능](https://karpenter.sh/docs/concepts/s
 - **Node Termination Handler** 1.25.0
   - NTH 동작 모드는 IMDS(Instance Metadata Service) 모드로 설정했으며, 데몬셋으로 배포됨
 
-&nbsp;
-
 ## 설정 가이드
 
 ### 노드 프로비저닝
@@ -33,6 +29,9 @@ Karpenter와 Karpenter의 [Fallback 기능](https://karpenter.sh/docs/concepts/s
 Karpenter가 노드 프로비저닝하는 과정의 트리거는 Pending 상태의 파드가 있는 시점
 
 ```mermaid
+---
+title: Karpenter node provisioning
+---
 flowchart LR
   p["`Pods
   Pending`"]
@@ -68,13 +67,14 @@ flowchart LR
   linkStyle 4 stroke:darkorange,stroke-width:2px
 ```
 
-&nbsp;
-
 ### Karpenter 헬름차트 구조
 
 Karpenter 설치는 [공식 헬름 차트](https://github.com/aws/karpenter-provider-aws/tree/main/charts)로 쉽게 진행할 수 있습니다.
 
 ```mermaid
+---
+title: Karpenter helm chart
+---
 flowchart LR
 
   admin["👨🏻‍💼 Cluster Admin"]
@@ -104,11 +104,7 @@ flowchart LR
 
 Karpenter의 커스텀 리소스를 담고있는 [karpenter-nodepool 차트](https://github.com/younsl/blog/tree/main/content/charts/karpenter-nodepool)는 공식 제공되는 차트가 아니라 직접 개발해서 운영중입니다.
 
-&nbsp;
-
 헬름차트로 Karpenter를 관리하는 이유는 복잡한 Kubernetes 리소스들을 템플릿화하여 환경별 설정값(dev/stage/prod)을 values.yaml 파일로 분리 관리할 수 있고, 차트 버전 기반의 원자적 배포와 즉시 롤백이 가능하기 때문입니다. 특히 Karpenter는 NodePool, EC2NodeClass 등 여러 CRD와 RBAC 설정이 복합적으로 연결되어 있어 헬름의 의존성 관리와 훅(hook) 기능을 활용하면 배포 순서 제어와 설정 일관성을 보장할 수 있으며, GitOps 워크플로우와 결합하여 인프라 변경사항을 코드로 추적하고 검토할 수 있어 운영 안정성이 크게 향상됩니다.
-
-&nbsp;
 
 ### 스팟 중단 핸들링 방법
 
@@ -118,8 +114,6 @@ Karpenter가 스팟 중단신호(Spot Interruption Notice)를 안전하게 처�
 2. EventBridge Rules + SQS + Karpenter
 
 Karpenter 공식문서의 [FAQ 페이지](https://karpenter.sh/docs/faq/#interruption-handling)에서는 SQS를 사용하는 방식을 권장하고 있지만, NTH를 사용하는 방식이 운영 편의성이 더 좋습니다.
-
-&nbsp;
 
 Karpenter가 노드 프로비저닝하며 NTH(Node Termination Handler)가 Spot 중단신호 감지 및 파드 Eviction 담당
 
@@ -166,8 +160,6 @@ flowchart LR
 
 1: https://karpenter.sh/docs/faq/#interruption-handling
 
-&nbsp;
-
 ### Spot Nodepool Fallback
 
 [Fallback](https://karpenter.sh/docs/concepts/scheduling/#fallback) 기능을 사용하여 [가중치(Weight)](https://karpenter.sh/docs/concepts/scheduling/#weighted-nodepools) 기반 spot, on-demand 노드풀 선정
@@ -194,8 +186,6 @@ spec:
 
 Karpenter는 같은 할당 조건을 가진 노드풀 중에서 가중치가 높은 노드풀을 우선 선택합니다. 높은 가중치의 노드에 할당이 실패하면 가중치가 낮은 노드에 할당을 시도합니다.
 
-&nbsp;
-
 파드 설정에서도 기본(스팟) 노드풀과 Fallback 노드풀에 대한 nodeAffinity를 모두 지정해야 합니다.
 
 ```yaml
@@ -220,8 +210,6 @@ spec:
 ```
 
 Karpenter 노드는 생성될 떄 자동으로 자신의 노드풀 이름이 담긴 `karpenter.sh/nodepool` 라벨이 붙습니다. 이 라벨을 사용해서 파드를 특정 노드풀과 폴백 노드풀에 할당할 수 있습니다.
-
-&nbsp;
 
 시스템 아키텍처:
 
@@ -260,11 +248,7 @@ flowchart LR
 
 노드 프로비저닝 과정이 시작되면 Karpenter Controller는 노드풀의 가중치(Weight)를 참고하여 가중치가 높은 스팟 노드풀을 우선 선택합니다. 만약 스팟 노드풀의 리소스가 부족하면 Fallback 노드풀이 선택됩니다.
 
-&nbsp;
-
 AWS Summit Seoul 2025에서 샌드버드가 발표한 'Amazon EKS 기반 클라우드 최적화와 생성형 AI 혁신 전략' 세션에서 많은 부분을 참고했습니다.
-
-&nbsp;
 
 ### 메트릭 수집 설정
 
@@ -280,8 +264,6 @@ serviceMonitor:
   # -- Specifies whether a ServiceMonitor should be created.
   enabled: true
 ```
-
-&nbsp;
 
 메트릭 수집 과정
 
@@ -316,8 +298,6 @@ flowchart LR
 
 Prometheus Server가 Karpenter 서비스의 `/metrics` 엔드포인트에 접근하여 메트릭을 수집합니다.
 
-&nbsp;
-
 ### Grafana 대시보드
 
 가시성(Observability)을 높이기 위해 Grafana 대시보드와 Prometheus 메트릭을 연동하여 Karpenter의 성능과 상태를 실시간으로 모니터링할 수 있습니다.
@@ -344,13 +324,9 @@ flowchart LR
     style kp fill:darkorange,color:#fff,stroke:#333
 ```
 
-&nbsp;
-
 Grafana 대시보드 [ID 20398](https://grafana.com/grafana/dashboards/20398-karpenter/)를 통해 노드풀, 스팟 현황 및 비중, 노드 레벨의 리소스 사용률을 확인할 수 있습니다.
 
 ![Karpenter Dashboard](./1.png)
-
-&nbsp;
 
 ## TLDR
 
@@ -373,3 +349,7 @@ ip-<REDACTED>.ap-northeast-2.compute.internal   Ready    <none>   4d2h    v1.32.
 ```
 
 Spot과 Fallback 노드풀 활용을 통해 EC2 비용 120 USD / 1mo 절감, 월비용으로는 3600 USD 절감되었습니다.
+
+## 관련자료
+
+- [Using Amazon EC2 Spot Instances with Karpenter at AWS Blog](https://aws.amazon.com/ko/blogs/containers/using-amazon-ec2-spot-instances-with-karpenter/)

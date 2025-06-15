@@ -40,13 +40,15 @@ EC2 기반 [Tinyproxy](https://github.com/tinyproxy/tinyproxy)를 K8s Squid로 �
 title: Legacy forward proxy server architecture
 ---
 flowchart LR
-    c(["`Client
-    Pod(s)`"])
     s["`**3rd Party Services**
     hooks.slack.com,
     api.slack.com,
     etc.`"]
     subgraph "VPC"
+        subgraph k8s["`Kubernetes`"]
+            c1(["Pod"])
+            c2(["Pod"])
+        end
         direction LR
         subgraph prv["Private Subnet"]
             nlb["`**NLB**
@@ -64,12 +66,12 @@ flowchart LR
         Gateway`"]
     end
 
-    c --> nlb
+    c1 & c2 --Send request--> nlb
     nlb --> tp1
     nlb --> tp2
 
-    tp1 --Rotate EIP--> eip1 --> igw
-    tp2 --Rotate EIP--> eip2 --> igw
+    tp1 --Rotate--> eip1 --> igw
+    tp2 --Rotate--> eip2 --> igw
     igw --> s
 
     style tp1 fill:darkorange, color: white
