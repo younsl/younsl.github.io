@@ -1,0 +1,18 @@
+{{ if .Page.Store.Get "hasMermaid" }}
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@latest/dist/mermaid.esm.min.mjs';
+    let mermaidTheme = 'dark';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: mermaidTheme,
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: false,
+        padding: 5,
+        nodeSpacing: 15,
+        rankSpacing: 15,
+        curve: 'basis'
+      }
+    });
+  </script>
+{{ end }}

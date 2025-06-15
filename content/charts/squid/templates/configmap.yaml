@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "squid.fullname" . }}-conf
+  labels:
+    {{- include "squid.labels" . | nindent 4 }}
+  {{- with include "squid.mergedAnnotations" (dict "common" .Values.commonAnnotations "resource" .Values.config.annotations) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+data:
+  squid.conf: |
+    {{- tpl (index .Values.config "squid.conf") . | nindent 4 }}

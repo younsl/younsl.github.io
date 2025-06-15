@@ -1,0 +1,18 @@
+apiVersion: v2
+name: kube-green-sleepinfos
+description: A Helm chart for managing kube-green SleepInfo resources. kube-green-sleepinfos chart is used to create SleepInfo resources for kube-green operator.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - kube-green-operator
+  - kube-green
+  - sleepinfo
+  - custom-resources
+  - scale-to-zero
+maintainers:
+  - name: younsl
+    email: cysl@kakao.com
+    url: https://github.com/younsl
+sources:
+  - https://github.com/younsl/blog

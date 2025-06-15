@@ -1,0 +1,256 @@
+#-----------------------------------------
+# Global values
+#-----------------------------------------
+global:
+  ## -- Common labels for RBAC resources
+  commonLabels: {}
+  # commonLabels:
+  #   github.com/organization-name: funny-company
+  #   github.com/repository-name: charts
+  #   github.com/team: devops
+
+#-----------------------------------------
+# multiple "clusterRole" resource
+#-----------------------------------------
+clusterRoles: {}
+  # ## -- Name of clusterRole resource
+  # pod-maintainer-developer:
+  #   ## -- Whether to create clusterRole resource
+  #   enabled: true
+  #   ## -- Labels for clusterRole resource
+  #   labels: {}
+  #   ## -- Rules for clusterRole resource
+  #   rules:
+  #   - apiGroups:
+  #     - keda.sh
+  #     resources:
+  #     - scaledobjects
+  #     verbs:
+  #     - get
+  #     - list
+  #     - watch
+  #     - update
+  #     - patch
+  #   - apiGroups:
+  #     - ""
+  #     resources:
+  #     - pods
+  #     - services
+  #     verbs:
+  #     - get
+  #     - list
+  #     - watch
+  #     - create
+  #     - update
+  #     - patch
+  #     - delete
+  #   - apiGroups:
+  #     - ""
+  #     resources:
+  #     - pods/log
+  #     - nodes
+  #     verbs:
+  #     - get
+  #     - list
+  #   - apiGroups:
+  #     - ""
+  #     resources:
+  #     - pods/exec
+  #     verbs:
+  #     - create
+  #     - get
+  #   - apiGroups:
+  #     - ""
+  #     resources:
+  #     - pods/portforward
+  #     verbs:
+  #     - create
+  #     - get
+  #   - apiGroups:
+  #     - apps
+  #     resources:
+  #     - deployments
+  #     - deployments/scale
+  #     - deployments/status
+  #     - deployments/rollback
+  #     - replicasets
+  #     - replicasets/scale
+  #     - replicasets/status
+  #     - statefulsets
+  #     - statefulsets/scale
+  #     - statefulsets/status
+  #     verbs:
+  #     - get
+  #     - list
+  #     - watch
+  #     - create
+  #     - update
+  #     - patch
+  #     - delete
+  #   - apiGroups:
+  #     - networking.k8s.io
+  #     resources:
+  #     - ingresses
+  #     verbs:
+  #     - list
+  #     - watch
+  #     - get
+  #     - patch
+  #     - update
+
+  # ## -- Name of clusterRole resource
+  # security-audit:
+  #   ## -- Whether to create clusterRole resource
+  #   enabled: true
+  #   ## -- Labels for clusterRole resource
+  #   labels:
+  #     funny-jira.atlassian.net/issue-number: FUN-1234
+  #     funny-jira.atlassian.net/requestor: johndoe
+  #   ## -- Rules for clusterRole resource
+  #   rules:
+  #   - apiGroups:
+  #     - rbac.authorization.k8s.io
+  #     resources:
+  #     - roles
+  #     - rolebindings
+  #     verbs:
+  #     - get
+  #     - list
+  #     - watch
+  #   - apiGroups:
+  #     - rbac.authorization.k8s.io
+  #     resources:
+  #     - clusterroles
+  #     - clusterrolebindings
+  #     verbs:
+  #     - get
+  #     - list
+  #     - watch
+  #   - apiGroups:
+  #     - ""
+  #     resources:
+  #     - pods/attach
+  #     - pods/exec
+  #     verbs:
+  #     - create
+
+#-----------------------------------------
+# multiple "clusterRoleBinding" resource
+#-----------------------------------------
+clusterRoleBindings: {}
+  # ## -- Name of clusterRoleBinding resource
+  # pod-maintainer-developer:
+  #   ## -- Whether to create clusterRoleBinding resource
+  #   enabled: true
+  #   ## -- Labels for clusterRoleBinding resource
+  #   labels: {}
+  #   ## -- roleRef for clusterRoleBinding resource
+  #   roleRef:
+  #     kind: ClusterRole
+  #     name: pod-maintainer-developer
+  #   ## -- subjects for clusterRoleBinding
+  #   subjects:
+  #     kind: Group
+  #     name: system:developers
+
+  # ## -- Name of clusterRoleBinding resource
+  # security-audit:
+  #   ## -- Whether to create clusterRoleBinding resource
+  #   enabled: true
+  #   ## -- Labels for clusterRoleBinding resource
+  #   labels:
+  #     funny-jira.atlassian.net/issue-number: FUN-1234
+  #     funny-jira.atlassian.net/requestor: johndoe
+  #   ## -- roleRef for clusterRoleBinding resource
+  #   roleRef:
+  #     kind: ClusterRole
+  #     name: security-audit
+  #   ## -- subjects for clusterRoleBinding
+  #   subjects:
+  #     kind: Group
+  #     name: security-engineers
+
+#---------------------------------
+# multiple "role" resource
+#---------------------------------
+roles: {}
+  ## -- Namespace (role and roleBinding is namespace scoped resource.)
+  # datadog:
+  #   ## -- Name of role resource
+  #   datadog-agent-maintainer:
+  #     ## -- Whether to create role resource
+  #     enabled: true
+  #     ## -- Labels for role resource
+  #     labels: {}
+  #     ## -- Rules for role resource
+  #     rules:
+  #     - apiGroups:
+  #       - ""
+  #       resources:
+  #       - pods
+  #       - services
+  #       - configmaps
+  #       verbs:
+  #       - get
+  #       - list
+  #       - watch
+  #       - create
+  #       - update
+  #       - patch
+  #       - delete
+  #     - apiGroups:
+  #       - ""
+  #       resources:
+  #       - pods/attach
+  #       - pods/exec
+  #       verbs:
+  #       - create
+  #     - apiGroups:
+  #       - ""
+  #       resources:
+  #       - pods/log
+  #       verbs:
+  #       - get
+  #       - list
+  #     - apiGroups:
+  #       - apps
+  #       resources:
+  #       - deployments
+  #       - deployments/scale
+  #       - deployments/status
+  #       - deployments/rollback
+  #       - replicasets
+  #       - replicasets/scale
+  #       - replicasets/status
+  #       - statefulsets
+  #       - statefulsets/scale
+  #       - statefulsets/status
+  #       verbs:
+  #       - get
+  #       - list
+  #       - watch
+  #       - create
+  #       - update
+  #       - patch
+  #       - delete
+
+#---------------------------------
+# multiple "roleBinding" resource
+#---------------------------------
+roleBindings: {}
+  ## -- Namespace (role and roleBinding is namespace scoped resource.)
+  # datadog:
+  #   ## -- Name of roleBinding resource
+  #   datadog-agent-maintainer:
+  #     ## -- Whether to create roleBinding resource
+  #     enabled: true
+  #     ## -- Labels for roleBinding resource
+  #     labels: {}
+  #     ## -- roleRef for roleBinding resource
+  #     roleRef:
+  #       kind: Role
+  #       name: datadog-agent-maintainer
+  #     ## -- subjects for roleBinding
+  #     subjects:
+  #     - kind: Group
+  #       name: datadog-agent-maintainer
