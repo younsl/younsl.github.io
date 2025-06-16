@@ -260,16 +260,14 @@ spec:
   template:
     spec:
       topologySpreadConstraints:
-        spec:
-          topologySpreadConstraints:
-          - maxSkew: 1
-            topologyKey: topology.kubernetes.io/zone
-            whenUnsatisfiable: DoNotSchedule
-            labelSelector:
-              matchLabels:
-                app: squid 
-            # At least keep 2 availability zones
-            minDomains: 2
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: squid 
+        # At least keep 2 availability zones
+        minDomains: 2
 ```
 
 공식 squid 헬름 차트가 존재하지 않는다는 점 빼면 많은 부분이 개선된 완벽한 전환기였습니다.
