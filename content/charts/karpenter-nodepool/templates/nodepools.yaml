@@ -1,0 +1,74 @@
+{{/*
+nodepool custom resource template (compatible with karpenter v1.5.0)
+*/}}
+
+{{- range $key, $value := .Values.nodePool }}
+---
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: {{ $key }}
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "nodepool.labels" $ | nindent 8 }}
+        {{- with .labels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if or .annotations $.Values.globalAnnotations }}
+      annotations:
+        {{- include "annotations" $ | nindent 8 }}
+        {{- with .annotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+    spec:
+      {{- with .nodeClassRef }}
+      nodeClassRef:
+        group: {{ default "karpenter.k8s.aws" .group }}
+        kind: {{ default "EC2NodeClass" .kind }}
+        name: {{ default "default" .name }}
+      {{- end }}
+      {{- with .taints }}
+      taints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .startupTaints }}
+      startupTaints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      expireAfter: {{ default "720h" .expireAfter | quote }}
+      {{- with .terminationGracePeriod }}
+      terminationGracePeriod: {{ . | quote }}
+      {{- end }}
+      {{- with .requirements }}
+      requirements:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .kubelet }}
+      kubelet:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  {{- if .disruption }}
+  {{- with .disruption }}
+  disruption: 
+    consolidationPolicy: {{ default "WhenEmptyOrUnderutilized" .consolidationPolicy }}
+    {{- with .consolidateAfter }}
+    consolidateAfter: {{ . | quote }}
+    {{- end }}
+    {{- with .budgets }}
+    budgets:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if .limits }}
+  limits:
+    cpu: {{ default "100" .limits.cpu | quote }}
+    memory: {{ default "100Gi" .limits.memory | quote }}
+  {{- end }}
+  {{- if .weight }}
+  weight: {{ .weight }}
+  {{- end }}
+{{- end }}

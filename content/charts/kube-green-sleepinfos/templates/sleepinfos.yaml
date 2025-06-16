@@ -1,0 +1,42 @@
+{{- /*
+Note: sleepinfo custom resource requires the kube-green operator to be installed in the cluster.
+Without the kube-green operator, the SleepInfo resources created by this chart will does not work properly.
+*/ -}}
+
+{{- range $namespace, $sleepinfos := .Values.sleepInfos }}
+{{- range $sleepinfo := $sleepinfos }}
+---
+apiVersion: kube-green.com/v1alpha1
+kind: SleepInfo
+metadata:
+  name: {{ $sleepinfo.name }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "kube-green-sleepinfos.labels" $ | nindent 4 }}
+  {{- if or .Values.commonAnnotations $sleepinfo.annotations }}
+  annotations:
+    {{- with .Values.commonAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with $sleepinfo.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  weekdays: {{ $sleepinfo.weekdays | quote }}
+  sleepAt: {{ $sleepinfo.sleepAt | quote }}
+  wakeUpAt: {{ $sleepinfo.wakeUpAt | quote }}
+  timeZone: {{ $sleepinfo.timeZone | default "UTC" | quote }}
+  {{- if $sleepinfo.excludeRef }}
+  excludeRef:
+    {{- toYaml $sleepinfo.excludeRef | nindent 4 }}
+  {{- end }}
+  {{- if $sleepinfo.suspendCronJobs }}
+  suspendCronJobs: {{ $sleepinfo.suspendCronJobs }}
+  {{- end }}
+  {{- if $sleepinfo.resources }}
+  resources:
+    {{- toYaml $sleepinfo.resources | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}
