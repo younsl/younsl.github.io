@@ -238,7 +238,41 @@ flowchart LR
 - squid-exporter를 squid 파드의 사이드카로 심어서 쉽게 메트릭을 수집할 수 있었습니다.
 - 프록시 서버인 squid 버전 업그레이드의 허들이 매우 낮아지며, 롤링 업데이트로 안정성도 확보됨. 컨테이너가 고장이 나더라도 Kubernetes의 셀프힐링으로 자율 운영이 가능합니다.
 
-공식적인 squid 차트가 존재하지 않는다는 점 빼면 많은 부분이 개선된 완벽한 전환기였습니다.
+### Topology Aware Routing
+
+Squid 운영시 Local AZ 통신을 위한 TAR 설정도 중요합니다. 네트워크 지연시간 감소(소폭의), 장애 내결함성, AZ간(Inter AZ) 비용 절감 3가지 이점을 얻을 수 있기 때문에 안하면 손해인 설정입니다.
+
+클러스터 내부 통신에서 되도록 같은 AZ(Local AZ)간의 통신을 선호하도록 TAR(Topology Aware Routing) 설정 활성화를 위해 Annotation도 추가합니다. 
+
+```yaml
+# service yaml
+metadata:
+  annotations:
+    service.kubernetes.io/topology-mode: Auto
+```
+
+EndpointSlice Controller가 Hints 활성화를 할 확률을 높이도록 파드 스케줄링시 AZ를 골고루 분배해야합니다. TopologyAwareRouting 설정은 안전장치로 전제조건(Safeguards)을 충족하지 못하면 Hints가 자동 비활성화되어 Inter AZ 통신으로 자동 전환됩니다.
+
+```yaml
+# deployment yaml
+spec:
+  replicas: 4
+  template:
+    spec:
+      topologySpreadConstraints:
+        spec:
+          topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: topology.kubernetes.io/zone
+            whenUnsatisfiable: DoNotSchedule
+            labelSelector:
+              matchLabels:
+                app: squid 
+            # At least keep 2 availability zones
+            minDomains: 2
+```
+
+공식 squid 헬름 차트가 존재하지 않는다는 점 빼면 많은 부분이 개선된 완벽한 전환기였습니다.
 
 ## 마치며
 
