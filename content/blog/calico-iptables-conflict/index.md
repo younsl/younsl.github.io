@@ -70,7 +70,7 @@ E0610 07:32:22.926611       1 proxier.go:1564] "Failed to execute iptables-resto
 
 ### kube-proxy와 calico-node의 iptables 경합
 
-문제가 발생한 클러스터에서는 felixconfiguration에 의해 calico가 BPF 모드로 동작하고 있었습니다. 이 설정에 의해 calico는 iptables가 주기적으로 생성한 iptables 체인들을 정리(cleanup)했습니다. iptables의 충돌입니다.
+문제가 발생한 클러스터에서는 felixconfiguration에 의해 calico가 BPF 모드로 동작하고 있었습니다. kube-proxy와 calico-node 둘 다 iptables 모드를 자동감지하도록 Auto detection 모드로 동작하고 있었으며, iptables-legaacy를 자동 감지했습니다. calico는 BGP 모드 활성화에 의해 kube-proxy가 주기적으로 생성한 iptables 체인들을 정리(cleanup)했고, 이로 인해 노드의 네트워킹 장애가 발생했습니다.
 
 ```mermaid
 ---
