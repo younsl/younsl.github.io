@@ -70,7 +70,7 @@ E0610 07:32:22.926611       1 proxier.go:1564] "Failed to execute iptables-resto
 
 ### kube-proxy와 calico-node의 iptables 경합
 
-문제가 발생한 클러스터에서는 felixconfiguration에 의해 calico가 BPF 모드로 동작하고 있었습니다. kube-proxy와 calico-node 둘 다 iptables 모드를 자동감지하도록 Auto detection 모드로 동작하고 있었으며, iptables-legaacy를 자동 감지했습니다. calico는 BGP 모드 활성화에 의해 kube-proxy가 주기적으로 생성한 iptables 체인들을 정리(cleanup)했고, 이로 인해 노드의 네트워킹 장애가 발생했습니다.
+문제가 발생한 클러스터에서는 felixconfiguration에 의해 calico가 BPF 모드로 동작하고 있었습니다. kube-proxy와 calico-node 둘 다 iptables 모드를 자동감지하도록 Auto detection 모드로 동작하고 있었으며, 실제로 calico-node도 iptables-legacy를 자동 감지했습니다. calico는 BGP 모드 활성화에 의해 kube-proxy가 주기적으로 생성한 iptables 체인들을 정리(cleanup)했고, 이로 인해 노드의 네트워킹 장애가 발생했습니다.
 
 ```mermaid
 ---
@@ -97,7 +97,7 @@ flowchart LR
   style ipt fill:darkorange, color:white
 ```
 
-문제가 발생했던 felixconfiguration 리소스 정보입니다. bpfEnabled가 켜져 있는 걸 확인할 수 있습니다.
+문제가 발생했던 felixconfiguration 리소스 정보입니다. BGP 모드(bpfEnabled)가 켜져 있는 걸 확인할 수 있습니다.
 
 ```yaml
 apiVersion: projectcalico.org/v3
@@ -140,7 +140,11 @@ spec:
   logSeverityScreen: Debug
 ```
 
-Calico 공식문서 [Avoiding conflicts with kube-proxy](https://docs.tigera.io/calico/latest/operations/ebpf/enabling-ebpf#avoiding-conflicts-with-kube-proxy)에 따르면 kube-proxy 데몬셋을 비활성화할 수 없는 경우(예: 쿠버네티스 배포판에서 관리되는 경우), felixconfiguration의 매개변수 BPFKubeProxyIptablesCleanupEnabled를 false로 변경해야 합니다. 기본값은 true 입니다. kubectl을 사용하여 다음과 같이 변경할 수 있습니다.
+### iptable cleanup 비활성화
+
+Calico 공식문서 [Avoiding conflicts with kube-proxy](https://docs.tigera.io/calico/latest/operations/ebpf/enabling-ebpf#avoiding-conflicts-with-kube-proxy)에 의하면, kube-proxy 데몬셋을 비활성화할 수 없는 경우(예: 쿠버네티스 배포판에서 관리되는 경우), felixconfiguration의 매개변수 BPFKubeProxyIptablesCleanupEnabled를 false로 변경해야 합니다. 만약 kube-proxy를 삭제 가능한 쿠버네티스 배포판이라고 하면 이 설정을 사용하기 보다는 [kube-proxy를 삭제](https://docs.tigera.io/calico/latest/operations/ebpf/enabling-ebpf#configure-kube-proxy)하고 BPF 모드의 Calico로 클러스터 네트워킹을 구성하는 것이 더 나은 선택지입니다. ([메인테이너 답변](https://github.com/projectcalico/calico/issues/10538#issuecomment-2982099838))
+
+kubectl을 사용하여 다음과 같이 변경할 수 있습니다. BPFKubeProxyIptablesCleanupEnabled의 기본값은 true 입니다.
 
 ```bash
 kubectl patch felixconfiguration default --patch='{"spec": {"bpfKubeProxyIptablesCleanupEnabled": false}}'
@@ -179,7 +183,9 @@ spec:
   vxlanVNI: 4096
 ```
 
-혹은 felixconfiguration에 선언된 Calico의 BPF 모드(bpfEnabled)를 끄면 됩니다.
+### BPF 모드 끄기
+
+혹은 felixconfiguration 리소스에 선언된 Calico의 BPF 모드(bpfEnabled)를 끄면 됩니다.
 
 ```bash
 # felixconfig
@@ -193,17 +199,27 @@ bpfKubeProxyIptablesCleanupEnabled 설정을 비활성화한 시점부터 kube-p
 iptables-restore v1.8.8 (legacy): Couldn't load target `KUBE-SVC-3KK4EHREJABVV2YJ':No such file or directory
 ```
 
-이는 iptables cleanup 기능을 비활성화하여 Calico BPF 모드와 kube-proxy 간의 충돌이 해결되었음을 확인합니다. 이는 kube-proxy와 calico 간의 iptables 제어 충돌로 인해 눈송이 클러스터에서 발생하는 네트워킹 문제입니다. Calico 설정(felixconfig)에서 BPF 모드(bpfEnabled) 자체를 비활성화하거나 BPF를 켠 상태에서 iptables cleanup을 비활성화하면 이 iptables 경합에 의한 손상 문제를 해결할 수 있습니다.
+이는 iptables cleanup 기능을 비활성화하여 Calico BPF 모드와 kube-proxy 간의 충돌이 해결되었음을 확인합니다. 이는 kube-proxy와 calico 간의 iptables 제어 충돌로 인해 눈송이 클러스터(각 노드마다 미묘하게 다른 설정이나 상태를 가진 일관성 없는 클러스터)에서 발생하는 네트워킹 문제입니다.
+
+1. Calico 설정(felixconfig)에서 BPF 모드(bpfEnabled) 자체를 비활성화하거나
+2. Calico BPF 모드를 사용해야 하는 경우, kube-proxy를 삭제합니다. kube-proxy를 삭제할 수 없는 쿠버네티스 배포판이라면 Calico의 BPF 모드를 켠 상태에서 iptables cleanup 동작을 비활성화하면 kube-proxy와의 iptables 경합에 의한 손상 문제를 해결할 수 있습니다. 다시 강조하지만 iptables cleanup 비활성화 설정은 kube-proxy를 삭제할 수 없을 때에만 사용해야 하는 선택지입니다.
 
 ## 마치며
 
 BPF 모드에서 Calico는 기본적으로 kube-proxy의 iptables 규칙을 적극적으로 삭제(cleanup)하는데, 이로 인해 kube-proxy가 규칙을 다시 복원하려다가 "No such file or directory" 에러가 발생하는 무한 루프가 반복되면서 네트워킹 장애가 발생했습니다.
+ 
+해결방법은 크게 2가지가 있습니다.
 
-felixconfiguration에서 bpfKubeProxyIptablesCleanupEnabled: false로 설정하여 Calico가 iptables를 정리하지 않도록 해서 충돌을 해결했습니다.
+- Calico를 BPF 모드로 켜고 kube-proxy를 삭제합니다. **kube-proxy를 삭제할 수 없는 특수한 경우**에만 bpfKubeProxyIptablesCleanupEnabled: false 설정을 통해 iptables를 삭제(cleanup)하지 못하게 조치합니다.
+- Calico의 BPF 모드를 끕니다. Calico는 BPF 모드를 끄면 iptables cleanup을 멈춥니다.
 
 지속적으로 발생하던 kube-proxy iptables 에러 로그를 문제 원인에서 배제한 것이 큰 실책이었습니다.
 
 ## 관련자료
 
+Github Issue:
 - [calico-node stuck in Not-ready state due to kube-apiserver connectivity timeout #10538](https://github.com/projectcalico/calico/issues/10538#issuecomment-2979312107)
+
+Calico docs:
+
 - [Avoiding conflicts with kube-proxy](https://docs.tigera.io/calico/latest/operations/ebpf/enabling-ebpf#avoiding-conflicts-with-kube-proxy) 
