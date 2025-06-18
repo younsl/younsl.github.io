@@ -38,7 +38,11 @@ hugo server --environment production --theme void
 hugo
 
 # Build with specific environment
-hugo --environment production
+hugo --environment production --minify
+
+# Build and serve using Docker (alternative local development)
+podman build -t hugo-blog .
+podman run --rm -p 1313:1313 -v $(pwd):/app hugo-blog
 ```
 
 ### Presentation Slides
@@ -123,3 +127,18 @@ The `cr.sh` script in `content/charts/` automates the complete chart release wor
 2. Packages chart to `.tgz` file
 3. Updates repository index
 4. Synchronizes index between `content/charts/` and `static/` directories
+
+## Deployment and CI/CD
+
+### GitHub Actions
+The repository uses GitHub Actions for automated deployment:
+- **Deploy workflow**: Triggers on pushes to `main` branch, builds Hugo site with production settings
+- **Hugo version**: 0.144.0 (extended) is used in CI/CD pipeline
+- **Build process**: Includes minification and optimized asset handling
+- **Target**: Deploys to GitHub Pages automatically
+
+### Container Support
+- Dockerfile provided for containerized local development
+- Uses Alpine Linux base with Hugo extended binary
+- Supports both Podman and Docker container engines
+- Default port: 1313 for local development server
