@@ -20,7 +20,7 @@ tags: []
   - calico/node:v3.28.1
   - tigera/operator:v1.34.3
 - Calico dataplane
-  - iptables (legacy mode)
+  - iptables 1.8.8 (legacy mode)
   - Pod IPAM은 VPC CNI에 의해 관리중
 - Orchestrator version: EKS 1.32
 - Operating System and version: Amazon Linux 2 v20250519, amd64
