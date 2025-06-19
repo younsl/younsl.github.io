@@ -142,7 +142,33 @@ spec:
 
 ### iptable cleanup 비활성화
 
-Calico 공식문서 [Avoiding conflicts with kube-proxy](https://docs.tigera.io/calico/latest/operations/ebpf/enabling-ebpf#avoiding-conflicts-with-kube-proxy)에 의하면, kube-proxy 데몬셋을 비활성화할 수 없는 경우(예: 쿠버네티스 배포판에서 관리되는 경우), felixconfiguration의 매개변수 BPFKubeProxyIptablesCleanupEnabled를 false로 변경해야 합니다. 만약 kube-proxy를 삭제 가능한 쿠버네티스 배포판이라고 하면 이 설정을 사용하기 보다는 [kube-proxy를 삭제](https://docs.tigera.io/calico/latest/operations/ebpf/enabling-ebpf#configure-kube-proxy)하고 BPF 모드의 Calico로 클러스터 네트워킹을 구성하는 것이 더 나은 선택지입니다. ([메인테이너 답변](https://github.com/projectcalico/calico/issues/10538#issuecomment-2982099838))
+Calico 공식문서 [Avoiding conflicts with kube-proxy](https://docs.tigera.io/calico/latest/operations/ebpf/enabling-ebpf#avoiding-conflicts-with-kube-proxy)에 의하면, kube-proxy 데몬셋을 비활성화할 수 없는 경우(예: 쿠버네티스 배포판에서 관리되는 경우), felixconfiguration의 매개변수 BPFKubeProxyIptablesCleanupEnabled를 false로 변경해야 합니다.
+
+tigera operator로 calico를 설치한 경우, felixconfiguration을 수정하더라도 오퍼레이터가 installation 리소스 기준으로 다시 맞춰서 설정이 롤백됩니다.
+
+```mermaid
+---
+title: Calico configuration
+---
+flowchart LR
+  to["tigera-operator"]
+  in["installation"]
+  fe["felixconfiguration"]
+
+  to --> in --> fe
+```
+
+installation 리소스에서 bgp 설정을 비활성화 해야합니다.
+
+```yaml
+# installation
+spec:
+  calicoNetwork:
+    bgp: Disabled
+    linuxDataplane: Iptables # Or BGP
+```
+
+만약 kube-proxy를 삭제 가능한 쿠버네티스 배포판이라고 하면 이 설정을 사용하기 보다는 [kube-proxy를 삭제](https://docs.tigera.io/calico/latest/operations/ebpf/enabling-ebpf#configure-kube-proxy)하고 BPF 모드의 Calico로 클러스터 네트워킹을 구성하는 것이 더 나은 선택지입니다. ([메인테이너 답변](https://github.com/projectcalico/calico/issues/10538#issuecomment-2982099838))
 
 kubectl을 사용하여 다음과 같이 변경할 수 있습니다. BPFKubeProxyIptablesCleanupEnabled의 기본값은 true 입니다.
 
