@@ -16,14 +16,14 @@ tags: []
 
 ## 환경
 
-- Calico
+- **Calico**
   - calico/node:v3.28.1
   - tigera/operator:v1.34.3
-- Calico dataplane
+- **Calico dataplane**
   - iptables 1.8.8 (legacy mode)
   - Pod IPAM은 VPC CNI에 의해 관리중
-- Orchestrator version: EKS 1.32
-- Operating System and version: Amazon Linux 2 v20250519, amd64
+- **Kubernetes version**: EKS 1.32
+- **OS version**: Amazon Linux 2 v20250519, amd64
 
 ## 증상
 
@@ -187,50 +187,83 @@ spec:
 
 ### BPF 모드 끄기
 
-tigera operator로 calico를 설치한 경우, felixconfiguration 리소스를 직접 수정하더라도 오퍼레이터가 installation 리소스 기준으로 다시 맞춰서 설정이 롤백됩니다.
+[FelixConfiguration](https://docs.tigera.io/calico/latest/reference/resources/felixconfig) 리소스는 Calico의 각 노드에서 실행되는 Felix 에이전트의 동작을 제어하는 설정파일입니다. 네트워크 정책 처리 방식(eBPF vs iptables), 로깅 레벨, 헬스체크 등 Felix의 세부적인 런타임 설정을 관리합니다.
+
+felixconfiguration에서 bpfEnabled 값을 false로 설정합니다.
+
+```yaml
+# felixconfiguration
+spec:
+  # -- bpfEnabled: If enabled Felix will use the BPF dataplane.
+  bpfEnabled: false  # Default: false
+```
+
+Felix의 eBPF 모드를 비활성화하여 전통적인 iptables 기반 데이터플레인을 사용하도록 설정했습니다. 이 구성에서 Felix는 Typha를 통해 FelixConfiguration 변경사항을 실시간으로 수신하고 네트워크 정책을 iptables 규칙으로 변환하여 적용합니다.
 
 ```mermaid
 ---
-title: Calico configuration
+title: Calico Component Architecture and Data Flow
 ---
 flowchart LR
-  to(["tigera-operator"])
-  in["installation"]
-  fe["felixconfiguration"]
+    subgraph k8s["Kubernetes Cluster"]
+        direction LR
+        subgraph node["Worker Node (EC2)"]
+            c(["`**DaemonSet Pod**
+            calico-node`"])
+            f["felix"]
+        end
+        t(["`**Pod**
+        calico-typha`"])
+        subgraph cp["Control Plane"]
+            k(["kube-apiserver"])
+            fc["felixconfiguration"]
+        end
+    end
 
-  to --> in --> fe
+    c --contain--> f --connect--> t --watch config--> k --> fc
 
-  style in fill:darkorange, color:white
+    style fc fill:darkorange, color:white
 ```
 
-installation 리소스에서 bgp 설정을 비활성화 해야합니다.
+### kube-proxy iptables-restore 에러 해결 방법
+
+다음 두 가지 방법 중 하나로 kube-proxy의 iptables-restore 에러를 해결할 수 있습니다:
+
+방법 1: Calico BPF 모드 비활성화 (권장)
 
 ```yaml
-# installation
-spec:
-  calicoNetwork:
-    bgp: Disabled
-    linuxDataplane: Iptables # Or BGP
-```
-
-installation 리소스의 bgp 값을 수정하면 felixconfig의 bpfEnabled 값도 자동으로 반영됩니다.
-
-```bash
-# felixconfig
+# FelixConfiguration에서 설정
 spec:
   bpfEnabled: false
 ```
 
-bpfKubeProxyIptablesCleanupEnabled 설정을 비활성화한 시점부터 kube-proxy의 iptables-restore 에러 로그가 멈춘 걸 확인할 수 있습니다. 
+방법 2: BPF 모드 유지 + iptables cleanup 비활성화
+
+```yaml
+# FelixConfiguration에서 설정 (kube-proxy 삭제 불가능한 환경에서만 사용)
+spec:
+  bpfEnabled: true
+  bpfKubeProxyIptablesCleanupEnabled: false
+```
+
+에러 해결 확인:
+
+설정 적용 후 kube-proxy에서 발생하던 다음과 같은 에러가 멈추는 것을 확인할 수 있습니다:
 
 ```bash
 iptables-restore v1.8.8 (legacy): Couldn't load target `KUBE-SVC-3KK4EHREJABVV2YJ':No such file or directory
 ```
 
-이는 iptables cleanup 기능을 비활성화하여 Calico BPF 모드와 kube-proxy 간의 충돌이 해결되었음을 확인합니다. 이는 kube-proxy와 calico 간의 iptables 제어 충돌로 인해 눈송이 클러스터(각 노드마다 미묘하게 다른 설정이나 상태를 가진 일관성 없는 클러스터)에서 발생하는 네트워킹 문제입니다.
+이 문제는 **Calico와 kube-proxy 간의 iptables lock 경합**으로 발생합니다. 특히 눈송이 클러스터(노드마다 상태가 다른 일관성 없는 클러스터)에서 자주 나타나는 네트워킹 문제입니다.
 
-1. Calico 설정(felixconfig)에서 BPF 모드(bpfEnabled) 자체를 비활성화하거나
-2. Calico BPF 모드를 사용해야 하는 경우, kube-proxy를 삭제합니다. kube-proxy를 삭제할 수 없는 쿠버네티스 배포판이라면 Calico의 BPF 모드를 켠 상태에서 iptables cleanup 동작을 비활성화하면 kube-proxy와의 iptables 경합에 의한 손상 문제를 해결할 수 있습니다. 다시 강조하지만 iptables cleanup 비활성화 설정은 kube-proxy를 삭제할 수 없을 때에만 사용해야 하는 선택지입니다.
+- **방법 1**: BPF 모드를 끄면 Calico가 iptables를 직접 조작하지 않아 충돌이 원천 차단됩니다
+- **방법 2**: BPF 모드는 유지하되 Calico가 kube-proxy 규칙을 정리하지 않도록 하여 경합을 방지합니다
+
+#### Calico BPF 모드에서 kube-proxy 제거가 권장되는 이유
+
+[Calico BPF 모드](https://docs.tigera.io/calico/latest/operations/ebpf/enabling-ebpf#avoiding-conflicts-with-kube-proxy)를 사용할 때 kube-proxy를 완전히 제거하는 것이 권장되는 이유는 성능과 안정성 측면에서 명확한 이점이 있기 때문입니다. BPF 직접 처리로 iptables 규칙 처리 오버헤드를 제거하여 더 빠른 패킷 포워딩과 CPU 사용량 감소, 네트워크 지연시간 단축을 실현할 수 있으며, 단일 네트워킹 솔루션으로 통합하여 아키텍처를 단순화하고 디버깅 복잡도를 줄이는 동시에 iptables lock 경합을 원천 차단하여 예상치 못한 네트워킹 동작을 방지할 수 있습니다.
+
+> **참고**: 방법 2에서 나오는 bpfKubeProxyIptablesCleanupEnabled 옵션은 kube-proxy를 삭제할 수 없는 관리형 쿠버네티스 환경(EKS, GKE 등)에서만 사용하는 임시 해결책입니다. 가능하다면 Calico BPF 모드 사용 시 kube-proxy를 완전히 제거하는 것이 권장됩니다.
 
 ## 마치며
 
@@ -251,3 +284,4 @@ Github Issue:
 Calico docs:
 
 - [Avoiding conflicts with kube-proxy](https://docs.tigera.io/calico/latest/operations/ebpf/enabling-ebpf#avoiding-conflicts-with-kube-proxy) 
+- [FelixConfiguration Reference](https://docs.tigera.io/calico/latest/reference/resources/felixconfig)
