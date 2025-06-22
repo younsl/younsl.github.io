@@ -1,0 +1,22 @@
+apiVersion: v2
+name: karpenter-nodepool
+description: A Helm chart for Karpenter Node pool, it will create the NodePool and the Ec2NodeClass.
+type: application
+version: 1.5.1
+appVersion: 1.5.0
+keywords:
+  - cluster
+  - node
+  - autoscaling
+  - karpenter
+  - karpenter-crds
+  - nodepool
+  - ec2nodeclass
+home: https://younsl.github.io/charts/
+icon: https://repository-images.githubusercontent.com/278480393/dab059c8-caa1-4b55-aaa7-3d30e47a5616
+maintainers:
+  - name: younsl
+    email: cysl@kakao.com
+    url: https://github.com/younsl
+sources:
+  - https://github.com/younsl/blog

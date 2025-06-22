@@ -1,0 +1,28 @@
+{{/*
+Low priority class for overprovisioning pods
+This PriorityClass is created when at least one nodepool has overprovisioning enabled
+*/}}
+{{- $hasOverprovisioning := false }}
+{{- range $nodePoolName, $nodePoolConfig := .Values.nodePool }}
+{{- if and $nodePoolConfig.overprovisioning $nodePoolConfig.overprovisioning.enabled }}
+{{- $hasOverprovisioning = true }}
+{{- end }}
+{{- end }}
+
+{{- if $hasOverprovisioning }}
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: overprovisioning-low-priority
+  labels:
+    app.kubernetes.io/component: overprovisioning
+    {{- include "labels" . | nindent 4 }}
+  {{- if .Values.globalAnnotations }}
+  annotations:
+    {{- include "annotations" . | nindent 4 }}
+  {{- end }}
+value: -1000
+globalDefault: false
+description: "Low priority class for overprovisioning pods that should be evicted first"
+{{- end }}
