@@ -3,12 +3,12 @@ title: "notion 200b blocks"
 date: 2025-07-05T00:24:20+09:00
 lastmod: 2025-07-05T00:24:30+09:00
 slug: ""
-description: "Notion이 200억 개 노트를 처리하는 방법 (크래시 없이)"
+description: "Notion이 2000억 개 노트를 처리하는 방법 (크래시 없이)"
 keywords: []
 tags: ["scale", "database"]
 ---
 
-# Notion이 200억 개 노트를 처리하는 방법 (크래시 없이)
+# Notion이 2000억 개 노트를 처리하는 방법 (크래시 없이)
 
 *이 글은 위의 Notion 엔지니어링 팀 공식 블로그 포스트와 기술 커뮤니티 분석 자료를 바탕으로 작성되었습니다.*
 
