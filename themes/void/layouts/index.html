@@ -1,0 +1,16 @@
+{{ define "main" }}
+
+<header>
+    {{- if $.Site.Params.theme_config.titleLinkEnable -}}
+       <h1><a class="main" href="{{ $.Site.Params.theme_config.titleLink | relURL }}">{{ $.Site.Title }}</a></h1>
+    {{- else -}}
+        <h1>{{ $.Site.Title }}</h1>
+    {{- end -}}
+    {{- if $.Site.Params.theme_config.show_description -}}
+        <p>{{ $.Site.Params.description }}</p>
+    {{- end -}}
+</header>
+{{ .Content }}
+{{ partial "menu_item.html" (dict "context" . "collection" $.Site.Params.entries) }}
+
+{{ end }}
