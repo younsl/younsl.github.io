@@ -1,0 +1,30 @@
+{{/*
+Helm template for "horizontalRunnerAutoscaler" custom resource
+*/}}
+
+{{- range .Values.runnerDeployments }}
+{{- if .autoscaling.enabled }}
+---
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: HorizontalRunnerAutoscaler
+metadata:
+  name: {{ .runnerName }}-hra
+  labels:
+    {{- include "actions-runner.labels" $ | nindent 4 }}
+spec:
+  scaleDownDelaySecondsAfterScaleOut: {{ .autoscaling.scaleDownDelaySecondsAfterScaleOut }}
+  scaleTargetRef:
+    kind: RunnerDeployment
+    name: {{ .runnerName }}
+  minReplicas: {{ .autoscaling.minReplicas }}
+  maxReplicas: {{ .autoscaling.maxReplicas }}
+  {{- with .autoscaling.metrics }}
+  metrics:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .autoscaling.scheduledOverrides }}
+  scheduledOverrides:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,63 @@
+{{/*
+Expand the name of the chart.
+*/}}
+{{- define "name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create chart name by the chart label.
+*/}}
+{{- define "chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Return standard labels
+*/}}
+{{- define "labels" -}}
+app.kubernetes.io/name: {{ include "name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+helm.sh/chart: {{ include "chart" . | quote }}
+{{- with .Values.globalLabels }}
+{{ toYaml . }}
+{{- end }}
+{{- end -}}
+
+{{/*
+Return labels for NodePool template metadata (excludes kubernetes.io domain labels)
+*/}}
+{{- define "nodepool.labels" -}}
+{{- with .Values.globalLabels }}
+{{ toYaml . }}
+{{- end }}
+{{- end -}}
+
+{{/*
+Return merged annotations
+*/}}
+{{- define "annotations" -}}
+{{- with .Values.globalAnnotations }}
+{{- toYaml . }}
+{{- end }}
+{{- end -}}
+
+{{/*
+Common selector terms helper for subnetSelectorTerms, securityGroupSelectorTerms, amiSelectorTerms, and capacityReservationSelectorTerms
+*/}}
+{{- define "ec2NodeClass.commonSelectorTerms" -}}
+{{- range . }}
+  {{- with .tags }}
+  - tags:
+      {{- toYaml . | nindent 6 }}
+  {{- end }}
+  {{- with .id }}
+  - id: {{ . }}
+  {{- end }}
+  {{- with .name }}
+  - name: {{ . | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}

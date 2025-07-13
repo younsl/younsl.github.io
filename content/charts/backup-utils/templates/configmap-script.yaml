@@ -1,0 +1,34 @@
+{{- if .Values.backupUtils.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: github-backup-utils-script
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "github-backup-utils.labels" . | nindent 4 }}
+data:
+  backup.sh: |
+    #!/bin/bash
+    set -e
+
+    # [1/3] Host connectivity check
+    echo "Current backup-utils CLI version: "
+    /backup-utils/bin/ghe-host-check --version
+    
+    echo "Check the host connecitivy at $(date +'%Y/%m/%d %H:%M:%S')"
+    /backup-utils/bin/ghe-host-check
+    echo "Completed the host connecitivy at $(date +'%Y/%m/%d %H:%M:%S')"
+
+    # [2/3] Backup
+    echo "Start backup at $(date +'%Y/%m/%d %H:%M:%S')"
+    df -hT /data
+    du -skh /data/*
+    /backup-utils/bin/ghe-backup
+    echo "Completed backup at $(date +'%Y/%m/%d %H:%M:%S')"
+
+    # [3/3] Retrieve latest backup
+    DATA_FILE_PATH='/data/current'
+    FILE_NAME=`basename $( realpath $DATA_FILE_PATH )`
+    echo "Latest backup folder is $FILE_NAME"
+{{- end }}
