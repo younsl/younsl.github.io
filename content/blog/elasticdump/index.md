@@ -1,7 +1,7 @@
 ---
 title: "elasticdump"
 date: 2025-07-15T23:06:00+09:00
-lastmod: 2025-07-15T23:06:00+09:00
+lastmod: 2025-07-18T00:07:00+09:00
 description: "elasticdump로 elasticsearch 인덱스를 json 파일로 백업하기"
 keywords: []
 tags: ["elasticsearch"]
@@ -10,6 +10,32 @@ tags: ["elasticsearch"]
 ## 개요
 
 Elasticsearch 인덱스를 안전하게 백업하고 복원하는 것은 데이터 관리의 핵심 작업입니다. elasticdump는 JSON 형태로 데이터를 추출할 수 있는 간단하고 효율적인 CLI 도구로, 개발자와 운영자가 손쉽게 백업 작업을 수행할 수 있게 해줍니다.
+
+```mermaid
+---
+title: ElasticSearch Data Backup Architecture using ElasticDump
+---
+flowchart LR
+    subgraph VPC
+        direction LR
+        subgraph sg["Security Group"]
+            e["ElasticSearch"]
+        end
+    end
+
+    subgraph Client Machine
+        direction TB
+        c["User"]
+        f["`**Index file**
+        .json`"]
+    end
+
+    c e1@--Run elasticdump--> e
+    e --Backup file--> f --> c
+
+    style f fill:darkorange, color:white
+    e1@{ animate: true }
+```
 
 ## TLDR
 
