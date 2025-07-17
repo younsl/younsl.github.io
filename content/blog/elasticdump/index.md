@@ -9,7 +9,7 @@ tags: ["elasticsearch"]
 
 ## 개요
 
-Elasticsearch 인덱스를 안전하게 백업하고 복원하는 것은 데이터 관리의 핵심 작업입니다. elasticdump는 JSON 형태로 데이터를 추출할 수 있는 간단하고 효율적인 CLI 도구로, 개발자와 운영자가 손쉽게 백업 작업을 수행할 수 있게 해줍니다.
+Elasticsearch 인덱스를 안전하게 백업하고 복원하는 것은 데이터 관리의 핵심 작업입니다. [elasticdump](https://github.com/elasticsearch-dump/elasticsearch-dump)는 JSON 형태로 데이터를 추출할 수 있는 간단하고 효율적인 CLI 도구로, 개발자와 운영자가 손쉽게 백업 작업을 수행할 수 있게 해줍니다.
 
 ```mermaid
 ---
@@ -125,3 +125,7 @@ Mon, 10 Jun 2024 08:34:30 GMT | sent 100 objects to destination file, wrote 100
 Mon, 10 Jun 2024 08:46:16 GMT | got 100 objects from source elasticsearch (offset: 70600)
 Mon, 10 Jun 2024 08:46:16 GMT | sent 100 objects to destination file, wrote 100
 ```
+
+## 관련자료
+
+- [elasticsearch-dump Github](https://github.com/elasticsearch-dump/elasticsearch-dump)
