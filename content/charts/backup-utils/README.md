@@ -11,11 +11,15 @@ A Helm chart for GitHub Enterprise backup utility (`backup-utils`) implemented a
 > [!WARNING]
 > The backup-utils chart uses the backup-utils official container image, but it is not an official project provided by Github.
 
+### Deprecation Notice
+
+GitHub Enterprise Server 3.17 introduced [a Built-in Backup Service](https://docs.github.com/en/enterprise-server@latest/admin/backing-up-and-restoring-your-instance/backup-service-for-github-enterprise-server/about-the-backup-service-for-github-enterprise-server) as a Preview Feature. The use of GitHub Enterprise backup utility is no longer recommended.
+
 ## Compatibility Matrix
 
-| EKS          | 1.32 | 1.31 | 1.30 | 1.29 | 1.28 | 1.27 | 1.26 |
-|--------------|------|------|------|------|------|------|------|
-| backup-utils | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| App Version | 1.32 | 1.31 | 1.30 | 1.29 | 1.28 | 1.27 | 1.26 |
+|-------------|------|------|------|------|------|------|------|
+| 0.4.2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Architecture
 
