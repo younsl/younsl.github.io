@@ -1,0 +1,30 @@
+{{/*
+Metrics dedicated service uses ClusterIP type for security reasons.
+Prometheus metrics should not be exposed externally as they may contain
+sensitive information about squid usage patterns, cache statistics,
+and internal system metrics.
+*/}}
+
+{{- if .Values.squidExporter.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "squid.fullname" . }}-metrics
+  labels:
+    {{- include "squid.labels" . | nindent 4 }}
+    app.kubernetes.io/component: metrics
+  {{- with include "squid.mergedAnnotations" (dict "common" .Values.commonAnnotations "resource" nil) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  # Use ClusterIP to keep metrics internal only - external exposure could be a critical security risk
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.squidExporter.port }}
+      targetPort: {{ .Values.squidExporter.port }}
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "squid.selectorLabels" . | nindent 4 }}
+{{- end }}
