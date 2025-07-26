@@ -36,7 +36,7 @@ CPU는 코어별로 독립적인 실행 단위를 가지고 있고, 메모리는
 ## 환경
 
 - EKS 1.32
-- gpu-operator 25.3.1 (helm install)
+- gpu-operator 25.3.1 (official helm install)
 - Worker Node: AL2023, g4dn.xlarge, amd64
 
 ## 설정 가이드
@@ -44,8 +44,12 @@ CPU는 코어별로 독립적인 실행 단위를 가지고 있고, 메모리는
 최신 버전의 [gpu-operator](https://github.com/NVIDIA/gpu-operator) v25.3.1 헬름 차트를 로컬로 다운로드 받습니다.
 
 ```bash
+helm repo list
+helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
 helm pull nvidia/gpu-operator --version 25.3.1 --untar
 ```
+
+**주의사항**: gpu-operator에서 레포를 직접 Clone 하거나, Github Release를 통해 헬름 차트를 받아 설치하는 경우, runtimeClass 커스텀 리소스가 정상 생성 안되거나, Nvidia Device Plugin 데몬셋이 정상적으로 실행되지 않는 특이사항이 있습니다. `helm pull`로 직접 헬름 차트를 다운로드 받아야만 합니다.
 
 gpu-operator 헬름 차트를 사용하면 GPU 시분할 설정도 configMap을 통해 쉽게 적용할 수 있습니다.
 
