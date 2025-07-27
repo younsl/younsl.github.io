@@ -1,7 +1,7 @@
 ---
 title: "Younsung Lee"
 date: 2022-08-31T15:38:15+09:00
-lastmod: 2025-06-17T02:23:00+09:00
+lastmod: 2025-07-27T22:54:00+09:00
 slug: ""
 description: "about"
 keywords: []
