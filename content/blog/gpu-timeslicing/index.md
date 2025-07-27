@@ -152,7 +152,31 @@ metadata:
 
 해당 configMap에는 GPU 시분할(Time Slicing) 관련 설정이 들어있습니다.
 
-GPU Operator는 커스텀 리소스인 ClusterPolicy를 실시간으로 감지하고 시분할을 반영하게 됩니다. 이 설정이 적용되면 gpu-feature-discovery와 nvidia-device-plugin 데몬셋이 재시작됩니다.
+GPU Operator는 커스텀 리소스인 ClusterPolicy를 실시간으로 감지하고 시분할을 반영하게 됩니다.
+
+```mermaid
+flowchart LR
+    subgraph k8s["Kubernetes"]
+        direction LR
+
+        pg["`**Pod**
+        gpu-operator`"]
+        cp["ClusterPolicy"]
+
+        subgraph GPU Worker Node
+            nfd["`**DaemonSet**
+            node-feature-discovery`"]
+            nvp["`**DaemonSet**
+            nvidia-device-plugin`"]
+        end
+
+        pg --Watch--> cp --Deploy--> nfd & nvp
+    end
+    
+    style cp fill:darkorange, color:white
+```
+
+이 설정이 적용되면 gpu-feature-discovery와 nvidia-device-plugin 데몬셋이 재시작됩니다.
 
 ```yaml
 # clusterpolicies.nvidia.com
