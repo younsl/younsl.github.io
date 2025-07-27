@@ -9,18 +9,13 @@ tags: ["about", bio", "profile"]
 showAdvertisement: false
 ---
 
-## Links
+[Github](https://github.com/younsl), [Resume](/about/assets/younsung-lee-devops.pdf), [Charts](/charts/)
 
-[Github](https://github.com/younsl) [Resume](/about/assets/younsung-lee-devops.pdf) [Charts](/charts/)
-
-## Slides
-
-Slides on SRE, Kubernetes, and Cloud Native technologies.
+Slides on SRE, Kubernetes, and Cloud Native technologies:
 
 1. [Kubernetes native admission policy](/slides/admission-policy.pdf)
 2. [Gateway API Inference Extension](/slides/gateway-api-inference.pdf)
 3. [GSS](/slides/gss.pdf)
 4. [EKS Security Enhancements](/slides/eks-security-enhancement.pdf)
-5. [Actions Runner Controller Scaling](/slides/arc-scale-zero.pdf)
-6. [Infrastructure for Sales](/slides/infrastructure-for-sales.pdf)
-7. [AWS로 여는 미래의 금융 - 코인원의 클라우드 도입 여정](https://www.youtube.com/watch?v=qXF0mgh3E4A)
+5. [Infrastructure for Sales](/slides/infrastructure-for-sales.pdf)
+6. [AWS로 여는 미래의 금융 - 코인원의 클라우드 도입 여정](https://www.youtube.com/watch?v=qXF0mgh3E4A)
