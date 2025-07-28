@@ -176,6 +176,29 @@ flowchart LR
     style cp fill:darkorange, color:white
 ```
 
+nfd(node-feature-discovery) 데몬셋의 Affinity 설정을 추가합니다.
+
+기본적으로 gpu-operator의 nfd worker 데몬셋은 Affinity가 설정되어 있지 않으므로, 모든 워커 노드에 배포됩니다. worker 데몬셋에 affinity를 추가해서 GPU 노드에만 할당되도록 제한합니다.
+
+```yaml
+# chart/gpu-operator/values_my.yaml
+node-feature-discovery:
+  worker:
+    serviceAccount:
+      name: node-feature-discovery
+      # disable creation to avoid duplicate serviceaccount creation by master spec below
+      create: false
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: karpenter.k8s.aws/instance-gpu-count
+              operator: Gt
+              values:
+              - "0" 
+```
+
 이 설정이 적용되면 gpu-feature-discovery와 nvidia-device-plugin 데몬셋이 재시작됩니다.
 
 ```yaml
