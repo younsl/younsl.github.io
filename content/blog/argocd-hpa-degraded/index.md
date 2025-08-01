@@ -59,6 +59,7 @@ configs:
 Custom health check for HPA:
 
 ```yaml
+# charts/argocd/values_my.yaml (appVersion v2.13.4)
 configs:
   cm:
     resource.customizations.useOpenLibs.autoscaling_HorizontalPodAutoscaler: "true"
