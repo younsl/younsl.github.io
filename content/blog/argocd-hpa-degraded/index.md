@@ -62,6 +62,7 @@ Custom health check for HPA:
 configs:
   cm:
     resource.customizations.useOpenLibs.autoscaling_HorizontalPodAutoscaler: "true"
+    resource.customizations.useOpenLibs.keda.sh_ScaledObject: "true"
     resource.customizations: |
       autoscaling/HorizontalPodAutoscaler:
         health.lua: |
