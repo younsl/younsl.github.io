@@ -76,6 +76,22 @@ securityContext:
   # Group 'proxy' is pre-defined in squid container image
   runAsGroup: 13
 
+# Environment variables for squid container
+env: []
+  # - name: HTTP_PROXY
+  #   value: "http://proxy.example.com:3128"
+  # - name: DEBUG_LEVEL
+  #   value: "2"
+  # - name: SQUID_CONFIG_PATH
+  #   value: "/etc/squid/squid.conf"
+
+# Environment variables from existing ConfigMaps and Secrets for squid container
+envFrom: []
+  # - configMapRef:
+  #     name: squid-env-config
+  # - secretRef:
+  #     name: squid-env-secret
+
 # DNS configuration
 dnsPolicy: ClusterFirst
 dnsConfig: {}
@@ -319,6 +335,48 @@ autoscaling:
         value: 2
         periodSeconds: 60
       selectPolicy: Min
+
+# Liveness probe determines if the container is running properly
+# If it fails, Kubernetes will restart the container
+livenessProbe:
+  # Enable or disable the liveness probe
+  enabled: true
+  # Delay before the first probe is initiated after container starts (seconds)
+  # Give Squid enough time to initialize before checking
+  initialDelaySeconds: 20
+  # How often to perform the probe (seconds)
+  # More frequent checks = faster failure detection but higher overhead
+  periodSeconds: 5
+  # Number of seconds after which the probe times out (seconds)
+  # Should be less than periodSeconds
+  timeoutSeconds: 1
+  # Minimum consecutive successes for the probe to be considered successful after having failed
+  # Lower values mean faster recovery detection
+  successThreshold: 1
+  # Number of consecutive failures before restarting the container
+  # Higher values prevent restarts during temporary network issues
+  failureThreshold: 3
+
+# Readiness probe determines if the container is ready to receive traffic
+# If it fails, the pod is removed from service endpoints but not restarted
+readinessProbe:
+  # Enable or disable the readiness probe
+  enabled: true
+  # Delay before the first probe is initiated after container starts (seconds)
+  # Can be lower than liveness probe since we want to detect readiness quickly
+  initialDelaySeconds: 5
+  # How often to perform the probe (seconds)
+  # Frequent checks ensure traffic is only sent to ready pods
+  periodSeconds: 5
+  # Number of seconds after which the probe times out (seconds)
+  # Keep it short for quick detection
+  timeoutSeconds: 1
+  # Minimum consecutive successes for the probe to be considered successful after having failed
+  # Set to 1 for quick recovery
+  successThreshold: 1
+  # Number of consecutive failures before marking the pod as not ready
+  # Pod stays alive but doesn't receive traffic
+  failureThreshold: 3
 
 # Persistence for cache
 persistence:

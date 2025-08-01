@@ -2,7 +2,7 @@ apiVersion: v2
 name: squid
 description: A Helm chart for Squid caching proxy
 type: application
-version: 0.2.2
+version: 0.3.2
 appVersion: "6.10"
 kubeVersion: ">=1.21.0-0"
 keywords:
