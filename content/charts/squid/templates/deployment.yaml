@@ -1,0 +1,192 @@
+{{- $minTGPS := add (.Values.squidShutdownTimeout | int) 10 -}}
+{{- if lt (.Values.terminationGracePeriodSeconds | int) $minTGPS -}}
+{{- fail (printf "terminationGracePeriodSeconds (%d) must be at least %d seconds (squidShutdownTimeout + 10)" (.Values.terminationGracePeriodSeconds | int) $minTGPS) -}}
+{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "squid.fullname" . }}
+  labels:
+    {{- include "squid.labels" . | nindent 4 }}
+  {{- with include "squid.mergedAnnotations" (dict "common" .Values.commonAnnotations "resource" .Values.annotations) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  {{- if .Values.strategy }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "squid.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "squid.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "squid.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      dnsPolicy: {{ .Values.dnsPolicy }}
+      {{- with .Values.dnsConfig }}
+      dnsConfig:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: squid
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          {{- with .Values.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    squid -k shutdown && \
+                    sleep {{ add .Values.squidShutdownTimeout 10 }} && \
+                    echo "Squid shutdown complete"
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: squid
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: squid
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: squid-config
+              mountPath: /etc/squid/squid.conf
+              subPath: squid.conf
+            {{- if .Values.persistence.enabled }}
+            - name: squid-cache
+              mountPath: /var/spool/squid
+            {{- end }}
+        {{- if .Values.squidExporter.enabled }}
+        - name: squid-exporter
+          image: "{{ .Values.squidExporter.image.repository }}:{{ .Values.squidExporter.image.tag }}"
+          imagePullPolicy: {{ .Values.squidExporter.image.pullPolicy }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.squidExporter.port }}
+              protocol: TCP
+          env:
+            - name: SQUID_HOSTNAME
+              value: "{{ .Values.squidExporter.squidHostname }}"
+            - name: SQUID_PORT
+              value: "{{ .Values.squidExporter.squidPort | default .Values.service.targetPort | toString }}"
+            {{- if .Values.squidExporter.squidLogin }}
+            - name: SQUID_LOGIN
+              value: "{{ .Values.squidExporter.squidLogin }}"
+            {{- end }}
+            {{- if .Values.squidExporter.squidPassword }}
+            - name: SQUID_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "squid.fullname" . }}-exporter-auth
+                  key: password
+            {{- end }}
+            - name: SQUID_EXPORTER_LISTEN
+              value: ":{{ .Values.squidExporter.port }}"
+            - name: SQUID_EXPORTER_METRICS_PATH
+              value: "{{ .Values.squidExporter.metricsPath }}"
+            - name: SQUID_EXTRACTSERVICETIMES
+              value: "{{ .Values.squidExporter.extractServiceTimes | toString }}"
+            {{- range $key, $value := .Values.squidExporter.customLabels }}
+            - name: SQUID_EXPORTER_LABEL_{{ $key | upper }}
+              value: "{{ $value | toString }}"
+            {{- end }}
+          {{- if .Values.squidExporter.customLabels }}
+          args:
+            {{- range $key, $value := .Values.squidExporter.customLabels }}
+            - "-label={{$key}}={{$value}}"
+            {{- end }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.squidExporter.metricsPath }}
+              port: metrics
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.squidExporter.metricsPath }}
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          {{- with .Values.squidExporter.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      volumes:
+        - name: squid-config
+          configMap:
+            name: {{ include "squid.fullname" . }}-conf
+        {{- if .Values.persistence.enabled }}
+        - name: squid-cache
+          persistentVolumeClaim:
+            claimName: {{ include "squid.fullname" . }}-cache
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

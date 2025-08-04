@@ -1,0 +1,441 @@
+# Default values for squid.
+# This is a YAML-formatted file.
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 2
+revisionHistoryLimit: 10
+
+# Deployment strategy configuration
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    # Maximum number of pods that can be created above the desired number of pods during the update
+    # Can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%)
+    maxSurge: 25%
+    # Maximum number of pods that can be unavailable during the update
+    # Can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%)
+    maxUnavailable: 25%
+
+image:
+  repository: ubuntu/squid
+  tag: "6.10-24.10_beta"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+  # - name: my-registry-secret
+  # - name: my-registry-secret-2
+
+# Common labels to add to all kubernetes resources (will be merged with resource-specific labels)
+commonLabels: {}
+  # team: platform
+  # environment: production
+  # cost-center: engineering
+
+# Common annotations to add to all kubernetes resources (will be merged with resource-specific annotations)
+commonAnnotations:
+  description: Squid is a HTTP/HTTPS proxy server supporting caching and domain whitelist access control.
+
+# A resource-specific annotations for Deployment
+annotations: {}
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use.
+  name: ""
+  # Set to false for better security unless your application needs to access Kubernetes API
+  automountServiceAccountToken: false
+  # Annotations to add to the service account
+  annotations: {}
+    # eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/squid-proxy-role
+
+podAnnotations: {}
+  ## Example pod annotations for Prometheus metrics scraping
+  # prometheus.io/scrape: "true"
+  # prometheus.io/port: "9301"
+  # prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  fsGroup: 13
+
+# Grace period for pod termination (should be longer than squid shutdown_lifetime)
+terminationGracePeriodSeconds: 60
+# Squid shutdown timeout (used in shutdown_lifetime and preStop hook timing)
+squidShutdownTimeout: 30
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  # Set to true to run as non-root user
+  runAsNonRoot: true
+  # User 'proxy' is pre-defined in squid container image
+  runAsUser: 13
+  # Group 'proxy' is pre-defined in squid container image
+  runAsGroup: 13
+
+# Environment variables for squid container
+env: []
+  # - name: HTTP_PROXY
+  #   value: "http://proxy.example.com:3128"
+  # - name: DEBUG_LEVEL
+  #   value: "2"
+  # - name: SQUID_CONFIG_PATH
+  #   value: "/etc/squid/squid.conf"
+
+# Environment variables from existing ConfigMaps and Secrets for squid container
+envFrom: []
+  # - configMapRef:
+  #     name: squid-env-config
+  # - secretRef:
+  #     name: squid-env-secret
+
+# DNS configuration
+dnsPolicy: ClusterFirst
+dnsConfig: {}
+  # nameservers:
+  #   - 1.1.1.1
+  #   - 8.8.8.8
+  # searches:
+  #   - ns1.svc.cluster-domain.example
+  #   - my.dns.search.suffix
+  # options:
+  #   - name: ndots
+  #     value: "2"
+  #   - name: edns0
+
+# Kubernetes service configuration
+service:
+  # Available service types: ClusterIP, NodePort, LoadBalancer
+  type: ClusterIP
+  # Squid normally listens to port 3128, but you can change it to any port you want
+  port: 3128
+  # Squid normally listens to port 3128, but you can change it to any port you want
+  targetPort: 3128
+  # Dedicated node port for NodePort service
+  nodePort: ""
+  externalTrafficPolicy: ""
+  loadBalancerIP: ""
+  loadBalancerSourceRanges: []
+  # Controls how traffic is distributed across the service endpoints
+  # Optional field - if not set, Kubernetes uses default load balancing (random distribution)
+  # Available values: PreferClose (topology-aware routing), null (disabled)
+  trafficDistribution: ""
+  # A resource-specific annotations for Service
+  annotations: {}
+    ## Example annotations for AWS Load Balancer Controller
+    # service.beta.kubernetes.io/aws-load-balancer-name: custom-name
+    # service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    # service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+    # service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "false"
+    # service.beta.kubernetes.io/aws-load-balancer-security-groups: sg-<FIXME>
+    # service.beta.kubernetes.io/aws-load-balancer-subnets: subnet-<FIXME>,subnet-<FIXME>
+    # service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: Environment=dev,Team=platform
+    ## Example annotations for MetalLB
+    # metallb.universe.tf/address-pool: production-public-ips
+    ## Example annotations for kubernetes TAR(Topology Aware Routing) feature
+    ## See: https://kubernetes.io/docs/concepts/services-networking/topology-aware-routing/
+    # service.kubernetes.io/topology-mode: Auto
+
+ingress:
+  enabled: false
+  className: ""
+  # A resource-specific annotations for Ingress
+  annotations: {}
+    # kubernetes.io/ingress.class annotations was deprecated from 1.18, and removed in 1.22.
+    # Before the IngressClass resource and ingressClassName field were added in Kubernetes 1.18,
+    # Ingress classes were specified with a kubernetes.io/ingress.class annotation on the Ingress.
+    # See: https://kubernetes.io/docs/concepts/services-networking/ingress/#deprecated-annotation 
+    # kubernetes.io/ingress.class: nginx
+  hosts:
+    - host: squid.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Pod topology spread constraints (modern approach for pod distribution)
+topologySpreadConstraints: []
+  ## Example: Spread squid pods evenly across nodes
+  # - maxSkew: 1
+  #   topologyKey: kubernetes.io/hostname
+  #   whenUnsatisfiable: DoNotSchedule  # or ScheduleAnyway
+  #   labelSelector:
+  #     matchLabels:
+  #       app.kubernetes.io/name: squid
+  ## Example: Spread squid pods evenly across multi AZ
+  # - maxSkew: 1
+  #   topologyKey: topology.kubernetes.io/zone
+  #   whenUnsatisfiable: DoNotSchedule
+  #   labelSelector:
+  #     matchLabels:
+  #       app.kubernetes.io/name: squid
+  #   minDomains: 2
+
+# Squid configuration
+config:
+  # Allowed networks configuration
+  allowedNetworks:
+    # Additional networks that can access the proxy
+    extra: []
+      # - name: "office"
+      #   cidr: "203.0.113.0/24"
+      #   description: "office network"
+      # - name: "branch"
+      #   cidr: "198.51.100.0/24"
+      #   description: "branch office"
+      # - name: "custom"
+      #   cidr: "1.2.3.0/24"
+      #   description: "custom network"
+
+  # Squid configuration file content
+  # This configuration will be mounted to /etc/squid/squid.conf inside the squid container
+  # See: https://www.squid-cache.org/Versions/v6/cfgman/
+  squid.conf: |
+    ## Squid normally listens to port {{ .Values.service.targetPort | default 3128 }}
+    http_port {{ .Values.service.targetPort | default 3128 }}
+
+    ## PID file location (writable by proxy user)
+    pid_filename /var/spool/squid/squid.pid
+
+    ## Log rotation setting
+    logfile_rotate 0
+
+    ## Reduce log verbosity for health checks
+    debug_options ALL,1
+    
+    ## Uncomment and adjust the following to add a disk cache directory.
+    # cache_dir ufs /var/spool/squid 100 16 256
+    
+    ## To disable caching completely, uncomment the following line:
+    # cache deny all
+    
+    ## Leave coredumps in the first cache dir
+    coredump_dir /var/spool/squid
+    
+    ## =============================================================================
+    ## TIMEOUT CONFIGURATION
+    ## =============================================================================
+    ## Connection timeouts
+    connect_timeout 10 seconds          # Timeout for server connections
+    read_timeout 15 minutes             # Timeout for reading from servers
+    request_timeout 1 minutes           # Timeout for client requests
+    client_lifetime 1 day               # Maximum time a client connection is kept alive
+    
+    ## Persistent connection timeouts
+    pconn_timeout 1 minute              # Timeout for persistent connections to servers
+    half_closed_clients off             # Don't wait for clients to close connections
+    
+    ## Shutdown timeout
+    shutdown_lifetime {{ .Values.squidShutdownTimeout }} seconds
+        
+    ## Add any of your own refresh_pattern entries above these.
+    refresh_pattern ^ftp:           1440    20%     10080
+    refresh_pattern ^gopher:        1440    0%      1440
+    refresh_pattern -i (/cgi-bin/|\?) 0     0%      0
+    refresh_pattern .               0       20%     4320
+    
+    ## =============================================================================
+    ## SECURITY CONFIGURATION
+    ## =============================================================================
+    ## Port security ACLs and rules
+    acl SSL_ports port 443 563
+    acl Safe_ports port 80 21 443 70 210 1025-65535 280 488 591 777
+    acl CONNECT method CONNECT
+    
+    ## Security rules (processed first)
+    http_access deny !Safe_ports
+    http_access deny CONNECT !SSL_ports
+    
+    ## =============================================================================
+    ## NETWORK ACCESS CONTROL
+    ## =============================================================================
+    ## Allowed networks definition
+    acl allowed_nets src 10.0.0.0/8
+    acl allowed_nets src 172.16.0.0/12
+    acl allowed_nets src 192.168.0.0/16
+    acl allowed_nets src fc00::/7
+    acl allowed_nets src fe80::/10
+    acl allowed_nets src 127.0.0.1
+    acl allowed_nets src localhost
+
+    ## Additional allowed networks
+    {{- if .Values.config.allowedNetworks.extra }}
+    {{- range $network := .Values.config.allowedNetworks.extra }}
+    acl allowed_nets src {{ $network.cidr }}  # {{ $network.description }}
+    {{- end }}
+    {{- end }}
+    
+    ## =============================================================================
+    ## DOMAIN FILTERING (OPTIONAL)
+    ## =============================================================================
+    ## Domain whitelist definition (uncomment to enable domain filtering)
+    # acl allowed_domains dstdomain .example.com
+    # acl allowed_domains dstdomain .google.com
+    # acl allowed_domains dstdomain .github.com
+    # acl allowed_domains dstdomain .kubernetes.io
+    
+    ## =============================================================================
+    ## ACCESS RULES
+    ## =============================================================================
+    ## Option 1: Allow all domains for trusted networks (default)
+    http_access allow allowed_nets
+    
+    ## Option 2: Domain filtering (uncomment below and comment above)
+    ## Step 1: Uncomment domain ACLs above
+    ## Step 2: Comment out "http_access allow allowed_nets" above  
+    ## Step 3: Uncomment the line below
+    # http_access allow allowed_nets allowed_domains
+
+    ## Cache Manager access control (allow localhost and pod-internal access)
+    http_access allow localhost manager
+    http_access deny manager
+    
+    ## Deny everything else
+    http_access deny all
+
+  # A resource-specific annotations for ConfigMap
+  annotations: {}
+
+# Horizontal Pod Autoscaler
+# See: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  # targetMemoryUtilizationPercentage: 80
+  # A resource-specific annotations for HorizontalPodAutoscaler
+  annotations: {}
+  # Autoscaling behavior configuration
+  # See: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#configurable-scaling-behavior
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Min
+
+# Liveness probe determines if the container is running properly
+# If it fails, Kubernetes will restart the container
+livenessProbe:
+  # Enable or disable the liveness probe
+  enabled: true
+  # Delay before the first probe is initiated after container starts (seconds)
+  # Give Squid enough time to initialize before checking
+  initialDelaySeconds: 20
+  # How often to perform the probe (seconds)
+  # More frequent checks = faster failure detection but higher overhead
+  periodSeconds: 5
+  # Number of seconds after which the probe times out (seconds)
+  # Should be less than periodSeconds
+  timeoutSeconds: 1
+  # Minimum consecutive successes for the probe to be considered successful after having failed
+  # Lower values mean faster recovery detection
+  successThreshold: 1
+  # Number of consecutive failures before restarting the container
+  # Higher values prevent restarts during temporary network issues
+  failureThreshold: 3
+
+# Readiness probe determines if the container is ready to receive traffic
+# If it fails, the pod is removed from service endpoints but not restarted
+readinessProbe:
+  # Enable or disable the readiness probe
+  enabled: true
+  # Delay before the first probe is initiated after container starts (seconds)
+  # Can be lower than liveness probe since we want to detect readiness quickly
+  initialDelaySeconds: 5
+  # How often to perform the probe (seconds)
+  # Frequent checks ensure traffic is only sent to ready pods
+  periodSeconds: 5
+  # Number of seconds after which the probe times out (seconds)
+  # Keep it short for quick detection
+  timeoutSeconds: 1
+  # Minimum consecutive successes for the probe to be considered successful after having failed
+  # Set to 1 for quick recovery
+  successThreshold: 1
+  # Number of consecutive failures before marking the pod as not ready
+  # Pod stays alive but doesn't receive traffic
+  failureThreshold: 3
+
+# Persistence for cache
+persistence:
+  enabled: false
+  storageClassName: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  volumeName: ""
+  # A resource-specific annotations for PersistentVolumeClaim
+  annotations: {}
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  # Use minAvailable or maxUnavailable, not both
+  # If both are set, minAvailable takes priority
+  minAvailable: 1
+  # maxUnavailable: 1
+  # A resource-specific annotations for PodDisruptionBudget
+  annotations: {}
+
+# Squid Exporter for Prometheus metrics
+# See: https://github.com/boynux/squid-exporter
+squidExporter:
+  enabled: true
+  image:
+    repository: boynux/squid-exporter
+    tag: "v1.13.0"
+    pullPolicy: IfNotPresent
+  port: 9301
+  metricsPath: /metrics
+  resources:
+    limits:
+      memory: 64Mi
+    requests:
+      cpu: 10m
+      memory: 32Mi
+  # Squid connection settings
+  squidHostname: localhost
+  # If not specified squidPort, defaults to .Values.service.targetPort
+  squidPort: ~
+  # Authentication (if squid requires basic auth)
+  squidLogin: ""
+  squidPassword: ""
+  # Extract service times from squid
+  extractServiceTimes: true
+  # Additional custom labels for prometheus metrics by squid-exporter
+  # By default, customLabels values are passed to squid-exporter as command line arguments (e.g. "-label=environment=development -label=cluster=dev")
+  customLabels: {}
+    # environment: development
+    # cluster: krdev
+    # team: platform
+
+# Squid grafana dashboard provided by squid-exporter
+dashboard:
+  # Whether to create squid dashboard configmap
+  enabled: false
+  # Namespace where grafana is installed
+  # Dashboard configmap need to be in the same namespace as grafana
+  grafanaNamespace: ""
+  # A resource-specific annotations for ConfigMap
+  annotations: {}

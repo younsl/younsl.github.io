@@ -1,0 +1,20 @@
+apiVersion: v2
+name: squid
+description: A Helm chart for Squid caching proxy
+type: application
+version: 0.3.0
+appVersion: "6.10"
+kubeVersion: ">=1.21.0-0"
+keywords:
+  - squid-cache
+  - squid
+  - proxy
+  - forward-proxy
+  - cache
+home: https://github.com/younsl/blog
+sources:
+  - http://www.squid-cache.org/
+maintainers:
+  - name: younsl
+    email: cysl@kakao.com
+    url: https://github.com/younsl

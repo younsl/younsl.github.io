@@ -1,0 +1,18 @@
+# Patterns to ignore when building packages.
+# This supports shell glob matching, relative path matching, and negation.
+# Example patterns:
+#
+# # ignore PGP key files
+# *.asc
+# # ignore snapshot files
+# *.snap
+# # ignore .git folder
+# .git/
+# # ignore tags file
+# TAGS
+
+.github/
+.gitignore
+notes.txt
+values*.yaml
+values*.yaml.example

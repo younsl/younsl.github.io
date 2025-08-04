@@ -1,0 +1,19 @@
+{{- if and .Values.dashboard.enabled .Values.squidExporter.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "squid.fullname" . }}-grafana-dashboard
+  namespace: {{ .Values.dashboard.grafanaNamespace }}
+  labels:
+    grafana_dashboard: "1"
+    {{- include "squid.labels" . | nindent 4 }}
+  {{- with include "squid.mergedAnnotations" (dict "common" .Values.commonAnnotations "resource" .Values.dashboard.annotations) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+data:
+  # Dashboard json file need to be located outside of the templates/ directory
+  # to be able to use in the ConfigMap as a string
+  squid-dashboard.json: |
+    {{- .Files.Get "dashboards/squid-dashboard.json" | nindent 4 }}
+{{- end }}
