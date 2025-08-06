@@ -20,7 +20,7 @@ ignoreFiles:
 module:
   hugoVersion:
     extended: true
-    min: 0.144.0
+    min: 0.148.2
 
 markup:
   goldmark:

@@ -39,7 +39,7 @@ jobs:
 
       - name: Install Hugo CLI
         env:
-          HUGO_VERSION: 0.144.0
+          HUGO_VERSION: 0.148.2
         run: |
           wget -O ${{ runner.temp }}/hugo.deb \
             https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${{ env.HUGO_VERSION }}_linux-${{ env.ARCH }}.deb \
