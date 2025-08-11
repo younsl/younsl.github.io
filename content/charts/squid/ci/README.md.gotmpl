@@ -7,37 +7,35 @@
 
 {{ template "chart.homepageLine" . }}
 
+{{ template "chart.requirementsSection" . }}
+
 ## Installation
-
-### Prerequisites
-
-- Kubernetes {{ template "chart.kubeVersion" . }}
 
 ### Add Helm repository
 
 ```console
-helm repo add younsl https://younsl.github.io/charts
+helm repo add younsl https://younsl.github.io/
 helm repo update
 ```
 
 ### Install the chart
 
-Install the chart with the release name `squid`:
+Install the chart with the release name `{{ template "chart.name" . }}`:
 
 ```console
-helm install squid younsl/{{ template "chart.name" . }}
+helm install {{ template "chart.name" . }} younsl/{{ template "chart.name" . }}
 ```
 
 Install with custom values:
 
 ```console
-helm install squid younsl/{{ template "chart.name" . }} -f values.yaml
+helm install {{ template "chart.name" . }} younsl/{{ template "chart.name" . }} -f values.yaml
 ```
 
 Install a specific version:
 
 ```console
-helm install squid younsl/{{ template "chart.name" . }} --version {{ template "chart.version" . }}
+helm install {{ template "chart.name" . }} younsl/{{ template "chart.name" . }} --version {{ template "chart.version" . }}
 ```
 
 ### Install from local chart
@@ -46,19 +44,19 @@ Download and install from local directory:
 
 ```console
 helm pull younsl/{{ template "chart.name" . }} --untar --version {{ template "chart.version" . }}
-helm install squid ./{{ template "chart.name" . }}
+helm install {{ template "chart.name" . }} ./{{ template "chart.name" . }}
 ```
 
 ## Upgrade
 
 ```console
-helm upgrade squid younsl/{{ template "chart.name" . }}
+helm upgrade {{ template "chart.name" . }} younsl/{{ template "chart.name" . }}
 ```
 
 ## Uninstall
 
 ```console
-helm uninstall squid
+helm uninstall {{ template "chart.name" . }}
 ```
 
 ## Configuration
@@ -104,10 +102,14 @@ persistence:
 
 {{ template "chart.sourcesSection" . }}
 
-{{ template "chart.requirementsSection" . }}
-
 {{ template "chart.maintainersSection" . }}
 
-## Support
+## License
 
-For issues and feature requests, please create an issue in the [GitHub repository](https://github.com/younsl/younsl.github.io/issues)
+This chart is licensed under the Apache License 2.0. See [LICENSE](https://github.com/younsl/younsl.github.io/blob/main/LICENSE) for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+{{ template "helm-docs.versionFooter" . }}
