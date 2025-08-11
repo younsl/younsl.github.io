@@ -1,6 +1,7 @@
 apiVersion: v2
 name: actions-runner
 description: A Helm chart for Kubernetes to deploy GitHub Actions runners include horizontalRunnerAutoscaler and serviceAccount
+deprecated: true
 version: 0.1.4
 sources:
   - https://github.com/younsl/blog
@@ -8,3 +9,8 @@ maintainers:
   - name: younsl
     email: cysl@kakao.com
     url: https://github.com/younsl
+annotations:
+  "helm.sh/deprecation-message": |
+    This chart is deprecated. Please use the official Actions Runner Controller (ARC) instead:
+    https://github.com/actions/actions-runner-controller
+    ARC provides better integration with GitHub Actions and more features for managing self-hosted runners on Kubernetes.

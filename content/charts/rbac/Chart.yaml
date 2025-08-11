@@ -1,6 +1,7 @@
 apiVersion: v2
 name: rbac
 description: Helm chart to define RBAC resources in the gitops way
+deprecated: false
 keywords:
 - cluster-security
 - rbac

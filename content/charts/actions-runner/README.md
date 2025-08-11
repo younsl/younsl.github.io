@@ -1,101 +1,137 @@
 # actions-runner
 
-Self-hosted actions runner chart include runnerDeployment, horizontalRunnerAutoscaler and serviceAccount.
+![Version: 0.1.4](https://img.shields.io/badge/Version-0.1.4-informational?style=flat-square)
 
-Tested in EKS v1.29 based AL2 amd64 environment.
+A Helm chart for Kubernetes to deploy GitHub Actions runners include horizontalRunnerAutoscaler and serviceAccount
 
-> [!WARNING]
-> This documentation covers the legacy mode of ARC (resources in the actions.summerwind.net namespace). If you're looking for documentation on the newer autoscaling runner scale sets, it is available in [GitHub Docs](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/quickstart-for-actions-runner-controller). This `actions-runner` helm chart deploys actions-runner pods controlled by runnerDeployments resource. Since it is a legacy resource, it is recommended to use runnetSet distributed by [gha-runner-scale-set-controller](https://github.com/actions/actions-runner-controller/tree/master/charts/gha-runner-scale-set-controller).
+> **:exclamation: This Helm Chart is deprecated!**
 
-## Prerequisites
+## Deprecation Notice
 
-1. Install [helm3](https://helm.sh/) CLI tool
-2. [ARC](https://github.com/actions/actions-runner-controller)<sup>actions runner controller</sup> must first be installed in your kubernetes cluster.
+The actions-runner chart is deprecated. Please use gha-runner-scale-set and gha-runner-scale-set-controller instead: https://github.com/actions/actions-runner-controller
 
-### Chart dependency
+ARC provides better integration with GitHub Actions and more features for managing self-hosted runners on Kubernetes.
 
-actions-runner chart relies on [custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) included in the [actions-runner-controller](https://github.com/actions/actions-runner-controller/tree/master/charts/actions-runner-controller) chart.  
-The following custom resources must exist in your Kubernetes cluster before install actions-runner chart.
+## Installation
 
-```bash
-kubectl api-resources \
-  --api-group actions.summerwind.dev \
-  -o wide
+### Add Helm repository
+
+```console
+helm repo add younsl https://younsl.github.io/
+helm repo update
 ```
 
-```bash
-NAME                          SHORTNAMES   APIVERSION                        NAMESPACED   KIND                         VERBS                                                        CATEGORIES
-horizontalrunnerautoscalers   hra          actions.summerwind.dev/v1alpha1   true         HorizontalRunnerAutoscaler   delete,deletecollection,get,list,patch,create,update,watch
-runnerdeployments             rdeploy      actions.summerwind.dev/v1alpha1   true         RunnerDeployment             delete,deletecollection,get,list,patch,create,update,watch
-runnerreplicasets             rrs          actions.summerwind.dev/v1alpha1   true         RunnerReplicaSet             delete,deletecollection,get,list,patch,create,update,watch
-runners                                    actions.summerwind.dev/v1alpha1   true         Runner                       delete,deletecollection,get,list,patch,create,update,watch
-runnersets                                 actions.summerwind.dev/v1alpha1   true         RunnerSet                    delete,deletecollection,get,list,patch,create,update,watch
+### Install the chart
+
+Install the chart with the release name `actions-runner`:
+
+```console
+helm install actions-runner younsl/actions-runner
 ```
 
-## Usage
+Install with custom values:
 
-Installation method only supports helm chart.
-
-### Installation
-
-We strongly recommend using different namespaces for actions-runner-controller and actions-runner resources.
-
-```bash
-helm upgrade \
-  --install \
-  --create-namespace \
-  --namespace actions-runner \
-  actions-runner . \
-  --values values_example.yaml \
-  --wait
+```console
+helm install actions-runner younsl/actions-runner -f values.yaml
 ```
 
-```bash
-helm list -n actions-runner
+Install a specific version:
+
+```console
+helm install actions-runner younsl/actions-runner --version 0.1.4
 ```
 
-### Delete
+### Install from local chart
 
-```bash
-helm uninstall -n actions-runner actions-runner
+Download actions-runner chart and install from local directory:
+
+```console
+helm pull younsl/actions-runner --untar --version 0.1.4
+helm install actions-runner ./actions-runner
 ```
 
-## Advanced configuration
+The `--untar` option downloads and unpacks the chart files into a directory for easy viewing and editing.
 
-### scheduledOverrides
+## Upgrade
 
-Runner pods can be automatically disabled during Weekly and Daily by the `scheduledOverrides` spec of HorizontalRunnerAutoscaler.
-
-If you need to disable this configuration, comment out (or delete) `autoscaling.scheduledOverrides` spec in the helm chart:
-
-```yaml
-    autoscaling:
-      enabled: true
-      scaleDownDelaySecondsAfterScaleOut: 300
-      minReplicas: 1
-      maxReplicas: 1
-      scheduledOverrides: {}
-      # minReplicas 값을 토요일 오전 0시(KST)부터 월요일 오전 0시(KST)까지 0로 지정
-      # - startTime: "2023-07-15T00:00:00+09:00"
-      #   endTime: "2023-07-17T00:00:00+09:00"
-      #   recurrenceRule:
-      #     frequency: Weekly
-      #   minReplicas: 0
-      # - startTime: "2024-02-05T00:00:00+09:00"
-      #   endTime: "2024-02-05T08:00:00+09:00"
-      #   recurrenceRule:
-      #     frequency: Daily
-      #   minReplicas: 0
+```console
+helm upgrade actions-runner younsl/actions-runner
 ```
 
-Then run `helm upgrade` command:
+## Uninstall
 
-```bash
-helm upgrade \
-  --install \
-  --create-namespace \
-  --namespace actions-runner \
-  actions-runner . \
-  --values values_example.yaml \
-  --wait
+```console
+helm uninstall actions-runner
 ```
+
+## Configuration
+
+The following table lists the configurable parameters and their default values.
+
+## Values
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| nameOverride | string | `nil` |  |
+| fullnameOverride | string | `nil` |  |
+| runnerDeployments[0].runnerName | string | `"doge-basic-runner"` |  |
+| runnerDeployments[0].enterprise | string | `"doge-company"` |  |
+| runnerDeployments[0].group | string | `""` |  |
+| runnerDeployments[0].podLabels | object | `{}` |  |
+| runnerDeployments[0].podAnnotations | object | `{}` |  |
+| runnerDeployments[0].labels[0] | string | `"DOGE-EKS-CLUSTER"` |  |
+| runnerDeployments[0].labels[1] | string | `"m6i.xlarge"` |  |
+| runnerDeployments[0].labels[2] | string | `"ubuntu-22.04"` |  |
+| runnerDeployments[0].labels[3] | string | `"v2.311.0"` |  |
+| runnerDeployments[0].labels[4] | string | `"build"` |  |
+| runnerDeployments[0].dnsConfig | object | `{}` |  |
+| runnerDeployments[0].securityContext.fsGroup | int | `1001` |  |
+| runnerDeployments[0].dockerVolumeMounts[0].mountPath | string | `"/tmp"` |  |
+| runnerDeployments[0].dockerVolumeMounts[0].name | string | `"tmp"` |  |
+| runnerDeployments[0].volumeMounts[0].mountPath | string | `"/tmp"` |  |
+| runnerDeployments[0].volumeMounts[0].name | string | `"tmp"` |  |
+| runnerDeployments[0].volumes[0].name | string | `"tmp"` |  |
+| runnerDeployments[0].volumes[0].emptyDir | object | `{}` |  |
+| runnerDeployments[0].resources.limits.cpu | string | `"1.5"` |  |
+| runnerDeployments[0].resources.limits.memory | string | `"6Gi"` |  |
+| runnerDeployments[0].resources.requests.cpu | string | `"0.5"` |  |
+| runnerDeployments[0].resources.requests.memory | string | `"1Gi"` |  |
+| runnerDeployments[0].nodeSelector."node.kubernetes.io/name" | string | `"basic"` |  |
+| runnerDeployments[0].autoscaling.enabled | bool | `true` |  |
+| runnerDeployments[0].autoscaling.scaleDownDelaySecondsAfterScaleOut | int | `300` |  |
+| runnerDeployments[0].autoscaling.minReplicas | int | `2` |  |
+| runnerDeployments[0].autoscaling.maxReplicas | int | `16` |  |
+| runnerDeployments[0].autoscaling.scheduledOverrides[0].startTime | string | `"2023-07-15T00:00:00+09:00"` |  |
+| runnerDeployments[0].autoscaling.scheduledOverrides[0].endTime | string | `"2023-07-17T00:00:00+09:00"` |  |
+| runnerDeployments[0].autoscaling.scheduledOverrides[0].recurrenceRule.frequency | string | `"Weekly"` |  |
+| runnerDeployments[0].autoscaling.scheduledOverrides[0].minReplicas | int | `1` |  |
+| runnerDeployments[0].autoscaling.metrics[0].type | string | `"PercentageRunnersBusy"` |  |
+| runnerDeployments[0].autoscaling.metrics[0].scaleUpThreshold | string | `"0.75"` |  |
+| runnerDeployments[0].autoscaling.metrics[0].scaleDownThreshold | string | `"0.25"` |  |
+| runnerDeployments[0].autoscaling.metrics[0].scaleUpFactor | string | `"2"` |  |
+| runnerDeployments[0].autoscaling.metrics[0].scaleDownFactor | string | `"0.5"` |  |
+| runnerDeployments[0].automountServiceAccountToken | bool | `true` |  |
+| runnerDeployments[0].serviceAccount.create | bool | `true` |  |
+| runnerDeployments[0].serviceAccount.annotations."eks.amazonaws.com/role-arn" | string | `"arn:aws:iam::111122223333:role/doge-eks-cluster-actions-build-runner-s3-access-irsa-role"` |  |
+| runnerDeployments[0].topologySpreadConstraints | object | `{}` |  |
+
+## Source Code
+
+* <https://github.com/younsl/blog>
+
+## Maintainers
+
+| Name | Email | Url |
+| ---- | ------ | --- |
+| younsl | <cysl@kakao.com> | <https://github.com/younsl> |
+
+## License
+
+This chart is licensed under the Apache License 2.0. See [LICENSE](https://github.com/younsl/younsl.github.io/blob/main/LICENSE) for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a [Pull Request](https://github.com/younsl/younsl.github.io/pulls).
+
+----------------------------------------------
+Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

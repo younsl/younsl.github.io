@@ -1,171 +1,127 @@
+# github-backup-utils
 
-# backup-utils-chart
+![Version: 0.4.2](https://img.shields.io/badge/Version-0.4.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 3.15.1](https://img.shields.io/badge/AppVersion-3.15.1-informational?style=flat-square)
 
-[![GitHub License](https://img.shields.io/badge/License-MIT-ff69b4.svg)](https://github.com/younsl/backup-utils-chart/blob/main/LICENSE)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/younsl/backup-utils-chart/issues)
+GitHub Enterprise Backup Utilities
 
-## Summary
+> **:exclamation: This Helm Chart is deprecated!**
 
-A Helm chart for GitHub Enterprise backup utility (`backup-utils`) implemented as a [Kubernetes CronJob](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/). This helm chart is inspired by [mail2sandeppd/github-backup-utils-kubernetes](https://github.com/mail2sandeepd/github-backup-utils-kubernetes).
+## Deprecation Notice
 
-> [!WARNING]
-> The backup-utils chart uses the backup-utils official container image, but it is not an official project provided by Github.
+GitHub Enterprise Server 3.17 introduced [a Built-in Backup Service](https://docs.github.com/en/enterprise-server@latest/admin/backing-up-and-restoring-your-instance/backup-service-for-github-enterprise-server/about-the-backup-service-for-github-enterprise-server) as a Preview Feature.
 
-### Deprecation Notice
+The Built-in Backup Service is recommended over backup-utils. Note that backup-utils may be deprecated in future releases.
 
-GitHub Enterprise Server 3.17 introduced [a Built-in Backup Service](https://docs.github.com/en/enterprise-server@latest/admin/backing-up-and-restoring-your-instance/backup-service-for-github-enterprise-server/about-the-backup-service-for-github-enterprise-server) as a Preview Feature. The Built-in Backup Service is recommended over backup-utils. Note that backup-utils may be deprecated in future releases.
-
-## Compatibility Matrix
-
-| App Version | 1.32 | 1.31 | 1.30 | 1.29 | 1.28 | 1.27 | 1.26 |
-|-------------|------|------|------|------|------|------|------|
-| 0.4.2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Architecture
-
-All components of backup-utils run on k8s native resources.
-
-![backup-utils architecture 1](./docs/1.png)
-
-![backup-utils architecture 2](./docs/2.png)
+**Homepage:** <https://github.com/github/backup-utils>
 
 ## Installation
 
-### Generate SSH Key
+### Add Helm repository
 
-Generate an Ed25519 type SSH key pair.
-
-```bash
-ssh-keygen \
-    -t ed25519 \
-    -C "backup-utils@github.example.com" \
-    -P ""
+```console
+helm repo add younsl https://younsl.github.io/
+helm repo update
 ```
 
-When you execute this command, the `ssh-keygen` utility will generate two key files in the current user's home directory:
+### Install the chart
 
-```bash
-$ ls -lh ~/.ssh/
-total 16
--rw-------@ 1 doge  staff   411B  6 29 07:28 id_ed25519
--rw-r--r--@ 1 doge  staff    96B  6 29 07:28 id_ed25519.pub
+Install the chart with the release name `github-backup-utils`:
+
+```console
+helm install github-backup-utils younsl/github-backup-utils
 ```
 
-- `id_ed25519`: This is the private key file and should be kept secure on your local machine. Inject the `id_ed25519` private key from the Secret into a pod controlled by CronJob.
-- `id_ed25519.pub`: This is the public key file, and its contents are meant to be copied and added to the `/home/admin/.ssh/authorized_keys` file on the remote github enterprise servers you want to access using this key.
+Install with custom values:
 
-### Add public key to GHE instance as backup target
-
-In order for backup-utils pods to be properly backed up, the SSH public key of the backup server (created in the previous step) must be registered in the target Github Enterprise Server instance.
-
-Add the `id_ed25519.pub` key generated into the Github Enterprise server's Management Console.
-
-The following command has the same effect as registering an SSH Key in Management Console.
-
-```bash
-# Add public key in your GHE instance as backup target
-echo "ssh-ed25519 <your-public-key> backup-utils@github.example.com" | tee -a /home/admin/.ssh/authorized_keys
+```console
+helm install github-backup-utils younsl/github-backup-utils -f values.yaml
 ```
 
-For more detailed information, please refer to [the official documentation of Github Enterprise](https://docs.github.com/en/enterprise-server/admin/administering-your-instance/accessing-the-administrative-shell-ssh).
+Install a specific version:
 
-### Push image to container registry
-
-backup-utils chart uses the [backup-utils](https://github.com/github/backup-utils) container image officially provided by Github.
-
-Build the backup-utils docker image using [official dockerfile](https://github.com/github/backup-utils/blob/v3.9.1/Dockerfile) on your local machine.
-
-```bash
-git clone https://github.com/github/backup-utils
-cd backup-utils
+```console
+helm install github-backup-utils younsl/github-backup-utils --version 0.4.2
 ```
 
-```bash
-docker build \
-    -t github-backup-utils:v3.10.0 \
-    -f Dockerfile \
-    --platform linux/amd64 .
+### Install from local chart
+
+Download github-backup-utils chart and install from local directory:
+
+```console
+helm pull younsl/github-backup-utils --untar --version 0.4.2
+helm install github-backup-utils ./github-backup-utils
 ```
 
-| Option       | Description | Value |
-|--------------|-------------|-------|
-| `--platform` | Target platform for running the backup-utils container image | `linux/amd64` or `linux/arm64` |
-| `-f` | Name of the Dockerfile to be used for building the container image | `Dockerfile` or `Dockefile-alpine` |
+The `--untar` option downloads and unpacks the chart files into a directory for easy viewing and editing.
 
-Push the built image to your private ECR repository.
+## Upgrade
 
-```bash
-# Change the tag of an image
-docker tag backup-utils:v3.10.0 111122223333.dkr.ecr.ap-northeast-2.amazonaws.com/github-backup-utils:v3.10.0
-
-# Push docker image to private Amazon ECR
-docker push 111122223333.dkr.ecr.ap-northeast-2.amazonaws.com/github-backup-utils:v3.10.0
+```console
+helm upgrade github-backup-utils younsl/github-backup-utils
 ```
 
-### helm
+## Uninstall
 
-> [!NOTE]  
-> For the CronJob-created Pods to back up data to PersistentVolumes, the Kubernetes cluster must have the "gp3" StorageClass installed already. To view the available storageclass resources in your Kubernetes cluster, execute the command: `kubectl get storageclass -o wide`.
-
-#### Helm install
-
-```bash
-helm upgrade \
-    --install \
-    --namespace github-backup-system \
-    --create-namespace \
-    github-backup-utils . \
-    -f values.yaml
+```console
+helm uninstall github-backup-utils
 ```
 
-Save Production Instance's SSH Private Key to `github-backup-utils-ssh-private-key` kubernetes secret.
+## Configuration
 
-```bash
-kubectl create secret generic \
-    github-backup-utils-ssh-private-key \
-    --from-file="$HOME/.ssh/id_ed25519" \
-    --namespace github-backup-system
-```
+The following table lists the configurable parameters and their default values.
 
-```bash
-secret/github-backup-utils-ssh-private-key created
-```
+## Values
 
-(Optional) If you want to use [staging instance](https://docs.github.com/en/admin/installing-your-enterprise-server/setting-up-a-github-enterprise-server-instance/setting-up-a-staging-instance), create `github-backup-utils-ssh-private-key-staging` kubernetes secret with the staging instance's SSH private key.
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| labels | object | `{}` | labels Global labels for all resources |
+| backupUtils | object | `{"affinity":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"kubernetes.io/arch","operator":"In","values":["amd64"]},{"key":"kubernetes.io/os","operator":"In","values":["linux"]}]}]}}},"backupConfig":{"extraCommandOptions":"-i /ghe-ssh/id_ed25519 -o UserKnownHostsFile=/ghe-ssh/known_hosts","githubEnterpriseHostname":"github.example.com","snapshotRententionNumber":72,"stagingInstance":false,"verboseLogFile":"/data/backup-verbose.log"},"command":["/bin/bash","-c","/backup-utils/backup.sh"],"concurrencyPolicy":"Forbid","dnsConfig":{},"enabled":true,"env":[{"name":"GHE_BACKUP_CONFIG","value":"/backup-utils/backup.config"}],"image":{"pullPolicy":"IfNotPresent","repository":"ghcr.io/younsl/backup-utils","tag":null},"knownHosts":"[github.example.com]:122 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBPHiBn7ko/8AE2Mwa01HB3Ef+ZZ92fg2PDjM/180eAXCYo0II9JeUVJO1hFXk6W10WfsHPabQgx8zV0ddaL9RzI=","nodeSelector":{},"persistentVolume":{"accessModes":["ReadWriteOnce"],"annotations":{},"finalizers":["kubernetes.io/pvc-protection"],"labels":{},"size":"500Gi","storageClass":"gp3"},"podAnnotations":{},"podLabels":{},"resources":{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"500m","memory":"512Mi"}},"schedule":"*/30 * * * *","suspend":false,"timeZone":"Asia/Seoul"}` | backupUtils Spec configuration for the backup utility |
+| backupUtils.enabled | bool | `true` | enabled Enable or disable the backup utility This allows you to easily toggle the backup functionality without removing existing configurations |
+| backupUtils.suspend | bool | `false` | suspend Suspend or resume deploying the backup utility by cronjob Suspending the cronjob will not stop jobs that have already been deployed. `spec.suspend` allows you to easily pause the backup functionality without removing existing configurations |
+| backupUtils.podLabels | object | `{}` | podLabels Labels to be added to the pod This can be used to categorize and organize pods, such as by app or environment |
+| backupUtils.podAnnotations | object | `{}` | podAnnotations Annotations to be added to the pod This can be used to add metadata to pods, such as for configuration or tool integrations |
+| backupUtils.dnsConfig | object | `{}` | dnsConfig DNS config for backup-utils pod |
+| backupUtils.timeZone | string | `"Asia/Seoul"` | timeZone Timezone for scheduled backups executed by cronjob ref: https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#time-zones |
+| backupUtils.schedule | string | `"*/30 * * * *"` | schedule Cron expression for scheduled backups backup-utils team recommends hourly backups at the least ref: https://github.com/github/backup-utils/blob/master/docs/scheduling-backups.md#scheduling-backups |
+| backupUtils.concurrencyPolicy | string | `"Forbid"` | concurrencyPolicy Specifies how to treat concurrent executions of a Job Valid values: Allow, Forbid, Replace Allow: allows CronJobs to run concurrently Forbid: forbids concurrent runs, skipping the next run if the previous hasn't finished yet Replace: cancels the currently running job and replaces it with a new one |
+| backupUtils.knownHosts | string | `"[github.example.com]:122 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBPHiBn7ko/8AE2Mwa01HB3Ef+ZZ92fg2PDjM/180eAXCYo0II9JeUVJO1hFXk6W10WfsHPabQgx8zV0ddaL9RzI="` | known_hosts data "[github.example.com]:122 ecdsa-sha2-nistp256 AAA............I="   ------------------      ------------------- -----------------    GHES Hostname or          Host key type     Host public key    IP Address |
+| backupUtils.backupConfig.githubEnterpriseHostname | string | `"github.example.com"` | githubEnterpriseHostname IP address or hostname of Github Enterprise server |
+| backupUtils.backupConfig.snapshotRententionNumber | int | `72` | snapshotRententionNumber Maximum number of snapshots to keep |
+| backupUtils.backupConfig.verboseLogFile | string | `"/data/backup-verbose.log"` | verboseLogFile Absolute path where detailed backup logs are stored |
+| backupUtils.backupConfig.extraCommandOptions | string | `"-i /ghe-ssh/id_ed25519 -o UserKnownHostsFile=/ghe-ssh/known_hosts"` | extraCommandOptions Extra SSH options for backup-utils pod to connect to GHE instances We usually recommend not to modify the default value for stability reasons |
+| backupUtils.backupConfig.stagingInstance | bool | `false` | stagingInstance If true, the backup utility will mount the staging instance's SSH private key |
+| backupUtils.image.tag | string | `nil` | tag Image tag for backup-utils cronjob If not specified or set to null, reference chart appVersion to set the image tag |
+| backupUtils.image.pullPolicy | string | `"IfNotPresent"` | pullPolicy Image pull policy (Always, Never, IfNotPresent) |
+| backupUtils.command | list | `["/bin/bash","-c","/backup-utils/backup.sh"]` | command Command to execute within the backup-utils container Use an array format for command to ensure proper handling of arguments |
+| backupUtils.env | list | `[{"name":"GHE_BACKUP_CONFIG","value":"/backup-utils/backup.config"}]` | env Environment variables for the application If you need to specify a configuration file for backup utility commands, modify the `GHE_BACKUP_CONFIG` environment variable. |
+| backupUtils.persistentVolume.storageClass | string | `"gp3"` | storageClass If EKS cluster does not have the EBS CSI Driver installed, use gp2 instead of gp3. Check whether gp3 is installed by using `kubectl get storageclass -A` command. |
+| backupUtils.persistentVolume.size | string | `"500Gi"` | size Volume size where snapshot backups are stored volume size vary based on current Git repository disk usage and growth patterns of your GitHub appliance at least 5x the amount of storage allocated to the primary GitHub appliance for historical snapshots and growth over time ref: https://github.com/github/backup-utils/blob/master/docs/requirements.md#storage-requirements |
+| backupUtils.persistentVolume.accessModes[0] | string | `"ReadWriteOnce"` | ReadWriteOnce The volume can be mounted as read-write by a single node |
+| backupUtils.persistentVolume.labels | object | `{}` | labels Extra labels for persistentVolumeClaim |
+| backupUtils.persistentVolume.annotations | object | `{}` | annotations Extra annotations for persistentVolumeClaim |
+| backupUtils.persistentVolume.finalizers | list | `["kubernetes.io/pvc-protection"]` | finalizers Extra finalizers to protect deletion persistentVolumeClaim ref: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolume-deletion-protection-finalizer |
+| backupUtils.resources | object | `{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"500m","memory":"512Mi"}}` | resources Resource requests and limits for github-backup-utils container ref: https://github.com/github/backup-utils/blob/master/docs/requirements.md#backup-host-requirements |
+| backupUtils.nodeSelector | object | `{}` | nodeSelector Node selector to specify on which nodes the job should run If not declared, the job can run on any node |
+| backupUtils.affinity | object | `{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"kubernetes.io/arch","operator":"In","values":["amd64"]},{"key":"kubernetes.io/os","operator":"In","values":["linux"]}]}]}}}` | affinity Affinity rules to specify on which nodes the job should run Node affinity allows for more complex node selection criteria than nodeSelector |
 
-```bash
-kubectl create secret generic \
-    github-backup-utils-ssh-private-key-staging \
-    --from-file="$HOME/.ssh/id_ed25519" \
-    --namespace github-backup-system
-```
+## Source Code
 
-```bash
-secret/github-backup-utils-ssh-private-key-staging created
-```
+* <https://github.com/github/backup-utils>
+* <https://github.com/younsl/blog>
 
-#### Helm uninstall
+## Maintainers
 
-```bash
-helm uninstall --namespace github-backup-system github-backup-utils
-kubectl delete namespace github-backup-system
-```
+| Name | Email | Url |
+| ---- | ------ | --- |
+| younsl | <cysl@kakao.com> | <https://github.com/younsl> |
 
-## Adapters
+## License
 
-This is the list of organizations and users that have publicly shared how they are using backup-utils.
+This chart is licensed under the Apache License 2.0. See [LICENSE](https://github.com/younsl/younsl.github.io/blob/main/LICENSE) for details.
 
-| Organization                     | Success Story                                 |
-|:---------------------------------|:----------------------------------------------|
-| [Coinone](https://coinone.co.kr) | We saved EC2 costs and improved resource efficiency by combining backup-utils with EKS. |
+## Contributing
 
-Add your organization by creating a PR.
+Contributions are welcome! Please feel free to submit a [Pull Request](https://github.com/younsl/younsl.github.io/pulls).
 
-## References
-
-[Github Issue for Helm chart support request](https://github.com/github/backup-utils/issues/1067)
-
-[Official backup-utils repository](https://github.com/github/backup-utils)
-
-[Accessing the administrative shell (SSH)](https://docs.github.com/en/enterprise-server@3.9/admin/administering-your-instance/accessing-the-administrative-shell-ssh)  
-Github Enterprise official doc
+----------------------------------------------
+Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

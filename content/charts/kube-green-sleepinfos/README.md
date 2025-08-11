@@ -1,10 +1,8 @@
-# rbac
+# kube-green-sleepinfos
 
-![Version: 0.2.1](https://img.shields.io/badge/Version-0.2.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.2.1](https://img.shields.io/badge/AppVersion-0.2.1-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.0](https://img.shields.io/badge/AppVersion-0.1.0-informational?style=flat-square)
 
-Helm chart to define RBAC resources in the gitops way
-
-**Homepage:** <https://github.com/younsl/blog>
+A Helm chart for managing kube-green SleepInfo resources. kube-green-sleepinfos chart is used to create SleepInfo resources for kube-green operator.
 
 ## Installation
 
@@ -17,31 +15,31 @@ helm repo update
 
 ### Install the chart
 
-Install the chart with the release name `rbac`:
+Install the chart with the release name `kube-green-sleepinfos`:
 
 ```console
-helm install rbac younsl/rbac
+helm install kube-green-sleepinfos younsl/kube-green-sleepinfos
 ```
 
 Install with custom values:
 
 ```console
-helm install rbac younsl/rbac -f values.yaml
+helm install kube-green-sleepinfos younsl/kube-green-sleepinfos -f values.yaml
 ```
 
 Install a specific version:
 
 ```console
-helm install rbac younsl/rbac --version 0.2.1
+helm install kube-green-sleepinfos younsl/kube-green-sleepinfos --version 0.1.0
 ```
 
 ### Install from local chart
 
-Download rbac chart and install from local directory:
+Download kube-green-sleepinfos chart and install from local directory:
 
 ```console
-helm pull younsl/rbac --untar --version 0.2.1
-helm install rbac ./rbac
+helm pull younsl/kube-green-sleepinfos --untar --version 0.1.0
+helm install kube-green-sleepinfos ./kube-green-sleepinfos
 ```
 
 The `--untar` option downloads and unpacks the chart files into a directory for easy viewing and editing.
@@ -49,13 +47,13 @@ The `--untar` option downloads and unpacks the chart files into a directory for 
 ## Upgrade
 
 ```console
-helm upgrade rbac younsl/rbac
+helm upgrade kube-green-sleepinfos younsl/kube-green-sleepinfos
 ```
 
 ## Uninstall
 
 ```console
-helm uninstall rbac
+helm uninstall kube-green-sleepinfos
 ```
 
 ## Configuration
@@ -66,11 +64,11 @@ The following table lists the configurable parameters and their default values.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| global.commonLabels | object | `{}` |  |
-| clusterRoles | object | `{}` |  |
-| clusterRoleBindings | object | `{}` |  |
-| roles | object | `{}` |  |
-| roleBindings | object | `{}` |  |
+| nameOverride | string | `nil` |  |
+| fullnameOverride | string | `nil` |  |
+| commonLabels | list | `[]` |  |
+| commonAnnotations | list | `[]` |  |
+| sleepInfos | object | `{}` |  |
 
 ## Source Code
 

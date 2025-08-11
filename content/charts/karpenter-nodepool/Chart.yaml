@@ -1,6 +1,7 @@
 apiVersion: v2
 name: karpenter-nodepool
 description: A Helm chart for Karpenter Node pool, it will create the NodePool and the Ec2NodeClass.
+deprecated: false
 type: application
 version: 1.5.1
 appVersion: 1.5.0

@@ -1,0 +1,101 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.deprecationWarning" . }}
+{{/* Custom deprecation messages for specific charts */}}
+{{- if eq .Name "actions-runner" }}
+
+## Deprecation Notice
+
+The {{ template "chart.name" . }} chart is deprecated. Please use gha-runner-scale-set and gha-runner-scale-set-controller instead: https://github.com/actions/actions-runner-controller
+
+ARC provides better integration with GitHub Actions and more features for managing self-hosted runners on Kubernetes.
+
+{{- else if eq .Name "github-backup-utils" }}
+
+## Deprecation Notice
+
+GitHub Enterprise Server 3.17 introduced [a Built-in Backup Service](https://docs.github.com/en/enterprise-server@latest/admin/backing-up-and-restoring-your-instance/backup-service-for-github-enterprise-server/about-the-backup-service-for-github-enterprise-server) as a Preview Feature.
+
+The Built-in Backup Service is recommended over backup-utils. Note that backup-utils may be deprecated in future releases.
+
+{{- end }}
+
+{{ template "chart.homepageLine" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+## Installation
+
+### Add Helm repository
+
+```console
+helm repo add younsl https://younsl.github.io/
+helm repo update
+```
+
+### Install the chart
+
+Install the chart with the release name `{{ template "chart.name" . }}`:
+
+```console
+helm install {{ template "chart.name" . }} younsl/{{ template "chart.name" . }}
+```
+
+Install with custom values:
+
+```console
+helm install {{ template "chart.name" . }} younsl/{{ template "chart.name" . }} -f values.yaml
+```
+
+Install a specific version:
+
+```console
+helm install {{ template "chart.name" . }} younsl/{{ template "chart.name" . }} --version {{ template "chart.version" . }}
+```
+
+### Install from local chart
+
+Download {{ template "chart.name" . }} chart and install from local directory:
+
+```console
+helm pull younsl/{{ template "chart.name" . }} --untar --version {{ template "chart.version" . }}
+helm install {{ template "chart.name" . }} ./{{ template "chart.name" . }}
+```
+
+The `--untar` option downloads and unpacks the chart files into a directory for easy viewing and editing.
+
+## Upgrade
+
+```console
+helm upgrade {{ template "chart.name" . }} younsl/{{ template "chart.name" . }}
+```
+
+## Uninstall
+
+```console
+helm uninstall {{ template "chart.name" . }}
+```
+
+## Configuration
+
+The following table lists the configurable parameters and their default values.
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "chart.sourcesSection" . }}
+
+{{ template "chart.maintainersSection" . }}
+
+## License
+
+This chart is licensed under the Apache License 2.0. See [LICENSE](https://github.com/younsl/younsl.github.io/blob/main/LICENSE) for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a [Pull Request](https://github.com/younsl/younsl.github.io/pulls).
+
+{{ template "helm-docs.versionFooter" . }}

@@ -1,162 +1,131 @@
 # karpenter-nodepool
 
-## 문서
+![Version: 1.5.1](https://img.shields.io/badge/Version-1.5.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.5.0](https://img.shields.io/badge/AppVersion-1.5.0-informational?style=flat-square)
 
-- [Overprovisioning](./docs/overprovisioning.md)
+A Helm chart for Karpenter Node pool, it will create the NodePool and the Ec2NodeClass.
 
-## 사용법
+**Homepage:** <https://younsl.github.io/charts/>
 
-### 설치
+## Installation
 
-`karpenter-nodepool` 차트를 설치합니다.
+### Add Helm repository
 
-```bash
-helm upgrade \
-  --install \
-  karpenter-nodepool . \
-  --values values_ops_mgmt.yaml \
-  --wait
+```console
+helm repo add younsl https://younsl.github.io/
+helm repo update
 ```
 
-`karpenter-nodepool` 차트에는 NodePool과 EC2NodeClass 커스텀 리소스가 포함되어 있습니다.
+### Install the chart
 
-```bash
-$ kubectl api-resources --categories karpenter
-NAME             SHORTNAMES     APIVERSION                  NAMESPACED   KIND
-ec2nodeclasses   ec2nc,ec2ncs   karpenter.k8s.aws/v1beta1   false        EC2NodeClass
-nodeclaims                      karpenter.sh/v1beta1        false        NodeClaim
-nodepools                       karpenter.sh/v1beta1        false        NodePool
+Install the chart with the release name `karpenter-nodepool`:
+
+```console
+helm install karpenter-nodepool younsl/karpenter-nodepool
 ```
 
-## 테스트
+Install with custom values:
 
-테스트 파드 배포
-
-```bash
-cat <<EOF | kubectl apply -f -
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: inflate
-spec:
-  replicas: 0
-  selector:
-    matchLabels:
-      app: inflate
-  template:
-    metadata:
-      labels:
-        app: inflate
-    spec:
-      terminationGracePeriodSeconds: 0
-      containers:
-        - name: inflate
-          image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
-          resources:
-            requests:
-              cpu: 1
-EOF
-
-kubectl scale deployment inflate --replicas 60
+```console
+helm install karpenter-nodepool younsl/karpenter-nodepool -f values.yaml
 ```
 
-&nbsp;
+Install a specific version:
 
-이후 karpenter controller pod의 로그를 확인하고 새 노드를 할당하는 지 모니터링합니다.
-
-```bash
-kubectl logs -f -n kube-system -l app.kubernetes.io/name=karpenter -c controller
+```console
+helm install karpenter-nodepool younsl/karpenter-nodepool --version 1.5.1
 ```
 
-## 운영자 가이드
+### Install from local chart
 
-### 카펜터 노드 수동으로 늘리기 (Inflate)
+Download karpenter-nodepool chart and install from local directory:
 
-Karpenter 노드는 ASG<sup>Auto Scaling Group</sup>를 사용하지 않는 특성으로 인해 Cluster Autoscaler와 다르게 각 노드그룹의 최소(Min), 현재(Desired), 최대(Max) 인스턴스 개수를 지정할 수 없습니다. 이것이 Karpenter와 Cluster Autoscaler의 가장 큰 차이점입니다.
-
-기본적으로 Karpenter는 클러스터의 워크로드 요구 사항을 감지하고 적절한 시점에 노드를 자동으로 추가하거나 제거하여 리소스 사용을 최적화합니다. 그러나 특정 상황에서는 클러스터 관리자가 카펜터 노드 수를 수동으로 조절할 필요가 있을 수 있습니다.
-
-Karpenter에서는 수동으로 노드 수를 늘리는 행위를 인플레이트<sup>inflate</sup>라고 부르며, 일반적인 방법은 임시 워크로드를 생성하여 클러스터에 리소스 요구 사항을 인위적으로 생성하는 것입니다. 이를 통해 Karpenter나 다른 자동 스케일러가 더 많은 노드를 추가하도록 유도할 수 있습니다.
-
-![inflate](./docs/1.png)
-
-```bash
-KARPENTER_NODEPOOL_NAME=default
-cat << EOF | kubectl apply -f -
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: karpenter-inflate
-spec:
-  # spec.replicas 값을 증가시키면, 각각의 파드가 다른 노드에 배포될 것입니다.
-  replicas: 1
-  selector:
-    matchLabels:
-      app: karpenter-inflate
-  template:
-    metadata:
-      labels:
-        app: karpenter-inflate
-    spec:
-      terminationGracePeriodSeconds: 0
-      containers:
-      - name: inflate
-        image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
-        resources:
-          requests:
-            cpu: 1
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - karpenter-inflate
-            topologyKey: "kubernetes.io/hostname"
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: karpenter.sh/nodepool
-                operator: In
-                values:
-                - ${KARPENTER_NODEPOOL_NAME}
-EOF
+```console
+helm pull younsl/karpenter-nodepool --untar --version 1.5.1
+helm install karpenter-nodepool ./karpenter-nodepool
 ```
 
-Kubernetes에서 `nodeAffinity`와 `podAntiAffinity` 설정은 함께 사용될 때 AND 조건으로 작동합니다. 이는 파드가 스케줄링될 때, nodeAffinity에 정의된 노드 선택 조건 그리고 podAntiAffinity에 정의된 다른 파드와의 위치 분리 조건을 동시에 만족해야 함을 의미합니다.
+The `--untar` option downloads and unpacks the chart files into a directory for easy viewing and editing.
 
-따라서 위 `karpenter-inflate` deployment를 사용하면 `default` 노드풀에 속하는 Karpenter Node는 `spec.replicas` 개수와 동일하게 늘어나게 됩니다.
+## Upgrade
 
-아래 명령어를 통해 `default` nodepool에 속한 노드를 6개로 고정합니다.
-
-```bash
-kubectl scale deployment karpenter-inflate --replicas 6
+```console
+helm upgrade karpenter-nodepool younsl/karpenter-nodepool
 ```
 
-&nbsp;
+## Uninstall
 
-karpenter controller pod 로그에서 Karpenter Node Autoscaling 과정을 실시간으로 확인할 수 있습니다.
-
-```bash
-kubectl logs -f \
-  -n kube-system \
-  -l app.kubernetes.io/name=karpenter \
-  -c controller
-
-# Check the list of newly created Karpenter Nodes
-kubectl get nodeclaim -o wide
+```console
+helm uninstall karpenter-nodepool
 ```
 
-## Version compatibility matrix
+## Configuration
 
-karpenter-nodepool chart version depends on [karpenter app version](https://github.com/aws/karpenter/releases).
+The following table lists the configurable parameters and their default values.
 
-| karpenter-nodepool version | karpenter version |
-| -------------------------- | ----------------- |
-| 1.5.1                      | 1.5.0             |
-| 1.5.0                      | 1.5.0             |
-| 1.3.0                      | 1.3.0             |
+## Values
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| nameOverride | string | `""` |  |
+| globalLabels | object | `{}` |  |
+| globalAnnotations | object | `{}` |  |
+| nodePool.default.labels | object | `{}` |  |
+| nodePool.default.annotations | object | `{}` |  |
+| nodePool.default.nodeClassRef | object | `{}` |  |
+| nodePool.default.taints | list | `[]` |  |
+| nodePool.default.startupTaints | list | `[]` |  |
+| nodePool.default.terminationGracePeriod | string | `nil` |  |
+| nodePool.default.requirements | list | `[]` |  |
+| nodePool.default.expireAfter | string | `"720h"` |  |
+| nodePool.default.kubelet | object | `{}` |  |
+| nodePool.default.disruption.consolidationPolicy | string | `"WhenUnderutilized"` |  |
+| nodePool.default.limits.cpu | int | `1000` |  |
+| nodePool.default.limits.memory | string | `"1000Gi"` |  |
+| nodePool.default.overprovisioning.enabled | bool | `false` |  |
+| nodePool.default.overprovisioning.nodes | int | `1` |  |
+| nodePool.default.overprovisioning.resources.requests.cpu | string | `"3500m"` |  |
+| nodePool.default.overprovisioning.resources.requests.memory | string | `"7000Mi"` |  |
+| nodePool.default.overprovisioning.resources.limits.cpu | string | `"3500m"` |  |
+| nodePool.default.overprovisioning.resources.limits.memory | string | `"7000Mi"` |  |
+| nodePool.default.overprovisioning.topologySpreadConstraints[0].maxSkew | int | `1` |  |
+| nodePool.default.overprovisioning.topologySpreadConstraints[0].topologyKey | string | `"kubernetes.io/hostname"` |  |
+| nodePool.default.overprovisioning.topologySpreadConstraints[0].whenUnsatisfiable | string | `"DoNotSchedule"` |  |
+| nodePool.default.overprovisioning.topologySpreadConstraints[0].labelSelector.matchLabels."app.kubernetes.io/component" | string | `"overprovisioning"` |  |
+| nodePool.default.overprovisioning.tolerations | list | `[]` |  |
+| nodePool.default.overprovisioning.podLabels | object | `{}` |  |
+| nodePool.default.overprovisioning.podAnnotations.description | string | `"Overprovisioning pod for maintaining spare capacity"` |  |
+| ec2NodeClass.default.amiFamily | string | `"AL2"` |  |
+| ec2NodeClass.default.subnetSelectorTerms | list | `[]` |  |
+| ec2NodeClass.default.securityGroupSelectorTerms | list | `[]` |  |
+| ec2NodeClass.default.role | string | `""` |  |
+| ec2NodeClass.default.instanceProfile | string | `""` |  |
+| ec2NodeClass.default.amiSelectorTerms | list | `[]` |  |
+| ec2NodeClass.default.userData | string | `""` |  |
+| ec2NodeClass.default.capacityReservationSelectorTerms | list | `[]` |  |
+| ec2NodeClass.default.tags | object | `{}` |  |
+| ec2NodeClass.default.metadataOptions | object | `{}` |  |
+| ec2NodeClass.default.blockDeviceMappings | list | `[]` |  |
+| ec2NodeClass.default.instanceStorePolicy | string | `nil` |  |
+| ec2NodeClass.default.detailedMonitoring | bool | `false` |  |
+| ec2NodeClass.default.associatePublicIPAddress | bool | `false` |  |
+
+## Source Code
+
+* <https://github.com/younsl/blog>
+
+## Maintainers
+
+| Name | Email | Url |
+| ---- | ------ | --- |
+| younsl | <cysl@kakao.com> | <https://github.com/younsl> |
+
+## License
+
+This chart is licensed under the Apache License 2.0. See [LICENSE](https://github.com/younsl/younsl.github.io/blob/main/LICENSE) for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a [Pull Request](https://github.com/younsl/younsl.github.io/pulls).
+
+----------------------------------------------
+Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

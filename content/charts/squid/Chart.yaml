@@ -1,6 +1,7 @@
 apiVersion: v2
 name: squid
 description: A Helm chart for Squid caching proxy
+deprecated: false
 type: application
 version: 0.3.0
 appVersion: "6.10"

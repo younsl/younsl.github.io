@@ -1,6 +1,7 @@
 apiVersion: v2
 name: kube-green-sleepinfos
 description: A Helm chart for managing kube-green SleepInfo resources. kube-green-sleepinfos chart is used to create SleepInfo resources for kube-green operator.
+deprecated: false
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
