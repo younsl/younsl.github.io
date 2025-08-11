@@ -203,9 +203,10 @@ config:
       #   cidr: "1.2.3.0/24"
       #   description: "custom network"
 
-  # Squid configuration file content
+  # -- Squid configuration file content
   # This configuration will be mounted to /etc/squid/squid.conf inside the squid container
   # See: https://www.squid-cache.org/Versions/v6/cfgman/
+  # @default -- Default squid.conf with basic ACLs and security settings. See [values.yaml](https://github.com/younsl/younsl.github.io/blob/main/content/charts/squid/values.yaml) for full configuration.
   squid.conf: |
     ## Squid normally listens to port {{ .Values.service.targetPort | default 3128 }}
     http_port {{ .Values.service.targetPort | default 3128 }}

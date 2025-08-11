@@ -1,0 +1,54 @@
+{{ template "chart.header" . }}
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.homepageLine" . }}
+
+## How to install this chart
+
+A simple install with default values, latest chart version and generated name:
+
+```console
+helm install --generate-name oci://ghcr.io/deliveryhero/helm-charts/{{ template "chart.name" . }}
+```
+
+To install a specific version of this chart:
+
+```console
+helm install --generate-name oci://ghcr.io/deliveryhero/helm-charts/{{ template "chart.name" . }} --version {{ template "chart.version" . }}
+```
+
+To install the chart with the release name `my-release`:
+
+```console
+helm install my-release oci://ghcr.io/deliveryhero/helm-charts/{{ template "chart.name" . }}
+```
+
+To install with some set values:
+
+```console
+helm install my-release oci://ghcr.io/deliveryhero/helm-charts/{{ template "chart.name" . }} --set values_key1=value1 --set values_key2=value2
+```
+
+To install with custom values file:
+
+```console
+helm install my-release oci://ghcr.io/deliveryhero/helm-charts/{{ template "chart.name" . }} -f values.yaml
+```
+
+{{ template "chart.sourcesSection" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "chart.maintainersSection" . }}
+
+## Chart source and versions
+
+Chart source: [github.com/deliveryhero/helm-charts/{{ template "chart.name" . }}](https://github.com/deliveryhero/helm-charts/tree/master/stable/{{ template "chart.name" . }})
+
+Older chart versions: [github.com/deliveryhero/helm-charts/pkgs/container/helm-charts/{{ template "chart.name" . }}](https://github.com/deliveryhero/helm-charts/pkgs/container/helm-charts%2F{{ template "chart.name" . }})
