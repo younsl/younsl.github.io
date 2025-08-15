@@ -271,7 +271,7 @@ jq -r ".additional_metric_counts[].metric" prometheus-metrics.json | sort > unus
 
 &nbsp;
 
-[promdrop](https://github.com/younsl/promdrop) CLI 도구는 Prometheus 설정파일에서 미사용 메트릭을 제외하는 설정을 자동으로 생성해줍니다. promdrop을 사용하면 미사용 메트릭을 제외하도록 하는 메트릭 수집(scrape) 설정을 생성할 수 있습니다. 이전에 mimirtool을 사용해 프로메테우스 서버가 어떤 메트릭을 수집하고 있는지 확인한 결과를 활용하여 미사용 메트릭을 제외하는 설정을 자동으로 생성합니다.
+[promdrop](https://github.com/younsl/box/tree/main/box/kubernetes/promdrop) CLI 도구는 Prometheus 설정파일에서 미사용 메트릭을 제외하는 설정을 자동으로 생성해줍니다. promdrop을 사용하면 미사용 메트릭을 제외하도록 하는 메트릭 수집(scrape) 설정을 생성할 수 있습니다. 이전에 mimirtool을 사용해 프로메테우스 서버가 어떤 메트릭을 수집하고 있는지 확인한 결과를 활용하여 미사용 메트릭을 제외하는 설정을 자동으로 생성합니다.
 
 &nbsp;
 
