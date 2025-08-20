@@ -33,7 +33,15 @@ flowchart LR
   u --443--> n --80--> si --> pi --> ig --"`http
   3000`"--> pg
 
+  note1["TLS Termination"]
+  note2["The ingress-nginx-controller service resource of type LoadBalancer is reconciled as an NLB by the AWS Load Balancer Controller."]
+  
+  note1 ~~~ k8s
+  note2 ~~~ pi
+
   style pg fill:darkorange, color:white
+  style note1 fill:transparent, color:lightgray, stroke: transparent
+  style note2 fill:transparent, color:lightgray, stroke: transparent
 ```
 
 ## 환경
@@ -165,6 +173,30 @@ spec:
 ```
 
 [proxy-body-size](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/#proxy-body-size) 어노테이션은 사용자가 대용량 파일을 git push할 때 ingress-nginx에서 반환하는 [413 Request Entity Too Large](https://forum.gitea.com/t/unable-to-push-to-repo-due-to-rpc-failed-http-413-error/2630) 오류를 방지하기 위해 설정합니다.
+
+```mermaid
+flowchart LR
+  u(["User"])
+  n["`**NLB**
+  Internal`"]
+  subgraph k8s["Kubernetes Cluster"]
+    si["`**Service**
+    ingress-nginx-controller`"]
+    pi["`**Pod**
+    ingress-nginx`"]
+  end
+
+  u --> n --> si --> pi
+  pi --"`Return 413 Error
+  Request Entity Too Large`"--> si --> n --> u
+
+  %% Style definitions for error path
+  classDef errorStyle fill:#ffcccc,stroke:#ff0000,stroke-width:1px,color:#000
+  classDef errorLinkStyle stroke:#ff0000,stroke-width:3px
+  
+  %% Apply error styling to nodes
+  class pi errorStyle
+```
 
 Prometheus, Grafana, ArgoCD 등의 플랫폼 어플리케이션에서는 일반적으로 쓰이지 않지만, Gitea, Gitlab 등과 같은 버전 컨트롤 시스템(VCS)의 경우 종종 proxy-body-size 값의 조정이 필요합니다.
 
