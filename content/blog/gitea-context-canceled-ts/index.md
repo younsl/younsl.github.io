@@ -16,7 +16,7 @@ ingress-nginx나 ALB와 같은 reverse proxy 뒤에서 서비스되는 Gitea에�
 title: Kubernetes Architecture for Gitea
 ---
 flowchart LR
-  u["User"]
+  u(["User"])
   n["`**NLB**
   Internal`"]
   subgraph k8s["Kubernetes Cluster"]
@@ -30,7 +30,8 @@ flowchart LR
     gitea`"]
   end
 
-  u --443--> n --80--> si --> pi --> ig --http--> pg
+  u --443--> n --80--> si --> pi --> ig --"`http
+  3000`"--> pg
 
   style pg fill:darkorange, color:white
 ```
@@ -39,8 +40,8 @@ flowchart LR
 
 - EKS 1.32
 - Amazon Linux 2023.8.20250721 (amd64) 
-- Gitea app version 1.24.2 (by helm install)
-- 앞단에 ingress-nginx가 reverse proxy 서버 역할로 TLS Termination 후 Gitea 파드로 넘겨주는 구성임
+- Gitea app version 1.24.2 (by [helm install](https://gitea.com/gitea/helm-gitea))
+- 앞단에 [ingress-nginx-controller](https://github.com/kubernetes/ingress-nginx)가 reverse proxy 서버 역할로 TLS Termination 후 Gitea 파드로 넘겨주는 구성임
 
 ## 증상
 
@@ -166,6 +167,15 @@ spec:
 [proxy-body-size](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/#proxy-body-size) 어노테이션은 사용자가 대용량 파일을 git push할 때 ingress-nginx에서 반환하는 [413 Request Entity Too Large](https://forum.gitea.com/t/unable-to-push-to-repo-due-to-rpc-failed-http-413-error/2630) 오류를 방지하기 위해 설정합니다.
 
 Prometheus, Grafana, ArgoCD 등의 플랫폼 어플리케이션에서는 일반적으로 쓰이지 않지만, Gitea, Gitlab 등과 같은 버전 컨트롤 시스템(VCS)의 경우 종종 proxy-body-size 값의 조정이 필요합니다.
+
+```yaml
+# gitea ingress yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 20m
+```
 
 Gitea 사용자가 git push 시 413 오류가 발생할 때 ingress-nginx-controller의 로그:
 
