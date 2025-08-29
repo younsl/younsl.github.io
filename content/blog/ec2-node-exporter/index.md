@@ -14,6 +14,11 @@ tags: ["kubernetes", "actions-runner", "finops"]
 
 EKS 워커 노드나 Kubernetes 환경이 아닌 **일반 EC2 서버**를 대상으로 하며, **바이너리 형태로 직접 설치**하는 방법을 설명합니다. Node Exporter는 단 하나의 실행 파일로 이루어진 경량 에이전트로, 복잡한 의존성 없이 시스템 메트릭을 수집할 수 있습니다.
 
+## TLDR
+
+- **대상 독자**: DevOps 엔지니어, SRE, 인프라 운영자
+- **얻을 수 있는 점**: 단독(Standalone) EC2 인스턴스에 Node Exporter를 바이너리로 설치하는 실무 가이드입니다. systemd 서비스 등록, Security Group 설정, 콜렉터 관리 등 운영에 필요한 모든 절차를 단계별로 다룹니다. Kubernetes가 아닌 일반 서버 환경에서 Prometheus 모니터링을 구축하려는 분들에게 유용합니다.
+
 ## 배경지식
 
 ### Node Exporter 설치 방식 모범사례
@@ -147,7 +152,29 @@ sudo systemctl start node_exporter
 sudo systemctl status node_exporter
 ```
 
-Node Exporter는 기본적으로 **TCP 포트 9100**에서 실행되며, 수집된 메트릭은 **`/metrics` 엔드포인트**를 통해 제공됩니다. 따라서 Prometheus 서버나 다른 모니터링 도구에서 `http://<EC2-IP>:9100/metrics` 주소로 접근하여 메트릭을 수집할 수 있습니다. 중요한 점은 EC2 인스턴스의 **Security Group에서 TCP 9100 포트가 허용**되어야 한다는 것입니다. 보안을 위해 Prometheus 서버의 IP 주소나 특정 CIDR 블록에서만 접근을 허용하도록 설정하는 것을 권장합니다.
+### 메트릭 수집상태 확인
+
+Node Exporter는 기본적으로 **TCP 포트 9100**에서 실행되며, 수집된 메트릭은 **`/metrics` 엔드포인트**를 통해 제공됩니다. Node Exporter가 정상적으로 실행되고 메트릭을 내보내고 있는지 확인하려면 curl 명령어로 로컬에서 접근해봅니다.
+
+Prometheus 서버나 다른 모니터링 도구에서는 `http://<EC2-IP>:9100/metrics` 주소로 접근하여 메트릭을 수집할 수 있으며, 이때 EC2 인스턴스의 **Security Group에서 TCP 9100 포트가 허용**되어야 합니다. 보안을 위해 Prometheus 서버의 IP 주소나 특정 CIDR 블록에서만 접근을 허용하도록 설정하는 것을 권장합니다.
+
+```bash
+curl http://localhost:9100/metrics
+```
+
+정상적으로 작동한다면 다음과 같은 형식의 메트릭들이 출력됩니다:
+
+```bash
+# HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{quantile="0"} 0
+go_gc_duration_seconds{quantile="0.25"} 0
+...
+# HELP node_cpu_seconds_total Seconds the CPUs spent in each mode.
+# TYPE node_cpu_seconds_total counter
+node_cpu_seconds_total{cpu="0",mode="idle"} 1234.56
+...
+```
 
 ### 활성화된 메트릭 콜렉터 확인
 
