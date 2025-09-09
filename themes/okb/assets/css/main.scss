@@ -47,11 +47,12 @@ pre {
   }
 }
 
+/* Fixes iOS font sizing anomaly */
 code {
-  background: #111;
-  padding: 2px 4px;
-  border-radius: 2px;
-  font-size: 90%;
+  text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 /* Blockquotes */
