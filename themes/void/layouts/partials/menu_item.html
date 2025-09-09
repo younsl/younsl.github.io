@@ -1,0 +1,14 @@
+{{- range $item := .collection -}}
+    {{- if $item.post_list -}}
+        {{- $post_list_params := dict
+            "context" .
+            "section" $item.post_list.section
+            "limit" $item.post_list.limit
+            "show_more" $item.post_list.show_more
+            "show_more_text" $item.post_list.show_more_text
+            "show_more_url" $item.post_list.show_more_url
+        -}}
+        
+        {{ partial "post_list.html" $post_list_params -}}
+    {{- end -}}
+{{- end -}}
