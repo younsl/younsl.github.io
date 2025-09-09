@@ -1,5 +1,5 @@
 {{ define "main" }}
-<nav><a href="/">← Back</a></nav>
+{{ partial "back_link.html" . }}
 <article>
 <p>{{ .Title }}</p>
 <p class="post-meta"><time>{{ .Date.Format "2006-01-02" }}</time></p>
