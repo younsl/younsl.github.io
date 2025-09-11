@@ -61,8 +61,7 @@ params:
     appearance: dark
     date_format: 2006-01-02
     isListGroupByDate: false
-    titleLinkEnable: true
-    titleLink: /about/
+    authorLink: /about/
   
   entries:
   - post_list:

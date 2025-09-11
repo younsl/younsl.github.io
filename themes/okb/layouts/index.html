@@ -1,5 +1,4 @@
 {{ define "main" }}
-<p><a href="{{ $.Site.Params.theme_config.titleLink | default "/about" | relURL }}">{{ $.Site.Title }}</a></p>
 {{ if $.Site.Params.description }}<p>{{ $.Site.Params.description }}</p>{{ end }}
 {{ .Content }}
 {{ range where .Site.RegularPages "Section" "blog" }}
