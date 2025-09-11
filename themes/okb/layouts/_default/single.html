@@ -3,7 +3,19 @@
 <article>
 <p>{{ .Title }}</p>
 <p class="post-meta"><time>{{ .Date.Format "2006-01-02" }}</time> | <a href="{{ $.Site.Params.theme_config.authorLink | relURL }}">{{ $.Site.Title }}</a></p>
-{{ .Content }}
+
+{{- $showAds := .Params.showAdvertisement | default (.Site.Params.article.showAdvertisement | default true) -}}
+{{- $adsensePartialExists := templates.Exists "partials/adsense.html" -}}
+{{- if and $showAds $adsensePartialExists -}}
+    {{- partial "adsense.html" . -}}
+    {{- .Content -}}
+    {{- partial "adsense.html" . -}}
+{{- else -}}
+    {{- if $showAds -}}
+        {{- warnf "[OKB] Adsense is enabled for %s but no google adsense partial exists." .File.Path -}}
+    {{- end -}}
+    {{- .Content -}}
+{{- end -}}
 </article>
 {{ partial "mermaid.html" . }}
 {{ end }} 
