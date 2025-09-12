@@ -1,8 +1,8 @@
 {{ define "main" }}
 {{ partial "back_link.html" . }}
 <article>
-<p>{{ .Title }}</p>
-<p class="post-meta"><time>{{ .Date.Format "2006-01-02" }}</time> | <a href="{{ $.Site.Params.theme_config.authorLink | relURL }}">{{ $.Site.Title }}</a></p>
+<p>{{ .Date.Format "2006-01-02" }} | {{ .Title }}</p>
+<p class="post-meta"><a href="{{ $.Site.Params.theme_config.authorLink | relURL }}">{{ $.Site.Title }}</a></p>
 
 {{- $showAds := .Params.showAdvertisement | default (.Site.Params.article.showAdvertisement | default true) -}}
 {{- $adsensePartialExists := templates.Exists "partials/adsense.html" -}}
