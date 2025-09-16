@@ -55,11 +55,3 @@ params:
     date_format: 2006-01-02
     isListGroupByDate: false
     authorLink: /about/
-  
-  entries:
-  - post_list:
-      limit: 0
-      section: blog
-      show_more: false
-      show_more_text: null
-      show_more_url: null
