@@ -7,7 +7,7 @@
 
 Personal tech blog built with [Hugo][hugo] and hosted on GitHub Pages, available at [younsl.github.io](https://younsl.github.io)
 
-This blog is styled with [void][void-docs] theme created by myself. If you want to know more about the theme, Feel free to read the [void][void-docs] docs.
+This blog is styled with [**okb**][okb] (1kb), an ultra-lightweight theme I created myself, focused on minimal footprint and maximum performance.
 
 [hugo]: https://gohugo.io/
-[void-docs]: ./themes/void/docs/README.md
+[okb]: ./themes/okb/
