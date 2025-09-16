@@ -14,8 +14,6 @@ ingress-nginx controller와 Internal NLB + ACM 조합해서 네트워크 구성�
 
 이 가이드는 쿠버네티스 클러스터와 Ingress 리소스를 관리하는 DevOps Engineer 또는 SRE를 위한 네트워크 구성 가이드입니다.
 
-&nbsp;
-
 ## 환경
 
 외부 사용자의 요청을 NLB로 받아 클러스터 내부의 ingress-nginx controller로 전달하는 네트워크 구성입니다.
@@ -24,13 +22,11 @@ ingress-nginx controller와 Internal NLB + ACM 조합해서 네트워크 구성�
 
 클러스터 내부에서 Ingress nginx controller 파드는 내부 NLB로 전달된 트래픽을 받아 클러스터 내부의 서비스로 전달합니다. 이 때, Ingress 리소스에 설정된 라우팅 규칙에 따라 트래픽이 뒷단의 파드로 전달됩니다.
 
-&nbsp;
-
 ## 구성하기
 
 ### ingress-nginx chart
 
-`ingress-nginx` 차트에서 service를 생성합니다.
+`ingress-nginx` 차트에서 **LoadBalancer 타입의 Service**를 생성합니다. 이 Service는 AWS Load Balancer Controller가 NLB를 프로비저닝하도록 트리거하며, 외부 트래픽을 ingress-nginx 파드로 전달하는 진입점 역할을 합니다.
 
 ```yaml
 # ingress-nginx/values.yaml
@@ -53,8 +49,6 @@ controller:
       service.beta.kubernetes.io/aws-load-balancer-attributes: deletion_protection.enabled=true
 ```
 
-&nbsp;
-
 `ingress-nginx` 파드에 고가용성 및 파드 오토스케일링을 적용하기 위해 다음과 HPA<sup>Horizontal Pod Autoscaler</sup>를 설정합니다.
 
 ```yaml
@@ -73,8 +67,6 @@ controller:
 
 CPU 사용률이 50% 또는 메모리 사용률이 50%를 기준으로 HPA에 의해 파드 스케일 인/아웃이 진행됩니다.
 
-&nbsp;
-
 `nginx` IngressClass를 클러스터의 디폴트 ingressClass로 지정하려면 `controller.ingressClassResource.default` 값을 `true`로 설정합니다.
 
 ```yaml
@@ -92,8 +84,6 @@ controller:
     default: true
 ```
 
-&nbsp;
-
 `nginx` IngressClass는 `ingress-nginx` 컨트롤러 차트에 포함되어 있습니다. 차트를 설치하면 `nginx` ingressClass가 같이 생성됩니다.
 
 ```bash
@@ -102,8 +92,6 @@ NAME    CONTROLLER             PARAMETERS   AGE
 alb     ingress.k8s.aws/alb    <none>       5d19h
 nginx   k8s.io/ingress-nginx   <none>       5d19h
 ```
-
-&nbsp;
 
 `ingress-nginx` 컨트롤러를 통해 특정 Ingress를 제어하고 싶은 경우에는 ingressClassName을 `nginx`로 지정할 수 있습니다.
 
@@ -117,23 +105,17 @@ spec:
   ingressClassName: nginx
 ```
 
-&nbsp;
-
 `ingress-nginx` 헬름 차트를 설치하면 `LoadBalancer` 타입의 Service 리소스가 생성됩니다.
 
 `ingress-nginx` 차트에 의해 배포, 관리되는 인프라 리소스 영역은 다음과 같습니다.
 
 ![ingress-nginx 차트에 의해 배포되는 리소스 관리 영역](./2.png)
 
-&nbsp;
-
 사전에 헬름 차트를 통해 [AWS Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller/)가 위 서비스 리소스에 설정된 annotation을 확인한 후, 그에 맞게 설정이 적용된 Network Load Balancer를 생성합니다.
 
 ![AWS 콘솔에서 확인한 NLB 설정](./3.png)
 
 ingress-nginx 차트에서 NLB는 loadBalancer 타입의 service 리소스를 통해 생성되며, 자세한 상세 설정은 AWS LBC에 의해 제어되는 구조입니다.
-
-&nbsp;
 
 ### TLS Termination 설정
 
@@ -169,8 +151,6 @@ controller:
 
 더 자세한 사항은 [Stack overflow 논의](https://stackoverflow.com/questions/70733110/kubernetes-ingress-controller-400-bad-request-plain-http-request-sent-to-http)를 확인합니다.
 
-&nbsp;
-
 ### Grafana ingress 구성
 
 `ingress-nginx` 파드가 트래픽을 받은 후, Grafana 파드로 연결하기 위해 Grafana Ingress 리소스를 생성합니다.
@@ -200,8 +180,6 @@ grafana:
 
 ingress-nginx 컨트롤러가 설치된 환경에서 `ingressClassName: nginx`로 설정하면, Grafana Ingress 리소스는 NGINX Ingress 컨트롤러에 의해 처리됩니다. 이는 NGINX 컨트롤러가 Grafana에 대한 HTTP(S) 요청을 관리하고 라우팅함을 의미합니다.
 
-&nbsp;
-
 Ingress 리소스에서 `kubernetes.io/ingress.class` annotation은 [Kubernetes v1.18부터 deprecation](https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#deprecating-the-ingress-class-annotation) 되었습니다. 대신 `spec.ingressClassName`을 사용합니다.
 
 ```diff
@@ -215,8 +193,6 @@ metadata:
 spec:
 + ingressClassName: nginx
 ```
-
-&nbsp;
 
 위 `kube-prometheus-stack`의 차트 설정에 의해 생성된 grafana ingress 리소스 설정은 다음과 같습니다.
 
@@ -256,21 +232,15 @@ status:
     - hostname: <REDACTED>
 ```
 
-&nbsp;
-
 ## 결론
 
 `ingress-nginx` 컨트롤러를 도입했을 때 가장 큰 기대효과는 여러 네임스페이스의 여러 개의 ingress 리소스를 `nginx` 파드를 통해 쉽게 라우팅 제어할 수 있습니다.
 
 ![ingress-nginx](./5.png)
 
-&nbsp;
-
 ingress-nginx-controller와 같은 Ingress controller를 사용하지 않으면 Kubernetes 클러스터에서 네임스페이스마다 Ingress 리소스와 ALB (Application Load Balancer)를 각각 설정해야 할 필요가 생깁니다. 이는 네트워크 인프라 관리의 복잡성과 비용을 증가시킬 수 있습니다.
 
 ![Ingress Controller를 사용하지 않을 경우의 구조](./6.png)
-
-&nbsp;
 
 ## 더 나아가서
 
@@ -286,9 +256,25 @@ Gateway API는 더 세분화된 라우팅 제어, 다양한 프로토콜 지원(
 
 현재 프로덕션 환경에서는 Ingress가 널리 사용되고 있지만, 새로운 프로젝트를 시작하거나 아키텍처를 개선할 때는 Gateway API 도입을 고려해 보는 것이 좋습니다. Ingress는 Ingress Nginx Controller를 통해 구현할 수 있으며, Gateway API는 NGINX에서 제공하는 [Nginx Gateway Fabric](https://github.com/nginx/nginx-gateway-fabric)을 통해 구현할 수 있습니다.
 
-&nbsp;
+## 주의사항
 
-## 참고자료
+### Ingress-nginx 프로젝트의 미래
+
+2025년 2월, Kubernetes 커뮤니티는 [ingress-nginx의 유지보수 모드 전환](https://github.com/kubernetes/ingress-nginx/issues/13002)을 발표했습니다. **v1.13이 마지막 마이너 릴리스**가 될 예정이며, 향후 2년간 보안 패치와 Kubernetes 호환성 업데이트만 제공됩니다.
+
+Kubernetes SIG는 ingress-nginx의 후속으로 **InGate** 프로젝트를 시작했습니다. InGate는 기존 Ingress API와 새로운 Gateway API를 모두 지원하여 부드러운 마이그레이션이 가능합니다.
+
+### 선택 가이드
+
+![Migration Roadmap](./8.png)
+
+**InGate**는 Kubernetes SIG의 공식 프로젝트로, Ingress API와 Gateway API를 모두 지원합니다. 기존 ingress-nginx 사용자나 두 API를 함께 사용해야 하는 경우 적합합니다.
+
+**NGINX Gateway Fabric**은 F5/NGINX의 상업 프로젝트로, Gateway API 전용입니다. 새 프로젝트를 시작하거나 엔터프라이즈 지원이 필요한 경우 고려할 수 있습니다.
+
+현재 운영 중인 시스템은 2년간 패치 지원을 받지만, 신규 프로젝트는 Gateway API 기반 솔루션 도입을 권장합니다. 자세한 내용은 [kubernetes-sigs/ingate](https://github.com/kubernetes-sigs/ingate) 레포지토리를 참고하세요.
+
+## 관련자료 
 
 AWS Network Load Balancer:
 
@@ -299,3 +285,8 @@ AWS Network Load Balancer:
 Kubernetes Ingress:
 
 - [Deprecating the Ingress Class Annotation](https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#deprecating-the-ingress-class-annotation)
+
+ingress-nginx-controller:
+
+- [⚠️ Ingress NGINX Project Status Update ⚠️ #13002](https://github.com/kubernetes/ingress-nginx/i/Users/younsung.lee/Desktop/8.pngssues/13002)
+- [Securing the Future of Ingress-Nginx](https://jamesstrong.dev/post/2024/2024-11-14-securing-the-future-ingress/)
