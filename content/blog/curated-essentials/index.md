@@ -47,6 +47,7 @@ weight: 10
 - [pet2cattle](https://pet2cattle.com/): System Administrator
 - [0XDC](https://0xdc.me/): SRE
 - [mkamadeus](https://mkamadeus.dev/): Infrastructure Engineer @Xendit
+- [James Strong](https://jamesstrong.dev) @Isovalent
 
 **Book**:
 
