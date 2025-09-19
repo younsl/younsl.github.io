@@ -13,8 +13,6 @@ weight: 10
 
 사이트 신뢰성 엔지니어(Site Reliability Engineer) 또는 데브옵스 엔지니어(DevOps Engineer)가 읽으면 좋은 학습 자료들을 큐레이팅했습니다.
 
-&nbsp;
-
 ## 큐레이팅된 학습 자료
 
 **Documentary**:
@@ -25,6 +23,7 @@ weight: 10
 - [Kubernetes: The Documentary [Part 2]](https://youtu.be/318elIq37PE?si=9VvPqRjXrKk-bnhS)
 - [Prometheus: The Documentary](https://youtu.be/rT4fJNbfe14?si=IpI_WplBDiUpqDKK)
 - [Inside Argo: Automating the Future](https://youtu.be/ox3Gx3eCTCs?si=VJGSP1bgOADfg300)
+- [Python: The Documentary](https://youtu.be/GfH4QL4VqJ0?si=bBBdSGb9zWDtc6vw)
 
 **Video**:
 
