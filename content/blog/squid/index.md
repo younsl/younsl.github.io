@@ -10,6 +10,8 @@ tags: ["kubernetes", "forward-proxy", "proxy", "squid"]
 
 ## 개요
 
+프록시 서버 구성과 관리는 DevOps Engineer or SRE의 주요 업무입니다.
+
 레거시 포워드 프록시 서버였던 EC2 기반의 [Tinyproxy](https://github.com/tinyproxy/tinyproxy)를 Kubernetes 클러스터에서 구동되는 squid로 마이그레이션한 여정을 소개합니다.
 
 ## TLDR
@@ -30,6 +32,26 @@ EC2 기반 [Tinyproxy](https://github.com/tinyproxy/tinyproxy)를 K8s Squid로 �
 ### Squid
 
 슬픈 현실부터 말하자면 오픈소스 프록시 서버인 squid는 공식 컨테이너 이미지는 제공하지만 헬름 차트는 제공하지 않습니다. 그래서 제가 직접 [squid 헬름 차트](https://github.com/younsl/charts/tree/main/charts/squid)를 개발했고 현재 지속적으로 개선하고 있습니다.
+
+#### 헬름 차트 설치
+
+squid 헬름 차트를 설치하려면 먼저 사용 가능한 버전을 [crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane)으로 확인할 수 있습니다:
+
+```bash
+crane ls ghcr.io/younsl/charts/squid
+```
+
+OCI 기반 차트 저장소는 `helm search repo`로 직접 검색할 수 없습니다. `helm search repo`는 기본적으로 전통적인 Helm repository (HTTP-based)를 검색하는 명령어이므로, OCI registry에 저장된 차트의 검색은 제한적입니다. 따라서 [crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane)과 같은 별도 도구로 버전을 확인한 후 OCI 기반 헬름 차트를 다운로드하고 설치할 수 있습니다:
+
+```bash
+# 헬름 차트 다운로드 및 압축 해제
+helm pull oci://ghcr.io/younsl/charts/squid --untar --version 0.7.0
+
+# 헬름 차트 설치
+helm upgrade --install squid ./squid --namespace squid --create-namespace
+```
+
+> Helm 3.8.0 이상에서만 OCI 기반 헬름 차트 다운로드를 지원합니다. 자세한 사항은 Helm 공식문서 [Use OCI-based registries](https://helm.sh/docs/topics/registries/)를 참고합니다.
 
 ### 기존 Tinyproxy 구성 (레거시)
 
@@ -83,7 +105,7 @@ flowchart LR
 - **유지보수 어려움**: Tinyproxy 서버 설정 파일 변경과 같은 작업시 유지보수 절차가 번거로웠습니다.
 - **확장성**: ASG 기반이 아닌 직접 구축이라 서버의 확장과 축소가 유연하지 못함
 - **비용**: 해당 EC2에 tinyproxy만 달랑 하나 떠있어서 컴퓨팅 리소스가 낭비되었으며, Elastic IP, NLB 등의 부가 리소스들의 비용이 부과되었습니다.
-- **버그**: 간헐적으로 tinyproxy 버그([#383](https://github.com/tinyproxy/tinyproxy/issues/383#issuecomment-2411862355))로 행이 걸려 주기적으로 저를 포함한 DevOps Engineer들이 재부팅을 해줘야했습니다. 우여곡절 끝에 tinyproxy 1.11.2로 버전 업그레이드를 해서 문제는 해결했지만 설치와 업그레이드 절차는 복잡했습니다. 더 심각한 건 GitOps로 설정파일과 모든 EC2 형상을 관리할 수 없는 환경이 DR 측면에서 매우 취약했습니다. 
+- **버그**: 간헐적으로 tinyproxy 버그([#383](https://github.com/tinyproxy/tinyproxy/issues/383#issuecomment-2411862355))로 행이 걸려 주기적으로 저를 포함한 DevOps Engineer들이 tinyproxy EC2 인스턴스를 재시작해줘야 했습니다. 우여곡절 끝에 tinyproxy 1.8.3을 1.11.2로 버전 업그레이드한 후 문제는 해결했지만 설치와 업그레이드 절차는 복잡했습니다. 더 심각한 건 GitOps로 tinyproxy 설정파일과 모든 EC2 형상을 선언적(Declarative) 인프라로 관리할 수 없는 환경이 DR 측면에서 매우 취약했습니다.
 - **가시성 문제**: NLB나 타겟그룹의 상태에 대한 기존 메트릭 알람은 걸려 있었지만 세부적인 Squid 메트릭, 로그 등 운영 가시성이 전무했기 때문에 블랙박스 영역이었습니다.
 
 이런 여러가지 운영의 한계점 때문에 저는 이 Tinyproxy 서버들을 쿠버네티스 위에 squid로 옮기기로 결심합니다.
