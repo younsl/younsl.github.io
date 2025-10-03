@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-Personal tech blog built with Hugo and hosted on GitHub Pages at [younsl.github.io](https://younsl.github.io). The blog uses a custom "void" theme created by the author.
+Personal tech blog built with Hugo and hosted on GitHub Pages at [younsl.github.io](https://younsl.github.io). The blog uses a custom "okb" (1kb) theme created by the author.
 
 ## Architecture
 
@@ -13,16 +13,16 @@ Personal tech blog built with Hugo and hosted on GitHub Pages at [younsl.github.
 - **content/**: Site content
   - `blog/`: Blog posts, each in its own directory with `index.md` and assets
   - `about/`: About page content
-  - `about/slides/`: Marp-based presentation slides
-- **themes/void/**: Custom minimalistic Hugo theme
+  - `slides/`: Marp-based presentation slides
+- **themes/okb/**: Custom ultra-lightweight Hugo theme (1kb)
 - **static/**: Static assets served directly
 - **public/**: Generated site output (git-ignored)
 
 ### Theme Architecture
-The custom "void" theme in `themes/void/` provides:
+The custom "okb" theme in `themes/okb/` provides:
+- Ultra-lightweight design focused on minimal footprint and maximum performance
 - Dark appearance by default
-- Minimalistic, content-first design
-- Support for MathJax and Mermaid diagrams
+- Support for Mermaid diagrams
 - Custom shortcodes for enhanced content
 
 ## Development Commands
@@ -33,7 +33,7 @@ The custom "void" theme in `themes/void/` provides:
 hugo server
 
 # Serve in production mode
-hugo server --environment production --theme void
+hugo server --environment production --theme okb
 
 # Build static site
 hugo
@@ -47,10 +47,10 @@ podman run --rm -p 1313:1313 -v $(pwd):/app hugo-blog
 ```
 
 ### Presentation Slides
-Located in `content/about/slides/`. Uses Marp for markdown-to-PDF conversion.
+Located in `content/slides/`. Uses Marp for markdown-to-PDF conversion.
 
 ```bash
-cd content/about/slides
+cd content/slides
 
 # Serve presentations with live reload
 make serve
@@ -81,16 +81,16 @@ make clean
 - Posts appear chronologically on the site
 
 ### Presentations
-- Located in `content/about/slides/{presentation-name}/`
+- Located in `content/slides/{presentation-name}/`
 - Source files named `slide-deck.md`
 - Build process converts to PDF using containerized Marp
-- Generated PDFs stored in `content/about/slides/`
+- Generated PDFs stored in `content/slides/`
 
 ## Configuration Notes
 
 ### Hugo Configuration
 - **Minimum Hugo version**: 0.148.2 (extended)
-- **Theme**: void (custom)
+- **Theme**: okb (custom, ultra-lightweight)
 - **Markdown renderer**: Goldmark with custom settings
 - **Syntax highlighting**: Built-in with `rrt` style
 - **Content filtering**: Ignores slide `.md` files during Hugo build
@@ -120,9 +120,9 @@ The repository uses GitHub Actions for automated deployment:
   - Includes minification and optimization
   - Deploys to `gh-pages` environment
 
-- **broken-link-finder.yml**: Daily broken link checks
-- **clean-workflow-runs.yml**: Workflow maintenance
-- **release-theme.yml**: Theme release automation
+- **broken-link-finder.yml**: Daily broken link checks using DeadFinder
+- **release-theme-okb.yml**: Theme release automation (triggered by version tags)
+- **close-pull-request.yml**: Automatically closes PRs (personal repository, no contributions accepted)
 
 ### Container Support
 - Dockerfile provided for local development
