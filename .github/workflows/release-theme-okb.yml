@@ -31,7 +31,7 @@ jobs:
         id: compress
         run: |
           cd themes && \
-          zip -r "../okb-${{ env.RELEASE_VERSION }}.zip" void
+          zip -r "../okb-${{ env.RELEASE_VERSION }}.zip" okb
       
       - name: Release
         uses: softprops/action-gh-release@v2.2.2
