@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이력서_이윤성_DevOps-Engineer</title>
+  <style>
+/* ===== CSS CUSTOM PROPERTIES ===== */
+:root {
+  --color-text: #333;
+  --color-text-muted: #555;
+  --color-text-light: #666;
+  --color-text-very-light: #999;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --spacing-xs: 0.2em;
+  --spacing-sm: 0.3em;
+  --spacing-md: 0.5em;
+  --spacing-lg: 0.8em;
+  --spacing-xl: 1.1em;
+  --spacing-2xl: 1.5em;
+  --spacing-3xl: 2em;
+  --line-height-tight: 1.1;
+  --line-height-normal: 1.2;
+  --line-height-relaxed: 1.4;
+}
+
+/* ===== BASE STYLES ===== */
+body {
+  font-family: var(--font-family);
+  font-weight: 400;
+  line-height: var(--line-height-normal);
+  color: black;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2em;
+  background-color: white;
+}
+
+.resume-content {
+  line-height: var(--line-height-normal);
+}
+
+.resume-content p,
+.resume-content li,
+.resume-content ul {
+  line-height: var(--line-height-normal);
+  margin: var(--spacing-sm) 0;
+}
+
+.resume-content h2,
+.resume-content h4 {
+  line-height: var(--line-height-tight);
+  margin: var(--spacing-lg) 0 0.4em 0;
+}
+
+h3 {
+  line-height: var(--line-height-tight);
+  margin: var(--spacing-2xl) 0 0.4em 0;
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  @page {
+    margin: 0.8in;
+  }
+  
+  
+  /* Force white background on all elements */
+  *, *::before, *::after {
+    background: white !important;
+    background-color: white !important;
+  }
+  
+  /* Force white background on root elements */
+  :root, html, body {
+    background-color: white !important;
+    background: white !important;
+    background-image: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  /* Hide everything by default */
+  * {
+    visibility: hidden;
+  }
+  
+  /* Show only resume content */
+  .resume-content,
+  .resume-content * {
+    visibility: visible;
+    color: black !important;
+    background-color: transparent !important;
+    background: transparent !important;
+  }
+  
+  /* Position resume content at top of page */
+  .resume-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background-color: white !important;
+    background: white !important;
+  }
+  
+  /* Force white background on main content areas */
+  main, article, section, div {
+    background-color: white !important;
+    background: white !important;
+  }
+  
+  body { 
+    max-width: 100%;
+    padding: 0;
+    font-family: var(--font-family);
+    color: black;
+    line-height: var(--line-height-normal) !important;
+  }
+  
+  .resume-content {
+    line-height: var(--line-height-normal) !important;
+  }
+  
+  .resume-content p,
+  .resume-content li,
+  .resume-content ul {
+    line-height: var(--line-height-normal) !important;
+    margin: var(--spacing-sm) 0 !important;
+  }
+  
+  .resume-content h2,
+  .resume-content h4 {
+    line-height: var(--line-height-tight) !important;
+    margin: var(--spacing-lg) 0 0.4em 0 !important;
+  }
+  
+  .resume-content h3 {
+    line-height: var(--line-height-tight) !important;
+    margin: var(--spacing-2xl) 0 0.4em 0 !important;
+  }
+  
+  /* Job header styling for print */
+  .job-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: baseline !important;
+    margin-bottom: var(--spacing-sm) !important;
+    margin-top: var(--spacing-xl) !important;
+  }
+  
+  .date {
+    color: var(--color-text-muted) !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Certification styling for print */
+  .cert-item {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: baseline !important;
+    margin-bottom: var(--spacing-xs) !important;
+  }
+  
+  .cert-item .date {
+    font-size: 0.9em !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Font colors for print */
+  .resume-content em,
+  .resume-content small {
+    color: var(--color-text-muted) !important;
+  }
+  
+  .resume-content code {
+    color: var(--color-text-light) !important;
+    background: #f5f5f5 !important;
+    padding: 2px 4px !important;
+    border-radius: 3px !important;
+  }
+  
+  .resume-content h2,
+  .resume-content h3,
+  .resume-content h4,
+  .resume-content strong {
+    color: black !important;
+  }
+  
+  .resume-content a {
+    color: black !important;
+    text-decoration: underline !important;
+  }
+  
+  /* Arrow lighter in print */
+  .resume-content .arrow {
+    color: var(--color-text-very-light) !important;
+    opacity: 0.8 !important;
+  }
+  
+  /* Proper page breaks */
+  h3, h4 { 
+    page-break-after: avoid; 
+  }
+  
+  /* Reset margin for elements after h3 */
+  h3 + .job-header,
+  h3 + * .job-header:first-child {
+    margin-top: 0 !important;
+  }
+  
+  /* Language visibility */
+  .lang-en, .lang-ko {
+    display: none !important;
+  }
+  
+  .lang-en.active, .lang-ko.active {
+    display: inline !important;
+  }
+}
+
+/* ===== SHARED FLEXBOX LAYOUTS ===== */
+.job-header,
+.cert-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+/* ===== JOB HEADER STYLES ===== */
+.job-header {
+  margin-bottom: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+}
+
+h3 + .job-header,
+h3 + * .job-header:first-child {
+  margin-top: 0;
+}
+
+/* ===== DATE STYLES ===== */
+.date {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* ===== CERTIFICATION STYLES ===== */
+.cert-item {
+  margin-bottom: var(--spacing-sm);
+}
+
+.cert-item .date {
+  font-size: 0.9em;
+}
+
+/* ===== CONTROLS ===== */
+.resume-controls {
+  margin-bottom: var(--spacing-3xl);
+  display: flex;
+  gap: 1em;
+}
+
+.resume-controls button {
+  background: none;
+  color: inherit;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.resume-controls button:hover {
+  opacity: 0.8;
+}
+
+/* ===== LANGUAGE TOGGLE ===== */
+.lang-en, .lang-ko {
+  display: none;
+}
+
+.lang-en.active, .lang-ko.active {
+  display: inline;
+}
+
+/* ===== RESUME CONTENT STYLES ===== */
+.resume-content em,
+.resume-content small {
+  color: var(--color-text-muted);
+}
+
+.resume-content code {
+  color: var(--color-text-light);
+  background: #f5f5f5;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.resume-content h2,
+.resume-content h3,
+.resume-content h4,
+.resume-content strong {
+  color: black;
+}
+
+.resume-content a {
+  color: black;
+  text-decoration: underline;
+}
+
+/* ===== ARROW LINKS ===== */
+.arrow {
+  color: var(--color-text-very-light);
+  opacity: 0.8;
+}
+
+/* ===== MOBILE RESPONSIVE STYLES ===== */
+@media screen and (max-width: 768px) {
+  /* Adjust base font size for mobile */
+  body {
+    font-size: 14px;
+  }
+  
+  /* Stack job headers vertically on mobile */
+  .job-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3em;
+  }
+  
+  .job-header .date {
+    font-size: 0.9em;
+    margin-top: 0;
+  }
+  
+  /* Stack certification items vertically */
+  .cert-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2em;
+  }
+  
+  .cert-item .date {
+    font-size: 0.85em;
+  }
+  
+  /* Reduce margins and padding */
+  h3 {
+    margin-top: var(--spacing-2xl);
+  }
+  
+  .resume-controls {
+    margin-bottom: var(--spacing-2xl);
+  }
+  
+  /* Prevent horizontal overflow */
+  .resume-content {
+    overflow-x: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Adjust list indentation */
+  ul, ol {
+    padding-left: 1.5em;
+  }
+  
+  /* Make links more touch-friendly */
+  a {
+    padding: 2px 0;
+  }
+}
+
+/* Extra small devices */
+@media screen and (max-width: 480px) {
+  body {
+    font-size: 13px;
+  }
+  
+  /* Further reduce spacing on very small screens */
+  :root {
+    --spacing-3xl: 1.5em;
+    --spacing-2xl: 1.2em;
+    --spacing-xl: 0.9em;
+  }
+  
+  ul, ol {
+    padding-left: 1.2em;
+  }
+  
+  /* Stack controls vertically on very small screens */
+  .resume-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5em;
+  }
+}
+  </style>
+</head>
+<body>
+  <div class="resume-controls no-print">
+    <button id="lang-toggle" onclick="toggleLanguage()">EN</button>
+    <button onclick="window.print()">Export to PDF</button>
+  </div>
+
+  <div class="resume-content">
+
+  <h2>Younsung Lee</h2>
+
+  <p><strong>DevOps Engineer</strong><br>
+  Kubernetes and Cloud Native Technologies (AUTOMATED yrs AUTOMATED mos) | <a href="https://github.com/younsl">Github</a> | <a href="https://younsl.github.io">Blog</a> | <a href="mailto:cysl@kakao.com">cysl@kakao.com</a></p>
+
+  <h3>Experience</h3>
+
+  <div class="job-header">
+    <div><strong>DevOps Engineer</strong> | <a href="https://coinone.co.kr">Coinone</a></div>
+    <div class="date">
+      <span class="lang-ko active">2023년 5월 30일 ― 현재 (2년 5개월)</span>
+      <span class="lang-en">May 30, 2023 ― Present (2 yrs 5 mo)</span>
+    </div>
+  </div>
+
+  <div>AWS, GCP, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops</div>
+
+  <div class="lang-ko active">
+  <ul>
+  <li>960개 레포지토리의 GitHub Actions 워크플로 모니터링을 중앙화하는 Go 기반 TUI 도구인 cocd(Chaos Of Continuous Deployment)를 개발하여 배포 승인 소요시간 30% 단축 <a href="https://github.com/younsl/box/tree/main/box/tools/cocd"><span class="arrow">↗</span></a></li>
+  <li>GPU Operator를 사용하여 ML 워크로드용 Kubernetes GPU 노드 프로비저닝 및 관리 <a href="https://younsl.github.io/blog/gpu-timeslicing/"><span class="arrow">↗</span></a> <a href="https://younsl.github.io/blog/gpu-operator-glibc/"><span class="arrow">↗</span></a></li>
+  <li>GitHub Enterprise Server의 예약된 워크플로우를 스캔하고 모니터링하는 Kubernetes 기반 GSS 마이크로서비스를 직접 개발 <a href="https://github.com/younsl/gss"><span class="arrow">↗</span></a> <a href="https://younsl.github.io/blog/gss"><span class="arrow">↗</span></a></li>
+  <li>리소스 사용량 최적화(Right-sizing), 컨테이너화를 통한 쿠버네티스 이전, 스팟 인스턴스, 파드 오토 스케일링을 포함한 비용 최적화 전략 구현으로 월 $30k 절감 달성</li>
+  <li>Workload Identity Federation을 사용하여 AWS EKS와 GCP 간 보안 교차 클라우드 인증 설계</li>
+  <li>Linkerd 서비스 메시, Kyverno 정책 엔진 및 CI/CD 파이프라인(GitHub Actions, ArgoCD) 운영 및 관리</li>
+  <li>프로덕션 환경에서 10개 이상의 마이크로서비스에 대해 처리량(TPS) 기반 파드 오토스케일링을 위한 KEDA 구현</li>
+  <li>4개 이상의 AWS 계정에 걸쳐 핵심 리소스를 위한 모듈화된 Terraform 인프라 구축으로 프로비저닝 시간 50% 단축</li>
+  <li>6개의 EKS 클러스터(v1.24-v1.32) 관리 및 Terraform을 사용하여 AL2에서 AL2023로 노드 그룹 마이그레이션 수행</li>
+  </ul>
+  </div>
+
+  <div class="lang-en">
+  <ul>
+  <li>Developed cocd (Chaos Of Continuous Deployment), a Go-based TUI tool to centralize GitHub Actions workflow monitoring across 960 repositories, reducing deployment approval time by 30% <a href="https://github.com/younsl/box/tree/main/box/tools/cocd"><span class="arrow">↗</span></a></li>
+  <li>Provisioned and managed Kubernetes GPU nodes with NVIDIA GPU Operator for ML workloads <a href="https://younsl.github.io/blog/gpu-timeslicing/"><span class="arrow">↗</span></a> <a href="https://younsl.github.io/blog/gpu-operator-glibc/"><span class="arrow">↗</span></a></li>
+  <li>Developed a containerized microservice named GSS to scan and monitor all scheduled workflows in GitHub Enterprise Server <a href="https://github.com/younsl/gss"><span class="arrow">↗</span></a> <a href="https://younsl.github.io/slides/gss.pdf"><span class="arrow">↗</span></a></li>
+  <li>Implemented cost optimization strategies including right-sizing, containerizing, spot instances, and automated pod scaling, achieving $30k monthly savings</li>
+  <li>Designed secure cross-cloud authentication between AWS EKS and GCP using Workload Identity Federation</li>
+  <li>Operated and managed Linkerd service mesh, Kyverno policy engine and CI/CD pipelines (GitHub Actions, ArgoCD)</li>
+  <li>Implemented KEDA for TPS-based pod autoscaling across 10+ microservices in production environment</li>
+  <li>Built modular Terraform infrastructure for core resources across 4+ AWS accounts, reducing provisioning time by 50%</li>
+  <li>Managed 6 EKS clusters (v1.24-v1.32) and migrated node groups from AL2 to AL2023 using Terraform</li>
+  </ul>
+  </div>
+
+  <div class="job-header">
+    <div><strong>DevOps Engineer</strong> | <a href="https://seedglobal.co">Greenlabs Financial</a></div>
+    <div class="date">
+      <span class="lang-ko active">2022년 9월 5일 ― 2023년 4월 7일 (7개월)</span>
+      <span class="lang-en">Sep 5, 2022 ― Apr 7, 2023 (7 mos)</span>
+    </div>
+  </div>
+
+  <div>AWS, Kubernetes, Istio, Observability, CI/CD, Terraform, MLOps, Infrastructure Ops</div>
+
+  <div class="lang-ko active">
+  <ul>
+  <li>전자금융업 라이센스 #2022-483 취득을 위한 멀티 계정 AWS 인프라를 3개월 내에 구축 <a href="https://www.fsc.go.kr/po040200/79214?srchCtgry=&curPage=&srchKey=&srchText=&srchBeginDt=&srchEndDt"><span class="arrow">↗</span></a></li>
+  <li>2개의 EKS 클러스터(v1.24-v1.25) 관리 및 인프라 최적화를 통해 월간 AWS 비용 30% 절감</li>
+  </ul>
+  </div>
+
+  <div class="lang-en">
+  <ul>
+  <li>Built multi-account AWS infrastructure for electronic finance business license #2022-483 in 3 months <a href="https://www.fsc.go.kr/po040200/79214?srchCtgry=&curPage=&srchKey=&srchText=&srchBeginDt=&srchEndDt"><span class="arrow">↗</span></a></li>
+  <li>Managed 2 EKS clusters (v1.24-v1.25) and optimized infrastructure, reducing monthly AWS costs by 30%</li>
+  </ul>
+  </div>
+
+  <div class="job-header">
+    <div><strong>Cloud Engineer</strong> | <a href="https://watcha.team">Watcha</a></div>
+    <div class="date">
+      <span class="lang-ko active">2022년 2월 14일 ― 2022년 8월 5일 (6개월)</span>
+      <span class="lang-en">Feb 14, 2022 ― Aug 5, 2022 (6 mos)</span>
+    </div>
+  </div>
+
+  <div>AWS, Kubernetes, CI/CD, Terraform, Infrastructure Ops</div>
+
+  <div class="lang-ko active">
+  <ul>
+  <li>Terraform을 사용하여 OTT 플랫폼을 위한 AWS 기반 Kubernetes 인프라 구현</li>
+  </ul>
+  </div>
+
+  <div class="lang-en">
+  <ul>
+  <li>Implemented Kubernetes-based infrastructure on AWS for OTT platform using Terraform</li>
+  </ul>
+  </div>
+
+  <div class="job-header">
+    <div><strong>System Engineer</strong> | <a href="https://kdn.com">KDN</a></div>
+    <div class="date">
+      <span class="lang-ko active">2013년 12월 16일 ― 2022년 2월 11일 (8년 2개월)</span>
+      <span class="lang-en">Dec 16, 2013 ― Feb 11, 2022 (8 yrs 2 mos)</span>
+    </div>
+  </div>
+
+  <div>On-premise, Linux administration, VMware Cluster administration, Storage administration, Backup and Recovery</div>
+
+  <div class="lang-ko active">
+  <ul>
+  <li>미션 크리티컬한 에너지 인프라를 위해 150개 이상의 Linux VM을 갖춘 VMware 클러스터(30개 이상 호스트) 관리</li>
+  <li>Python/Bash를 활용한 운영 업무 자동화 및 고가용성 구성 구현</li>
+  <li>가상화 기술 지원 제공 및 EMC Networker를 사용한 백업/복구 구현</li>
+  </ul>
+  </div>
+
+  <div class="lang-en">
+  <ul>
+  <li>Managed VMware clusters (30+ hosts) with 150+ Linux VMs for mission-critical energy infrastructure</li>
+  <li>Automated operational tasks with Python/Bash and implemented high availability configurations</li>
+  <li>Provided technical support for virtualization and implemented backup/recovery using EMC Networker</li>
+  </ul>
+  </div>
+
+  <h3>Projects</h3>
+
+  <div class="lang-ko active">
+  <ul>
+  <li><strong><a href="https://github.com/younsl/box/tree/main/box/tools/cocd">cocd</a></strong>: GitHub Actions 배포 관리를 위한 Go 기반 TUI 도구</li>
+  <li><strong><a href="https://github.com/younsl/charts/">charts</a></strong>: 직접 개발 및 유지보수하는 프로덕션용(production-ready) kubernetes helm 차트 저장소</li>
+  <li><strong><a href="https://github.com/younsl/box/tree/main/box/kubernetes/promdrop">promdrop</a></strong>: mimirtool로 분석된 사용되지 않는 메트릭을 제거하는 Prometheus scrape 설정 생성기</li>
+  <li><strong><a href="https://github.com/younsl/box/tree/main/box/tools/idled">idled</a></strong>: AWS의 유휴 리소스를 분석하는 CLI 도구</li>
+  <li><strong><a href="https://github.com/younsl/gss">gss</a></strong>: GitHub Enterprise Server의 Scheduled Workflow를 위한 Kubernetes 기반 스캐너</li>
+  </ul>
+  </div>
+
+  <div class="lang-en">
+  <ul>
+  <li><strong><a href="https://github.com/younsl/box/tree/main/box/tools/cocd">cocd</a></strong>: Go-based TUI tool for GitHub Actions deployment management</li>
+  <li><strong><a href="https://github.com/younsl/charts/">charts</a></strong>: Production-ready Kubernetes Helm charts repository, developed and maintained</li>
+  <li><strong><a href="https://github.com/younsl/box/tree/main/box/kubernetes/promdrop">promdrop</a></strong>: Prometheus scrape config generator to drop unused metrics analyzed by mimirtool</li>
+  <li><strong><a href="https://github.com/younsl/box/tree/main/box/tools/idled">idled</a></strong>: CLI tool to analyze idle resources in AWS</li>
+  <li><strong><a href="https://github.com/younsl/gss">gss</a></strong>: Kubernetes-based scanner for scheduled workflows in GitHub Enterprise Server</li>
+  </ul>
+  </div>
+
+  <h3>Education</h3>
+
+  <div class="job-header">
+    <div><strong>BSE, ICT Applied</strong> | <a href="https://www3.chosun.ac.kr/chosun/index.do">Chosun University</a></div>
+    <div class="date">
+      <span class="lang-ko active">2018년 3월 ― 2022년 2월</span>
+      <span class="lang-en">Mar 2018 ― Feb 2022</span>
+    </div>
+  </div>
+
+  <h3>Certifications</h3>
+
+  <div class="cert-item">
+    <div><a href="https://ti-user-certificates.s3.amazonaws.com/e0df7fbf-a057-42af-8a1f-590912be5460/6cfe4db5-e3a4-4b43-b839-4a699fc2a909-youn-sung-lee-1ba5569b-a2a3-4f67-8ce0-7234008f47f2-certificate.pdf">Prometheus Certified Associate</a></div>
+    <div class="date">
+      <span class="lang-ko active">2025년 9월 13일 ― 2027년 9월 13일</span>
+      <span class="lang-en">Sep 13, 2025 ― Sep 13, 2027</span>
+    </div>
+  </div>
+  <div class="cert-item">
+    <div><a href="https://ti-user-certificates.s3.amazonaws.com/e0df7fbf-a057-42af-8a1f-590912be5460/6cfe4db5-e3a4-4b43-b839-4a699fc2a909-younsung-lee-ea037e0a-09a6-4cc1-8f8d-9cbba5956b8b-certificate.pdf">Certified GitOps Associate</a></div>
+    <div class="date">
+      <span class="lang-ko active">2025년 4월 20일 ― 2027년 4월 20일</span>
+      <span class="lang-en">Apr 20, 2025 ― Apr 20, 2027</span>
+    </div>
+  </div>
+  <div class="cert-item">
+    <div><a href="https://ti-user-certificates.s3.amazonaws.com/e0df7fbf-a057-42af-8a1f-590912be5460/6cfe4db5-e3a4-4b43-b839-4a699fc2a909-younsung-lee-fde352b5-f17b-4087-9592-31993594f187-certificate.pdf">Linux Foundation Certified IT Associate</a></div>
+    <div class="date">
+      <span class="lang-ko active">2024년 11월 29일 ― 2026년 11월 29일</span>
+      <span class="lang-en">Nov 29, 2024 ― Nov 29, 2026</span>
+    </div>
+  </div>
+  <div class="cert-item">
+    <div><a href="https://ti-user-certificates.s3.amazonaws.com/e0df7fbf-a057-42af-8a1f-590912be5460/6cfe4db5-e3a4-4b43-b839-4a699fc2a909-younsung-lee-f696b514-dc1e-446d-876a-43bc129209dc-certificate.pdf">Kubernetes and Cloud Native Associate</a></div>
+    <div class="date">
+      <span class="lang-ko active">2024년 11월 29일 ― 2026년 11월 29일</span>
+      <span class="lang-en">Nov 29, 2024 ― Nov 29, 2026</span>
+    </div>
+  </div>
+  <div class="cert-item">
+    <div>AWS Certified Solutions Architect - Professional</div>
+    <div class="date">
+      <span class="lang-ko active">2023년 5월 21일 ― 2026년 5월 21일</span>
+      <span class="lang-en">May 21, 2023 ― May 21, 2026</span>
+    </div>
+  </div>
+  <div class="cert-item">
+    <div>AWS Certified Developer - Associate</div>
+    <div class="date">
+      <span class="lang-ko active">2023년 5월 18일 ― 2026년 5월 18일</span>
+      <span class="lang-en">May 18, 2023 ― May 18, 2026</span>
+    </div>
+  </div>
+  <div class="cert-item">
+    <div>AWS Certified SysOps Administrator - Associate</div>
+    <div class="date">
+      <span class="lang-ko active">2023년 5월 13일 ― 2026년 5월 13일</span>
+      <span class="lang-en">May 13, 2023 ― May 13, 2026</span>
+    </div>
+  </div>
+  <div class="cert-item">
+    <div>AWS Certified Cloud Practitioner</div>
+    <div class="date">
+      <span class="lang-ko active">2023년 5월 4일 ― 2026년 5월 4일</span>
+      <span class="lang-en">May 4, 2023 ― May 4, 2026</span>
+    </div>
+  </div>
+  <div class="cert-item">
+    <div>AWS Certified Solutions Architect - Associate</div>
+    <div class="date">
+      <span class="lang-ko active">2020년 6월 26일 ― 2026년 5월 21일</span>
+      <span class="lang-en">Jun 26, 2020 ― May 21, 2026</span>
+    </div>
+  </div>
+
+  </div>
+
+  <script>
+let currentLang = 'ko';
+
+function toggleLanguage() {
+  currentLang = currentLang === 'ko' ? 'en' : 'ko';
+  
+  // Hide all language elements
+  document.querySelectorAll('.lang-ko, .lang-en').forEach(el => {
+    el.classList.remove('active');
+  });
+  
+  // Show current language elements
+  document.querySelectorAll(`.lang-${currentLang}`).forEach(el => {
+    el.classList.add('active');
+  });
+  
+  // Update toggle button text
+  const toggleBtn = document.getElementById('lang-toggle');
+  toggleBtn.textContent = currentLang === 'ko' ? 'EN' : 'KO';
+  
+  // Update experience calculation
+  updateExperienceDisplay();
+}
+
+function updateExperienceDisplay() {
+  const jobs = [
+    { months: 29 }, // Coinone
+    { months: 7 },  // Greenlabs
+    { months: 6 },  // Watcha
+    { months: 98 }  // KDN
+  ];
+  
+  const totalMonths = jobs.reduce((sum, job) => sum + job.months, 0);
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+  
+  // Update experience display
+  const experienceElements = document.querySelectorAll('p');
+  experienceElements.forEach(el => {
+    if (el.textContent.includes('Kubernetes and Cloud Native Technologies')) {
+      const format = currentLang === 'ko' ? `(${years}년 ${months}개월)` : `(${years} yrs ${months} mos)`;
+      el.innerHTML = el.innerHTML.replace(/\(.*?\)/, format);
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  updateExperienceDisplay();
+});
+  </script>
+
+</body>
+</html>
