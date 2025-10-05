@@ -124,7 +124,7 @@ ROOT_URL은 Gitea가 세션 쿠키 도메인과 리다이렉트 URL을 생성할
 
 `/data/gitea/config/app.ini` 설정 파일에서 reverse proxy를 통한 외부 접근 URL로 설정:
 
-```ini
+```ini {hl_lines=[2,12]}
 [server]
 ROOT_URL = https://gitea.mydomain.com  # Fixed authentication
 ENABLE_PPROF = false
@@ -200,7 +200,7 @@ flowchart LR
 
 Prometheus, Grafana, ArgoCD 등의 플랫폼 어플리케이션에서는 일반적으로 쓰이지 않지만, Gitea, Gitlab 등과 같은 버전 컨트롤 시스템(VCS)의 경우 종종 proxy-body-size 값의 조정이 필요합니다.
 
-```yaml
+```yaml {hl_lines=[6]}
 # gitea ingress yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
