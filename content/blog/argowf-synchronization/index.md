@@ -36,7 +36,7 @@ WorkflowTemplate은 재사용 가능한 워크플로우 정의를 제공하는 �
 
 WorkflowTemplate 리소스에 설정할 수 있습니다.
 
-```bash
+```yaml {hl_lines=["4-5"]}
 # workflowtemplate yaml
 spec:
   synchronization:

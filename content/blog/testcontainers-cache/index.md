@@ -35,7 +35,7 @@ Actions Runner가 testcontainers에서 사용하는 이미지 2개(mysql, valkey
 
 코틀린 코드에 포함되어 있는 testcontainers 설정은 다음과 같습니다.
 
-```java
+```java {hl_lines=[6,11]}
 @Testcontainers
 class PropertyOverrideContextInitializer: ApplicationContextInitializer<ConfigurableApplicationContext> {
 
