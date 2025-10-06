@@ -34,7 +34,7 @@ jobs:
           zip -r "../okb-${{ env.RELEASE_VERSION }}.zip" okb
       
       - name: Release
-        uses: softprops/action-gh-release@v2.2.2
+        uses: softprops/action-gh-release@v2.3.4
         id: release
         with:
           files: okb-${{ env.RELEASE_VERSION }}.zip
