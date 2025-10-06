@@ -14,7 +14,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Close pull requests
-        uses: peter-evans/close-fork-pulls@v3.0.0
+        uses: peter-evans/close-fork-pulls@v4.0.0
         with:
           comment: |
             ${{ github.repository }} repository does not accept any external contributions by pull requests.
