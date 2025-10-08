@@ -1,0 +1,148 @@
+/* ================================================
+   OKB Theme - Ultra Lightweight CSS
+   ================================================ */
+
+/* Base Elements */
+html {
+  height: 100%;
+}
+
+body {
+  font: 16px/1.6 monospace;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  color: #fafafa;
+  background: #0f0e0e;
+  overflow-wrap: break-word;
+}
+
+/* Links */
+a {
+  color: #fafafa;
+  text-decoration: underline;
+  text-decoration-color: #999;
+  
+  &:hover {
+    color: #999;
+    text-decoration-color: #999;
+  }
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.2;
+  margin: 1.5rem 0 0.5rem;
+}
+
+/* Code Blocks */
+pre {
+  overflow-x: auto;
+  padding: 1rem;
+  background: #111;
+  border-radius: 4px;
+  
+  code {
+    background: none;
+    padding: 0;
+  }
+}
+
+/* Fixes iOS font sizing anomaly */
+code {
+  text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Blockquotes */
+blockquote {
+  border-left: 3px solid #444;
+  margin: 1rem 0;
+  padding-left: 1rem;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  border: 1px solid #333;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+/* Horizontal Rules */
+hr {
+  text-align: center;
+  border: 0;
+  margin: 2rem 0;
+  
+  &:before {
+    content: '/////';
+  }
+  
+  &:after {
+    content: attr(data-content) '/////';
+  }
+}
+
+/* Navigation */
+nav {
+  a {
+    color: #888;
+    
+    &:hover {
+      color: #fff;
+    }
+  }
+}
+
+/* Article */
+article {
+  margin: 2rem 0;
+}
+
+/* Layout Components */
+.w {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Post Metadata */
+.post-meta {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.post-date {
+  color: #999999;
+}
+
+/* Post List Items */
+.post-item {
+  margin-bottom: 0.8rem;
+  
+  time {
+    color: #999;
+  }
+}
+
+/* Mermaid Diagrams */
+.mermaid {
+  background: #0f0e0e;
+  padding: 1rem;
+  margin: 1rem 0;
+}

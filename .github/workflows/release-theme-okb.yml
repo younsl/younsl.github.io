@@ -1,0 +1,63 @@
+name: Release okb theme
+run-name: 📦 Release okb theme ${{ github.ref_name }}
+
+on:
+  push:
+    tags:
+      - 'okb/[0-9].[0-9].[0-9]'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        id: checkout
+
+      - name: Pin version
+        id: version
+        run: |
+          RELEASE_VERSION=${GITHUB_REF#refs/tags/okb/}
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
+      
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v9
+
+      - name: Compress theme files
+        id: compress
+        run: |
+          cd themes && \
+          zip -r "../okb-${{ env.RELEASE_VERSION }}.zip" okb
+      
+      - name: Release
+        uses: softprops/action-gh-release@v2.3.4
+        id: release
+        with:
+          files: okb-${{ env.RELEASE_VERSION }}.zip
+          tag_name: ${{ github.ref }}
+          name: Okb theme ${{ env.RELEASE_VERSION }}
+          body: |
+            ## Summary
+
+            okb theme ${{ env.RELEASE_VERSION }} has been released from branch ${{ steps.branch-name.outputs.base_ref_branch }}.
+            okb is a minimal, clean, and responsive theme for [Hugo](https://gohugo.io/). Please refer to [docs](https://github.com/${{ github.repository }}/tree/main/themes/okb) for installation and usage.
+            
+            ## Directory Structure
+
+            `okb-${{ env.RELEASE_VERSION }}.zip` file is a zip archive of the following files:
+            
+            ```bash
+            okb-${{ env.RELEASE_VERSION }}/
+            └── okb/
+                ├── assets/   # Assets for okb theme (e.g. css, js, and etc.)
+                ├── layouts/  # Layouts for okb theme (e.g. _default, partials, shortcodes, and etc.)
+                └── docs/     # Documentation for okb theme
+            ```
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true
