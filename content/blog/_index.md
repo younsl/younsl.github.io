@@ -1,4 +1,4 @@
-+++
-title = "Blog"
-sort_by = "date"
-+++
+---
+title: Blog
+sort_by: date
+---

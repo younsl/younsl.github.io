@@ -2,7 +2,7 @@
 {% import "macros.html" as macros %}
 
 {% block content %}
-<nav><a href="/">←</a></nav>
+<nav><a href="/">back</a></nav>
 <article>
 <p>{% if page.date %}<span class="post-date">{{ page.date | date(format="%Y-%m-%d") }}</span> {% endif %}{{ page.title }}</p>
 <p class="post-meta"><a href="{{ config.extra.author_link }}">{{ config.title }}</a></p>
