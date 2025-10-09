@@ -5,8 +5,6 @@ lastmod: 2024-03-19T18:08:25+09:00
 description: "DevOps Engineer를 위한 가이드"
 keywords: []
 tags: ["career", "devops", "aws", "kubernetes"]
-showComments: true
-showAdvertisement: true
 ---
 
 ## 개요

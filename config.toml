@@ -35,7 +35,7 @@ ignored_content = ["**/README.md"]
 # Whether to do syntax highlighting
 # Theme can be customised by setting the `highlight_theme` variable to a theme supported by Zola
 highlight_code = true
-highlight_theme = "ayu-dark"
+highlight_theme = "nord"
 
 # When set to "true", all code blocks are wrapped in a <pre> tag
 # If set to "false", each code block is wrapped in a <code> tag
