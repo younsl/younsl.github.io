@@ -2,7 +2,6 @@
 title: "GHES Mirror Action"
 date: 2023-11-18T18:47:15+09:00
 lastmod: 2023-11-18T18:47:25+09:00
-slug: ""
 description: "Github Actions를 사용해서 Github Cloud에 있는 Private Repository를 Mirror Clone 하기"
 keywords: []
 tags: ["ghe", "actions"]

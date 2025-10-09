@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+<nav><a href="/">←</a></nav>
+<article>
+<p>{% if page.date %}<span class="post-date">{{ page.date | date(format="%Y-%m-%d") }}</span> {% endif %}{{ page.title }}</p>
+<p class="post-meta"><a href="{{ config.extra.author_link }}">{{ config.title }}</a></p>
+
+{{ page.content | safe }}
+</article>
+{% endblock content %}

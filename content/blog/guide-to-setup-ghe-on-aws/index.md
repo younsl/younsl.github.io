@@ -2,7 +2,6 @@
 title: "Github Enterprise on AWS 구축 가이드"
 date: 2022-12-22T00:07:15+09:00
 lastmod: 2024-07-03T22:19:05+09:00
-slug: ""
 description: "Github Enterprise on AWS 구축 가이드"
 keywords: []
 tags: ["aws", "ghe"]

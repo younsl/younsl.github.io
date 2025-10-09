@@ -2,7 +2,6 @@
 title: "AWS 네트워크 구성 패턴 가이드"
 date: 2022-12-19T00:00:15+09:00
 lastmod: 2023-01-16T02:14:33+09:00
-slug: ""
 description: "AWS Direct Connect 전용망 구성 가이드"
 keywords: []
 tags: ["aws", "networking"]

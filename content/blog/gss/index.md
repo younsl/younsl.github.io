@@ -2,7 +2,6 @@
 title: gss
 date: 2025-09-01T23:02:00+09:00
 lastmod: 2025-09-01T23:02:00+09:00
-slug: ""
 description: "Kubernetes 기반 GitHub Enterprise Server 스케줄 워크플로우 모니터링 도구 GSS(GHES Schedule Scanner) 소개"
 keywords: ["gss", "ghes", "github enterprise", "ci/cd", "workflow", "kubernetes", "slack canvas"]
 tags: ["devops", "kubernetes", "github", "ci/cd", "observability", "slack"]

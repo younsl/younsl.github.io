@@ -1,0 +1,71 @@
+# The URL the site will be built for
+base_url = "https://younsl.github.io"
+
+# The site title and description
+title = "younsl"
+description = ""
+
+# The theme to use
+theme = "okb"
+
+# The default language
+default_language = "en"
+
+# Whether to build a search index to be used later on by a JavaScript library
+build_search_index = false
+
+# Whether to automatically compile all Sass files in the sass directory
+compile_sass = true
+
+# Whether to generate a feed file for the site
+generate_feeds = false
+
+# When set to "true", the Sass files in the `sass` directory in the site root are compiled.
+# Sass files in theme directories are always compiled.
+minify_html = true
+
+# A list of glob patterns specifying asset files to ignore when the content
+# directory is processed. Defaults to none, which means that all asset files are
+# copied over to the `public` directory.
+# Example: ["*.{graphml,xlsx}", "temp.*"]
+ignored_content = ["**/README.md"]
+
+# Configuration of the Markdown rendering
+[markdown]
+# Whether to do syntax highlighting
+# Theme can be customised by setting the `highlight_theme` variable to a theme supported by Zola
+highlight_code = true
+highlight_theme = "ayu-dark"
+
+# When set to "true", all code blocks are wrapped in a <pre> tag
+# If set to "false", each code block is wrapped in a <code> tag
+render_emoji = false
+external_links_target_blank = true
+external_links_no_follow = false
+external_links_no_referrer = false
+smart_punctuation = false
+
+# Configuration of the link checker.
+[link_checker]
+# Skip link checking for external URLs that start with these prefixes
+skip_prefixes = []
+
+# Skip anchor checking for external URLs that start with these prefixes
+skip_anchor_prefixes = []
+
+# Enable or disable the link checker
+internal_level = "warn"
+external_level = "warn"
+
+# Various slugification strategies
+[slugify]
+paths = "on"
+taxonomies = "on"
+anchors = "on"
+
+[extra]
+# Theme specific parameters
+env = "production"
+author = "younsl"
+author_link = "/about/"
+date_format = "%Y-%m-%d"

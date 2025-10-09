@@ -2,7 +2,6 @@
 title: "karpenter spot fallback"
 date: 2025-05-31T17:35:00+09:00
 lastmod: 2025-05-31T17:35:00+09:00
-slug: ""
 description: "Karpenter를 사용하여 스팟 인스턴스를 중단 없이 사용하는 방법"
 keywords: []
 tags: ["devops", "kubernetes", "karpenter"]

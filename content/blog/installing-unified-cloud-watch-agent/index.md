@@ -2,7 +2,6 @@
 title: "CloudWatch Agent 설치 및 구성"
 date: 2022-01-13T16:35:15+09:00
 lastmod: 2022-06-05T14:57:02+09:00
-slug: ""
 description: "AWS EC2 Instance에 CloudWatch Agent를 설치하고 구성하는 방법을 설명합니다."
 keywords: []
 tags: ["os", "linux", "aws"]

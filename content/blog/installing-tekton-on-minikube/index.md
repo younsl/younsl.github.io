@@ -2,7 +2,6 @@
 title: "Tekton 설치"
 date: 2022-05-02T21:17:15+09:00
 lastmod: 2022-06-05T02:21:33+09:00
-slug: ""
 description: "minikube 환경에서 Tekton pipeline과 Tekton Dashboard를 설치하고 데모를 진행하는 방법을 소개합니다."
 keywords: []
 tags: ["devops", "tekton", "kubernetes", "minikube"]

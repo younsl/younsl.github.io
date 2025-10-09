@@ -2,7 +2,6 @@
 title: "minikube 설치"
 date: 2021-11-09T12:44:30+09:00
 lastmod: 2022-06-22T23:46:50+09:00
-slug: ""
 description: "macOS에서 docker + minikube를 설치하고 실습 환경을 구축하는 방법을 설명합니다."
 keywords: []
 tags: ["devops", "kubernetes", "minikube"]

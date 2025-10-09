@@ -2,7 +2,6 @@
 title: "ipmitool 명령어로 HP iLO IP 확인"
 date: 2021-10-13T23:34:15+09:00
 lastmod: 2022-08-30T14:43:15+09:00
-slug: ""
 description: "CLI 환경에서 iLO IP를 확인하는 방법"
 keywords: []
 tags: ["os", "linux", "hardware"]

@@ -2,7 +2,6 @@
 title: "Argo Workflows의 executor plugin 설정"
 date: 2022-09-04T14:20:15+09:00
 lastmod: 2022-11-05T22:01:15+09:00
-slug: ""
 description: "Argo Workflows의 executor plugin 설정"
 keywords: []
 tags: ["devops", "kubernetes"]

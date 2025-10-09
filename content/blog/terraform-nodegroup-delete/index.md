@@ -2,7 +2,6 @@
 title: "terraform nodegroup delete"
 date: 2024-10-21T21:34:00+09:00
 lastmod: 2024-10-21T21:34:00+09:00
-slug: ""
 description: "v18 이하 버전의 EKS 모듈에서 노드그룹을 안전하게 삭제하는 절차를 설명합니다"
 keywords: []
 tags: ["devops", "iac", "terraform"]

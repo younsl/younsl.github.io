@@ -2,7 +2,6 @@
 title: "docker build secret 사용"
 date: 2022-11-17T22:32:15+09:00
 lastmod: 2024-05-31T08:00:25+09:00
-slug: ""
 description: "docker build 할 떄 secret 사용하는 방법"
 keywords: []
 tags: ["docker"]

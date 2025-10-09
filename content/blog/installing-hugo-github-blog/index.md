@@ -2,7 +2,6 @@
 title: "Hugo x github 블로그 설치 방법"
 date: 2021-07-31T00:29:09+09:00
 lastmod: 2022-01-07T22:24:25+09:00
-slug: ""
 description: "Hugo 와 Github 를 사용해 블로그를 구축하는 방법"
 keywords: []
 tags: ["hugo", "github"]
@@ -532,7 +531,6 @@ hugo-theme-codex 테마 기준으로 게시글은 `./content/blog/` 디렉토리
 title: "Hugo x github 블로그 설치 방법"
 date: 2021-07-31T00:29:09+09:00
 lastmod: 2021-07-31T00:33:04+09:00
-slug: ""
 description: "Hugo 와 Github 를 사용해 블로그를 구축하는 방법"
 keywords: []
 draft: false

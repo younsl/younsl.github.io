@@ -2,7 +2,6 @@
 title: "GopherCon Korea 2023"
 date: 2023-08-05T12:24:15+09:00
 lastmod: 2023-08-07T00:51:33+09:00
-slug: ""
 description: "GopherCon Korea 2023을 다녀온 후기"
 keywords: []
 tags: ["programming", "go", "conference"]

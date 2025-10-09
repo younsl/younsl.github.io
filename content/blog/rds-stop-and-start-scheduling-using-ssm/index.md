@@ -2,7 +2,6 @@
 title: "RDS 가동시간 스케줄링 자동화"
 date: 2023-01-26T00:47:20+09:00
 lastmod: 2023-01-26T00:47:25+09:00
-slug: ""
 description: "Systems Manager를 활용해 RDS 가동시간 스케줄링 자동화하기"
 keywords: []
 tags: ["aws", "rds"]

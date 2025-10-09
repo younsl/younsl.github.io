@@ -2,7 +2,6 @@
 title: "prom scaler"
 date: 2025-01-22T18:02:20+09:00
 lastmod: 2025-01-22T18:02:20+09:00
-slug: ""
 description: "KEDA에서 AMP(Amazon Managed Prometheus)에 저장된 메트릭 기반으로 파드 오토스케일링을 하는 방법을 소개합니다."
 keywords: []
 tags: ["aws", "keda", "prometheus"]

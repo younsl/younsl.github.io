@@ -2,7 +2,6 @@
 title: "litmus dns experiment"
 date: 2025-04-18T09:26:45+09:00
 lastmod: 2025-04-18T09:26:45+09:00
-slug: ""
 description: "litmus dns experiment"
 keywords: []
 tags: ["devops", "kubernetes", "litmus", "chaos engineering"]

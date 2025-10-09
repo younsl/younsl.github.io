@@ -2,7 +2,6 @@
 title: "Senior Engineer"
 date: 2023-03-04T15:38:15+09:00
 lastmod: 2023-03-04T23:33:25+09:00
-slug: ""
 description: "what makes one become a senior engineer?"
 keywords: []
 tags: ["career"]

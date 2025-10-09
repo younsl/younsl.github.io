@@ -2,7 +2,6 @@
 title: "Site-to-Site VPN with Transit Gateway"
 date: 2023-02-21T12:11:30+09:00
 lastmod: 2023-03-05T13:47:35+09:00
-slug: ""
 description: "Site-to-Site VPN with Transit Gateway"
 keywords: []
 tags: ["aws", "devops", "network", "vpn"]

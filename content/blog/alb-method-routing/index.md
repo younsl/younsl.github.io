@@ -2,7 +2,6 @@
 title: "alb method routing"
 date: 2025-09-23T09:23:30+09:00
 lastmod: 2025-09-23T09:23:35+09:00
-slug: ""
 description: "arc scale zero"
 keywords: []
 tags: ["kubernetes", "actions-runner", "finops"]

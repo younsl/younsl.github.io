@@ -2,7 +2,6 @@
 title: "Gloo 환경에서 ArgoCD 리소스 삭제"
 date: 2022-07-21T23:49:15+09:00
 lastmod: 2022-07-21T23:49:33+09:00
-slug: ""
 description: "API Gateway로 Gloo Edge를 사용하는 환경일 경우 ArgoCD 리소스인 application(set)을 삭제할 때 몇 가지 선행절차가 필요합니다. application을 안전하게 삭제하는 방법을 소개하는 안내서입니다."
 keywords: []
 tags: ["aws", "kubernetes"]

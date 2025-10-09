@@ -2,7 +2,6 @@
 title: "ESXi 호스트 서버 끄기"
 date: 2021-10-25T19:57:09+09:00
 lastmod: 2021-10-25T20:19:35+09:00
-slug: ""
 description: "VMware ESXi 호스트 서버를 CLI 환경에서 종료(Shutdown)하는 방법을 소개합니다."
 keywords: []
 tags: ["os", "vmware"]

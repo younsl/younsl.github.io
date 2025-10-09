@@ -2,7 +2,6 @@
 title: "Github Enterprise 백업 인스턴스 구성"
 date: 2023-06-16T10:51:15+09:00
 lastmod: 2024-12-03T21:36:25+09:00
-slug: ""
 description: "Github Enterprise 백업 구성"
 keywords: []
 tags: ["aws", "ghe"]

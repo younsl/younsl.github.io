@@ -2,7 +2,6 @@
 title: "git 삭제된 파일 복구"
 date: 2022-08-31T15:38:15+09:00
 lastmod: 2023-08-12T18:48:25+09:00
-slug: ""
 description: "깃허브 삭제된 파일 복구"
 keywords: []
 tags: ["git", "dev"]

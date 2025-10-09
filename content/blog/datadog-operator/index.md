@@ -2,7 +2,6 @@
 title: "datadog-operator"
 date: 2024-05-31T00:29:15+09:00
 lastmod: 2024-05-31T00:29:33+09:00
-slug: ""
 description: "datadog-operator 설치 및 운영 가이드"
 keywords: []
 tags: ["devops", "kubernetes", "datadog"]

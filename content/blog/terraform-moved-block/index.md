@@ -2,7 +2,6 @@
 title: "Terraform moved Block"
 date: 2023-08-09T01:34:00+09:00
 lastmod: 2023-08-19T08:20:00+09:00
-slug: ""
 description: "테라폼의 moved {} 블록을 사용하여 리소스 재생성 없이도 리소스 이름만 안전하게 변경하는 방법을 소개합니다."
 keywords: []
 tags: ["devops", "iac", "terraform"]

@@ -2,7 +2,6 @@
 title: "terminating pv rescue"
 date: 2025-04-05T15:45:00+09:00
 lastmod: 2025-04-05T15:45:00+09:00
-slug: ""
 description: "Terminating 상태로 걸려있는 Persistent Volume을 복구하는 가이드"
 keywords: []
 tags: ["kubernetes", "storage", "ebs"]

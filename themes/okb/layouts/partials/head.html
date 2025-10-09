@@ -1,9 +1,0 @@
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-{{ if .IsPage }}<meta name="description" content="{{ .Summary }}">{{ end }}
-<title>{{ if not .IsHome }}{{ .Title }} - {{ end }}{{ $.Site.Title }}</title>
-{{ $sass := resources.Get "css/main.scss" }}
-{{ $style := $sass | css.Sass (dict "outputStyle" "compressed") | minify }}
-<link rel="stylesheet" href="{{ $style.Permalink | relURL }}">
-</head>

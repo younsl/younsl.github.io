@@ -2,7 +2,6 @@
 title: "argowf synchronization"
 date: 2025-09-26T10:26:00+09:00
 lastmod: 2025-09-26T10:26:30+09:00
-slug: ""
 description: "Argo Workflows에서 동시 실행 방지하기"
 keywords: []
 tags: ["devops", "kubernetes", "argo-workflows"]
@@ -36,7 +35,7 @@ WorkflowTemplate은 재사용 가능한 워크플로우 정의를 제공하는 �
 
 WorkflowTemplate 리소스에 설정할 수 있습니다.
 
-```yaml {hl_lines=["4-5"]}
+```yaml,hl_lines=4-5
 # workflowtemplate yaml
 spec:
   synchronization:

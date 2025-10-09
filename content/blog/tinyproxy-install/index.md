@@ -2,7 +2,6 @@
 title: "tinyproxy install"
 date: 2024-10-02T23:37:10+09:00
 lastmod: 2024-10-02T23:37:15+09:00
-slug: ""
 description: "tinyproxy install"
 keywords: []
 tags: ["tinyproxy"]

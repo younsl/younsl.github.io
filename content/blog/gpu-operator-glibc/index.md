@@ -2,7 +2,6 @@
 title: "gpu operator glibc"
 date: 2025-08-12T23:40:40+09:00
 lastmod: 2028-08-12T23:40:45+09:00
-slug: ""
 description: ""
 keywords: []
 tags: ["devops", "kubernetes", "gpu-operator"]

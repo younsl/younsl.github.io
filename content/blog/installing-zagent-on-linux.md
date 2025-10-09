@@ -2,7 +2,6 @@
 title: "zagent 모니터링 에이전트 설치"
 date: 2021-11-05T22:11:05+09:00
 lastmod: 2021-11-07T22:55:20+09:00
-slug: ""
 description: "브레인즈컴퍼니에서 개발한 모니터링 솔루션인 ITSM(IT Service Management)의 모니터링 에이전트를 모니터링 대상 서버에 설치하는 방법을 설명합니다."
 keywords: []
 tags: ["os", "linux"]

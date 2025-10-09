@@ -2,7 +2,6 @@
 title: "coredns cpa"
 date: 2024-09-16T20:25:00+09:00
 lastmod: 2024-09-18T21:36:00+09:00
-slug: ""
 description: "EKS의 CoreDNS 오토스케일링에 대해 더 알아보자"
 keywords: []
 tags: ["devops", "kubernetes", "coredns"]

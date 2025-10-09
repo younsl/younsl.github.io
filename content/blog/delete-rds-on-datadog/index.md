@@ -2,7 +2,6 @@
 title: "데이터독 RDS 삭제"
 date: 2022-07-22T23:09:10+09:00
 lastmod: 2022-07-22T23:50:15+09:00
-slug: ""
 description: "데이터독 APM 서비스에서 Aurora RDS를 안전하게 삭제하는 방법을 소개합니다."
 keywords: []
 tags: ["aws", "monitoring"]

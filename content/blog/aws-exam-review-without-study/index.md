@@ -2,7 +2,6 @@
 title: "AWS 자격증 합격 후기"
 date: 2023-05-14T11:17:30+09:00
 lastmod: 2023-08-24T08:02:35+09:00
-slug: ""
 description: "사전 학습 없이 기본실력으로 AWS 자격증 시험을 본 후 합격한 후기"
 keywords: []
 tags: ["certification", "aws"]

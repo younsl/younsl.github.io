@@ -2,7 +2,6 @@
 title: "git 커밋로그 전체 삭제"
 date: 2022-04-15T22:33:52+09:00
 lastmod: 2024-08-04T13:48:22+09:00
-slug: ""
 description: "중요정보나 파일이 Public 레포지터리에 노출된 상황일 때, 커밋로그를 전체를 삭제(초기화)하는 방법"
 keywords: []
 tags: ["git", "dev"]

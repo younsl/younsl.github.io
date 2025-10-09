@@ -2,7 +2,6 @@
 title: "pull through cache"
 date: 2024-12-26T00:47:20+09:00
 lastmod: 2024-12-26T22:26:25+09:00
-slug: ""
 description: "ECR의 pull through cache 기능을 사용해 Docker Hub Rate Limit을 회피하는 방법"
 keywords: []
 tags: ["aws", "ecr", "container"]

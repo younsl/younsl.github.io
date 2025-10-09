@@ -2,7 +2,6 @@
 title: "etcd 백업 복구"
 date: 2022-08-24T19:06:40+09:00
 lastmod: 2022-08-24T20:44:45+09:00
-slug: ""
 description: "etcd 백업과 복구 방법을 소개합니다."
 keywords: []
 tags: ["devops", "kubernetes"]

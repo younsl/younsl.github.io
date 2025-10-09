@@ -2,7 +2,6 @@
 title: "minikube 멀티노드 구성"
 date: 2021-11-10T15:46:40+09:00
 lastmod: 2021-11-10T15:46:40+09:00
-slug: ""
 description: "minikube를 이용해 3대의 노드를 생성해서 Kubernetes 클러스터 구성하는 방법을 설명한다."
 keywords: []
 tags: ["devops", "kubernetes", "minikube"]

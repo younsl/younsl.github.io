@@ -2,7 +2,6 @@
 title: "Amazon Linux 2 로케일과 타임존 변경"
 date: 2023-01-17T19:52:10+09:00
 lastmod: 2023-01-17T23:49:15+09:00
-slug: ""
 description: "Amazon Linux 2 EC2의 타임존을 한국 표준시(KST)로 바꾸는 방법을 소개합니다."
 keywords: []
 tags: ["os", "linux", "aws"]

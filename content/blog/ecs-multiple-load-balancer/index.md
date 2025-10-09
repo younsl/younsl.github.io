@@ -3,7 +3,6 @@
 title: "ECS 서비스에 여러개 로드밸런서 연결"
 date: 2022-11-15T00:15:15+09:00
 lastmod: 2022-11-29T00:16:25+09:00
-slug: ""
 description: "ECS Multiple Load Balancer"
 keywords: []
 tags: ["aws", "ecs"]

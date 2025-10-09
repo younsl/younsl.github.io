@@ -2,7 +2,6 @@
 title: "brew 백업 및 복구"
 date: 2022-08-31T15:38:15+09:00
 lastmod: 2023-07-01T23:09:25+09:00
-slug: ""
 description: "brew 백업 및 복구"
 keywords: []
 tags: []

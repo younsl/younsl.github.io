@@ -2,7 +2,6 @@
 title: "kafka ui"
 date: 2024-07-18T07:46:15+09:00
 lastmod: 2024-07-18T07:46:33+09:00
-slug: ""
 description: "쿠버네티스 기반의 Kafka UI 운영 가이드"
 keywords: []
 tags: ["devops", "kubernetes", "kafka-ui", "kafka"]

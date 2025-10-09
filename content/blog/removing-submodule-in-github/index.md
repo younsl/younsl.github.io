@@ -2,7 +2,6 @@
 title: "submodule 삭제 후 재등록"
 date: 2022-01-03T00:39:20+09:00
 lastmod: 2022-12-28T23:38:20+09:00
-slug: ""
 description: "git 명령어로 submodule을 삭제한 후 다시 등록하는 방법을 설명합니다."
 keywords: []
 tags: ["github", "dev"]

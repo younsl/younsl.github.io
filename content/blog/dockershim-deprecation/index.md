@@ -2,7 +2,6 @@
 title: "Dockershim deprecation"
 date: 2021-11-16T22:58:05+09:00
 lastmod: 2022-08-31T02:39:20+09:00
-slug: ""
 description: "쿠버네티스는 v1.20 이후 컨테이너 런타임으로서 dockershim 사용을 중단하기로 결정했습니다. 이 이벤트가 발생한 이유, 배경, 영향, 해결방법 등을 설명합니다."
 keywords: []
 tags: ["devops", "container", "kubernetes"]

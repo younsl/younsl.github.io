@@ -2,7 +2,6 @@
 title: "secrets store csi driver with eks pod identity"
 date: 2025-03-07T09:31:00+09:00
 lastmod: 2025-03-07T09:31:00+09:00
-slug: ""
 description: "EKS Pod Identity를 사용한 Secrets Store CSI Driver 설정 방법을 소개합니다."
 keywords: []
 tags: ["kubernetes", "secret", "secret-managemenet"]

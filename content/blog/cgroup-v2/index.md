@@ -2,7 +2,6 @@
 title: "cgroup v2"
 date: 2024-09-30T11:19:15+09:00
 lastmod: 2024-09-30T11:19:25+09:00
-slug: ""
 description: "cgroup v1에서 cgroup v2로 전환시 발생할 수 있는 이슈를 정리한 페이지"
 keywords: []
 tags: ["linux", "kubernetes", "container", "cgroup"]

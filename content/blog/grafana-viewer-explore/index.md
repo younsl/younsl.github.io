@@ -2,7 +2,6 @@
 title: "grafana viewer explore"
 date: 2025-04-02T23:39:15+09:00
 lastmod: 2025-04-02T23:39:33+09:00
-slug: ""
 description: "Grafana Viewer 권한을 가진 사용자가 Explore 기능을 사용할 수 있도록 하는 방법"
 keywords: []
 tags: ["grafana", "explore", "observability", "permission", "security"]

@@ -2,7 +2,6 @@
 title: "ethtool collector"
 date: 2025-02-19T09:36:06+09:00
 lastmod: 2025-02-19T09:36:06+09:00
-slug: ""
 description: "Prometheus Node Exporter 데몬셋에서 ethtool 컬렉터를 사용해 네트워크 통계 정보를 수집할 수 있습니다."
 keywords: []
 tags: ["prometheus", "node-exporter", "ethtool"]

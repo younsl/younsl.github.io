@@ -2,7 +2,6 @@
 title: "notion 200b blocks"
 date: 2025-07-05T00:24:20+09:00
 lastmod: 2025-07-05T00:24:30+09:00
-slug: ""
 description: "Notion이 2000억 개 노트를 처리하는 방법 (크래시 없이)"
 keywords: []
 tags: ["scale", "database"]

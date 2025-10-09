@@ -2,7 +2,6 @@
 title: "VMware Tools 설치"
 date: 2021-08-30T00:54:12+09:00
 lastmod: 2023-09-30T01:00:20+09:00
-slug: ""
 description: "가상머신에 VMware Tools를 설치하여 원활하게 시스템 운영하기"
 keywords: []
 tags: ["os", "linux", "vmware"]

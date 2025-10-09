@@ -2,7 +2,6 @@
 title: "prometheus와 grafana 구축"
 date: 2021-11-25T23:26:15+09:00
 lastmod: 2022-08-25T13:19:10+09:00
-slug: ""
 description: "minikube 기반의 쿠버네티스 환경에서 prometheus와 grafana를 설치, 구축하는 방법을 설명합니다."
 keywords: []
 tags: ["devops", "kubernetes"]

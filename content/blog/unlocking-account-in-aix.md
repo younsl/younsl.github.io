@@ -2,7 +2,6 @@
 title: "AIX 계정잠금 해제"
 date: 2021-10-20T21:04:15+09:00
 lastmod: 2023-04-13T20:13:30+09:00
-slug: ""
 description: "IBM AIX에서 잠긴 계정을 확인하고 잠금 해제하는 방법을 설명합니다."
 keywords: []
 tags: ["os", "unix", "aix"]

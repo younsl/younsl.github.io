@@ -2,7 +2,6 @@
 title: "SCDF hack"
 date: 2023-09-30T13:22:40+09:00
 lastmod: 2023-11-08T23:55:41+09:00
-slug: ""
 description: "쿠버네티스를 쉽고 효율적으로 관리하기 위해 k9s, kubecolor 등의 유틸리티 툴을 설치하고 사용하는 방법을 안내합니다."
 keywords: []
 tags: ["dev", "kubernetes", "scdf", "spring"]

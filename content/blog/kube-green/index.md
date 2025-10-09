@@ -2,7 +2,6 @@
 title: "kube-green"
 date: 2023-03-23T22:03:15+09:00
 lastmod: 2023-09-28T22:41:33+09:00
-slug: ""
 description: "워커노드 비용 절감과 환경을 지키기 위해 kubegreen을 설치하고 운영하는 방법을 소개하는 가이드입니다."
 keywords: []
 tags: ["devops", "kubernetes"]

@@ -2,7 +2,6 @@
 title: "keda"
 date: 2024-03-07T18:08:15+09:00
 lastmod: 2025-07-22T00:44:15+09:00
-slug: ""
 description: "Kubernetes Event Driven Autoscaler"
 keywords: []
 tags: ["devops", "kubernetes", "keda", "autoscaling"]

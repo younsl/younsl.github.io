@@ -2,7 +2,6 @@
 title: "terraform sso"
 date: 2024-10-20T13:01:00+09:00
 lastmod: 2024-10-20T13:01:00+09:00
-slug: ""
 description: "AWS IAM Identity Center의 인증 환경에서 terraform CLI 사용하기"
 keywords: []
 tags: ["devops", "iac", "terraform"]

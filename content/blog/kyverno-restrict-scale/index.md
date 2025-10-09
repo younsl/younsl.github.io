@@ -2,7 +2,6 @@
 title: "kyverno restrict scale"
 date: 2025-02-21T16:48:15+09:00
 lastmod: 2025-02-21T16:48:15+09:00
-slug: ""
 description: "Kyverno를 이용한 스케일 제한"
 keywords: []
 tags: ["kubernetes", "kyverno"]
@@ -86,7 +85,7 @@ Kyverno는 Validate, Mutate, Generate, Verify Images 등 [다양한 정책 타�
 
 다음 명령어로 Validate 정책을 생성합니다.
 
-```bash {hl_lines="26"}
+```bash,hl_lines=26
 cat << EOF | kubectl apply -f -
 ---
 apiVersion: kyverno.io/v1

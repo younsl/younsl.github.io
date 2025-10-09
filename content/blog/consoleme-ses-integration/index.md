@@ -2,7 +2,6 @@
 title: "ConsoleMe SES 연동"
 date: 2022-05-20T22:36:10+09:00
 lastmod: 2022-05-21T00:08:15+09:00
-slug: ""
 description: "ConsoleMe 메일 알림을 지원하기 위해 AWS SES와 연동하는 방법을 소개한다."
 keywords: []
 tags: ["aws"]

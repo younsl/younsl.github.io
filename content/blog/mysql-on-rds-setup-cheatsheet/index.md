@@ -2,7 +2,6 @@
 title: "RDS MySQL 초기 설정 가이드"
 date: 2022-12-05T23:39:15+09:00
 lastmod: 2022-12-05T00:00:25+09:00
-slug: ""
 description: "RDS MySQL 초기 설정 가이드"
 keywords: []
 tags: ["aws"]

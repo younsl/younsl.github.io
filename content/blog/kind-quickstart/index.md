@@ -2,7 +2,6 @@
 title: "kind 쿠버네티스 구축"
 date: 2021-12-06T21:28:15+09:00
 lastmod: 2022-05-27T23:58:33+09:00
-slug: ""
 description: "kind(kubernetes in docker)를 설치한 후 로컬 환경에서 쿠버네티스 클러스터를 구축하는 방법을 설명합니다."
 keywords: []
 tags: ["devops", "kubernetes"]

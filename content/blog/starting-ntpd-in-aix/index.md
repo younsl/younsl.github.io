@@ -2,7 +2,6 @@
 title: "AIX NTP 데몬 설정"
 date: 2021-10-26T21:00:45+09:00
 lastmod: 2022-08-21T23:10:45+09:00
-slug: ""
 description: "IBM AIX 환경에서 명령어를 통한 NTP 데몬(xntpd) 설정, 시작, 상태확인하는 방법을 설명합니다."
 keywords: []
 tags: ["os", "unix", "aix"]

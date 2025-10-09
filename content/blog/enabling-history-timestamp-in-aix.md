@@ -2,7 +2,6 @@
 title: "AIX History 시간 설정"
 date: 2021-10-23T15:16:09+09:00
 lastmod: 2021-10-23T15:19:56+09:00
-slug: ""
 description: "IBM AIX에서 History 시간이 나오도록 설정하는 방법을 설명합니다."
 keywords: []
 tags: ["os", "unix", "aix"]

@@ -2,7 +2,6 @@
 title: "trivy로 컨테이너 취약점 스캔"
 date: 2022-06-22T00:04:12+09:00
 lastmod: 2022-08-23T23:43:22+09:00
-slug: ""
 description: "trivy를 사용해서 컨테이너 취약점을 찾아보는 방법을 소개합니다"
 keywords: []
 tags: ["security", "container"]

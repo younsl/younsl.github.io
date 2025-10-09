@@ -2,7 +2,6 @@
 title: "lshw 패키지로 리눅스 하드웨어 정보 확인"
 date: 2021-11-12T22:56:10+09:00
 lastmod: 2022-08-30T20:53:40+09:00
-slug: ""
 description: "리눅스 서버에 lshw 패키지를 설치한 후 명령어로 하드웨어 정보를 확인하는 방법을 설명합니다."
 keywords: []
 tags: ["os", "linux", "hardware"]

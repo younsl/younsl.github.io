@@ -2,7 +2,6 @@
 title: "ORA-28007 조치방법"
 date: 2021-09-04T17:38:12+09:00
 lastmod: 2022-05-15T22:03:40+09:00
-slug: ""
 description: "ORA-28007: the password cannot be reused 에러 메세지에 대한 조치방법"
 keywords: []
 tags: ["database", "oracle", "security"]

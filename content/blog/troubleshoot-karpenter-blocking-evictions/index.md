@@ -2,7 +2,6 @@
 title: "Karpenter PDB is blocking evictions"
 date: 2023-03-03T11:33:40+09:00
 lastmod: 2023-03-03T12:03:45+09:00
-slug: ""
 description: "Karpenter 운영 중 겪은 PDB is blocking evictions 해결방법"
 keywords: []
 tags: ["devops", "kubernetes", "karpenter"]

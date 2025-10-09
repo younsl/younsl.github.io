@@ -2,7 +2,6 @@
 title: "atlantis"
 date: 2024-09-03T19:59:00+09:00
 lastmod: 2024-09-03T19:59:00+09:00
-slug: ""
 description: "쿠버네티스 환경에서 atlantis 모범사례"
 keywords: []
 tags: ["devops", "kubernetes", "terraform","atlantis"]

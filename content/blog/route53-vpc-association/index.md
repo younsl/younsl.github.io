@@ -2,7 +2,6 @@
 title: "Route 53 VPC Association"
 date: 2022-12-23T18:18:30+09:00
 lastmod: 2022-12-23T18:19:35+09:00
-slug: ""
 description: "Private hosted zone에 다른 계정의 VPC를 연결하는 방법"
 keywords: []
 tags: ["aws", "networking"]

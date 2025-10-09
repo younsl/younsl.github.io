@@ -2,7 +2,6 @@
 title: "ec2 node exporter"
 date: 2025-08-29T20:34:30+09:00
 lastmod: 2025-08-29T20:34:40+09:00
-slug: ""
 description: "단독 EC2에서 Node Exporter를 설치하는 방법을 소개합니다."
 keywords: []
 tags: ["kubernetes", "actions-runner", "finops"]

@@ -1,7 +1,6 @@
 ---
 title: "CentOS 7에서 hpssacli 설치 및 사용법"
 date: 2021-08-03T22:32:15+09:00
-slug: ""
 description: "CentOS 7에서 hpssacli 패키지 설치 후 명령어 사용하는 방법"
 keywords: []
 tags: ["os", "linux"]

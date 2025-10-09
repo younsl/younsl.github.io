@@ -2,7 +2,6 @@
 title: "HP-UX root 직접 로그인 금지"
 date: 2021-07-31T09:42:09+09:00
 lastmod: 2022-08-05T01:00:32+09:00
-slug: ""
 description: "HP-UX에서 root로 바로 로그인 방지하는 설정 방법"
 keywords: []
 tags: ["os", "unix", "hpux"]

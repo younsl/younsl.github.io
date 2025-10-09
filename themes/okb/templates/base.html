@@ -1,0 +1,18 @@
+{% import "macros.html" as macros %}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+{% if page and page.summary %}<meta name="description" content="{{ page.summary | striptags }}">{% endif %}
+<title>{% if page %}{{ page.title }} - {% endif %}{{ config.title }}</title>
+{% set css_path = get_url(path="main.css", trailing_slash=false) %}
+<link rel="stylesheet" href="{{ css_path }}">
+</head>
+<body>
+<div class="w">
+{% block content %}{% endblock %}
+</div>
+{{ macros::mermaid_script() }}
+</body>
+</html>

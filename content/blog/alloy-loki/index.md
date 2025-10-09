@@ -2,7 +2,6 @@
 title: "alloy loki"
 date: 2025-03-24T21:58:15+09:00
 lastmod: 2025-03-24T21:58:15+09:00
-slug: ""
 description: "쿠버네티스 클러스터 안에서 Alloy를 사용해서 워커 노드 시스템 로그 및 파드 컨테이너 로그를 수집하고 Loki로 전송하는 방법을 설명합니다."
 keywords: []
 tags: ["devops", "kubernetes", "loki", "logging", "observability"]

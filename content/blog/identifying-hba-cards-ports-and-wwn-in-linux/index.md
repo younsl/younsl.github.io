@@ -2,7 +2,6 @@
 title: "linux WWN 확인"
 date: 2021-12-07T21:26:09+09:00
 lastmod: 2021-12-07T21:28:09+09:00
-slug: ""
 description: "Linux OS 환경에서 명령어를 통해 HBA 카드의 정보, 포트 구성, WWN(World Wide Name)을 확인하는 방법을 설명합니다."
 keywords: []
 tags: ["os", "linux", "storage"]

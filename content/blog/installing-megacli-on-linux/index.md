@@ -2,7 +2,6 @@
 title: "MegaCLI 설치 및 사용법"
 date: 2021-11-18T22:58:20+09:00
 lastmod: 2021-11-18T23:28:44+09:00
-slug: ""
 description: "LSI 사의 RAID Controller가 장착된 리눅스 서버에서 MegaCLI를 설치, 사용하는 방법을 소개합니다."
 keywords: []
 tags: ["os", "linux", "hardware"]

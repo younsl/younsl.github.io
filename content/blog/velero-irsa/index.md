@@ -2,7 +2,6 @@
 title: "velero irsa"
 date: 2024-08-23T05:30:30+09:00
 lastmod: 2024-08-23T05:30:35+09:00
-slug: ""
 description: "쿠버네티스의 백업 서버인 velero에 IRSA 구성해서 더 안전하게 권한 부여하기"
 keywords: []
 tags: ["devops", "kubernetes", "velero"]

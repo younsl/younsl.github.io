@@ -2,7 +2,6 @@
 title: "리눅스 서버와 스토리지 볼륨 연결"
 date: 2021-12-14T00:07:10+09:00
 lastmod: 2022-08-28T23:32:15+09:00
-slug: ""
 description: "리눅스 서버에 할당한 스토리지 LUN을 multipath를 이용해 연결하는 작업을 설명한다. 해당 메뉴얼에서는 LVM은 사용하지 않는다."
 keywords: []
 tags: ["os", "linux", "storage"]

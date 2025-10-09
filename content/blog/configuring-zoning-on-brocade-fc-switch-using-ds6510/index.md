@@ -1,7 +1,6 @@
 ---
 title: "Brocade DS6510에서 Zoning 설정하기"
 date: 2021-08-23T01:09:09+09:00
-slug: ""
 description: "Brocade DS6510 SAN 스위치에서 Zoning 설정하기"
 keywords: []
 tags: ["san", "storage"]

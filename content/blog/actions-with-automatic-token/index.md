@@ -2,7 +2,6 @@
 title: "Actions with Automatic Token"
 date: 2024-06-15T10:41:30+09:00
 lastmod: 2024-06-15T10:41:35+09:00
-slug: ""
 description: "Actions"
 keywords: []
 tags: ["github", "actions"]

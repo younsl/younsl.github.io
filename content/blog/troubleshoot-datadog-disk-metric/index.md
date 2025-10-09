@@ -2,7 +2,6 @@
 title: "Datadog disk metric error"
 date: 2022-06-30T21:52:00+09:00
 lastmod: 2022-06-30T22:55:22+09:00
-slug: ""
 description: "데이터독 에이전트에서 발생하는 disk metric error 이슈를 해결하는 방법을 소개합니다."
 keywords: []
 tags: ["monitoring", "datadog"]

@@ -2,7 +2,6 @@
 title: "ingress-nginx source ip preserve"
 date: 2025-03-20T00:58:00+09:00
 lastmod: 2025-03-20T00:58:00+09:00
-slug: ""
 description: "ingress-nginx-controller의 IP ACL 기반 whitelist-source-range 기능을 사용할 때, 클라이언트의 실제 소스 IP가 NLB를 거치면서 변경되어 IP 기반 접근제어가 제대로 동작하지 않는 문제를 해결한 과정을 설명합니다."
 keywords: []
 tags: ["devops", "kubernetes", "network", "ingress", "ingress-nginx", "load-balancer-controller"]

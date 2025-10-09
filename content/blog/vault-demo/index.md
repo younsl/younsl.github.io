@@ -2,7 +2,6 @@
 title: "Vault Demo"
 date: 2022-06-14T21:51:10+09:00
 lastmod: 2022-09-01T02:28:15+09:00
-slug: ""
 description: "Hashicorp Vault를 구성하고 사용해보는 간단한 데모. Vault의 인증정보를 사용해서 테라폼으로 EC2 인스턴스를 배포하는 법을 알아보겠습니다."
 keywords: []
 tags: ["terraform", "vault"]

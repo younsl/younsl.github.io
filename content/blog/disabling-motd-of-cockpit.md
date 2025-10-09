@@ -2,7 +2,6 @@
 title: "Cockpit 로그인 메세지 비활성화"
 date: 2021-08-23T22:22:15+09:00
 lastmod: 2022-08-25T18:57:20+09:00
-slug: ""
 description: "CentOS 8에서 로그인 시 발생하는 Cockpit의 불필요한 motd(message of the day) 메세지를 비활성화하는 방법"
 keywords: []
 tags: ["os", "linux"]

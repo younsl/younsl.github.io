@@ -3,7 +3,6 @@
 title: "SonarQube ECS Fargate 설치"
 date: 2022-11-02T01:02:15+09:00
 lastmod: 2022-11-02T01:02:25+09:00
-slug: ""
 description: "ECS Fargate 워크로드에 소나큐브 9.7.1을 구축하는 가이드"
 keywords: []
 tags: ["aws", "ecs", "sonarqube"]

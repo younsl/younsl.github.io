@@ -2,7 +2,6 @@
 title: "kubelet의 Garbage Collection 설정"
 date: 2023-03-20T22:58:15+09:00
 lastmod: 2023-03-21T22:36:33+09:00
-slug: ""
 description: "image garbage collection 설정"
 keywords: []
 tags: ["devops", "kubernetes", "minikube"]

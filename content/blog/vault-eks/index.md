@@ -2,7 +2,6 @@
 title: "vault eks"
 date: 2024-11-20T20:56:40+09:00
 lastmod: 2024-11-20T20:56:45+09:00
-slug: ""
 description: "install vault and setup auto unseal using AWS KMS"
 keywords: []
 tags: ["devops", "kubernetes", "vault"]
@@ -68,7 +67,7 @@ Mutating Webhook 문제에 대한 자세한 원인 및 해결방법은 다음 �
 
 EKS 테라폼 모듈을 사용해서 클러스터를 생성하는 경우, `node_security_group_additional_rules` 옵션을 통해 워커노드의 보안그룹에 추가 인바운드 룰을 설정할 수 있습니다.
 
-```hcl {hl_lines=["4-13"]}
+```hcl,hl_lines=4-13
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
 
@@ -90,7 +89,7 @@ module "eks" {
 
 기본적으로 Mutating Webhook의 API 서버 역할을 하는 `vault-agent-injector` 파드는 8080 포트를 통해 컨트롤플레인과 통신합니다. 아래는 `vault` 차트의 `injector` 설정입니다.
 
-```yaml {hl_lines=["11"]}
+```yaml,hl_lines=11
 # charts/vault/values.yaml
 # chart version 0.29.0
 injector:
@@ -118,7 +117,7 @@ kubectl create namespace vault
 
 `vault` 차트에서 사용할 `values.yaml` 파일을 작성합니다. 세부 설정으로는 [High Availability(HA) 모드](https://www.vaultproject.io/docs/concepts/ha)를 활성화하고 3개의 파드를 배포합니다.
 
-```yaml {hl_lines=["3-5"]}
+```yaml,hl_lines=3-5
 # charts/vault/values.yaml
 server:
   ha:
@@ -191,7 +190,7 @@ Vault 권장사항인 dataStorage와 auditStorage를 통해 PVC를 구성합니�
 
 Vault의 시크릿 데이터와 감사 로그는 파드가 재시작되어도 유지되어야 하므로 쿠버네티스의 [PersistentVolume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)을 사용합니다. 또한 Raft 클러스터의 안정적인 운영과 감사 로그의 안전한 저장을 위해 PVC 구성을 권장합니다.
 
-```yaml {hl_lines=["3-9"]}
+```yaml,hl_lines=3-9
 # charts/vault/values.yaml
 server:
   dataStorage:
@@ -275,7 +274,7 @@ vault-agent-injector-7c59f6dc9f-xxfwk   2/2     Running   0          2m46s
 kubectl logs -l app.kubernetes.io/name=vault -n vault -c vault
 ```
 
-```bash {hl_lines=["1-2"]}
+```bash,hl_lines=1-2
 2024-11-20T07:23:18.974Z [INFO]  core: security barrier not initialized
 2024-11-20T07:23:18.974Z [INFO]  core: seal configuration missing, not initialized
 2024-11-20T07:23:23.990Z [INFO]  core: security barrier not initialized
@@ -551,7 +550,7 @@ vault-2    vault-2.vault-internal:8201    follower    true
 
 Vault 클러스터의 파드 목록을 확인합니다. 모든 Vault 파드가 정상적으로 실행되고 있음을 확인할 수 있습니다.
 
-```bash {hl_lines=["3-5"]}
+```bash,hl_lines=3-5
 $ kubectl get pods -n vault
 NAME                                    READY   STATUS    RESTARTS   AGE
 vault-0                                 2/2     Running   0          106m
@@ -610,7 +609,7 @@ wget -O vault-irsa/versions.tf https://raw.githubusercontent.com/younsl/box/main
 
 `main.tf` 파일에는 클러스터 이름을 지정하는 부분이 있습니다. `data.aws_eks_cluster.this.name`에는 `vault`를 설치할 EKS 클러스터 이름으로 변경합니다.
 
-```terraform {hl_lines=["7"]}
+```terraform,hl_lines=7
 #===============================================================================
 # External Data (Account ID, OIDC Provider ARN)
 #===============================================================================
@@ -692,7 +691,7 @@ IRSA 설정:
 
 `eks.amazonaws.com/role-arn` 어노테이션에는 이전에 생성한 IAM Role ARN을 추가합니다.
 
-```yaml {hl_lines=["19"]}
+```yaml,hl_lines=19
 # charts/vault/values.yaml
 server:
   serviceAccount:
@@ -720,7 +719,7 @@ server:
 
 `vault` serviceAccount에 추가한 IAM Role ARN을 확인합니다.
 
-```bash {hl_lines=["8"]}
+```bash,hl_lines=8
 $ kubectl describe sa vault -n vault
 Name:                vault
 Namespace:           vault
@@ -743,7 +742,7 @@ Events:              <none>
 
 Auto unseal 설정시 주의할 점은 `server.ha.raft.config`에 설정을 추가해야합니다. `server.ha.config`에 넣으면 Vault의 Auto unseal이 정상 동작하지 않습니다. vault는 HA 구성시 Kubernetes의 etcd처럼 [Raft Consensus Algorithm](https://raft.github.io/)을 사용해서 클러스터로서 동작하기 때문에 반드시 `raft`에 Auto Unseal 설정을 추가해야합니다.
 
-```yaml {hl_lines=["6-9"]}
+```yaml,hl_lines=6-9
 # charts/vault/values.yaml
 server:
   ha:
@@ -838,7 +837,7 @@ helm upgrade \
 
 `vault` 파드가 정상적으로 올라온 것을 확인합니다. 아직 Initialized 된 상태가 아니므로 아래와 같이 파드들이 Ready 되지 않습니다.
 
-```bash {hl_lines=["3-5"]}
+```bash,hl_lines=3-5
 $ kubectl get pod -n vault
 NAME                                    READY   STATUS    RESTARTS   AGE
 vault-0                                 1/2     Running   0          35s
@@ -859,7 +858,7 @@ kubectl exec vault-0 -n vault -c vault \
 > **주의사항**:
 > AWS KMS 키를 사용해서 Auto unseal을 구성하면 `vault operator init` 명령어에서 `-key-shares=1`과 `-key-threshold=1` 옵션을 사용할 수 없습니다.
 
-```bash {hl_lines=["4-5"]}
+```bash,hl_lines=4-5
 # Wrong `vault operator init` command
 kubectl exec vault-0 -n vault -c vault \
   -- vault operator init \
@@ -872,7 +871,7 @@ kubectl exec vault-0 -n vault -c vault \
 
 즉 KMS Auto Unseal 구성에서 위와 같은 명령어를 실행할 경우 아래와 같은 `parameters secret_shares,secret_threshold not applicable to seal type awskms` 에러가 발생합니다.
 
-```bash {hl_lines=["6"]}
+```bash,hl_lines=6
 Error initializing: Error making API request.
 
 URL: PUT http://127.0.0.1:8200/v1/sys/init
@@ -891,7 +890,7 @@ kubectl exec vault-0 -n vault -c vault \
   -- vault status
 ```
 
-```bash {hl_lines=["3","5-6"]}
+```bash,hl_lines=3 5-6
 Key                      Value
 ---                      -----
 Seal Type                awskms

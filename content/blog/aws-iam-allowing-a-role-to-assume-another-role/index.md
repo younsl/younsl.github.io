@@ -2,7 +2,6 @@
 title: "Role to Role AssumeRole 설정"
 date: 2022-05-17T21:45:30+09:00
 lastmod: 2023-01-16T03:12:35+09:00
-slug: ""
 description: "다른 AWS 계정에 생성된 IAM Role을 AssumeRole 할 수 있도록 설정하는 방법을 소개한다."
 keywords: []
 tags: ["aws"]

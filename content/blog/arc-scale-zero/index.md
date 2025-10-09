@@ -2,7 +2,6 @@
 title: "arc scale zero"
 date: 2025-02-14T00:43:30+09:00
 lastmod: 2025-02-13T00:44:35+09:00
-slug: ""
 description: "arc scale zero"
 keywords: []
 tags: ["kubernetes", "actions-runner", "finops"]

@@ -2,7 +2,6 @@
 title: "리눅스 부팅순서"
 date: 2021-11-02T23:59:40+09:00
 lastmod: 2022-09-01T12:29:09+09:00
-slug: ""
 description: "리눅스 부팅 순서를 상세하게 설명합니다."
 keywords: []
 tags: ["os", "linux", "hardware"]

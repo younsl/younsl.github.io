@@ -2,7 +2,6 @@
 title: "오라클 세션 확인하고 Kill"
 date: 2021-09-08T20:48:20+09:00
 lastmod: 2022-12-25T00:47:22+09:00
-slug: ""
 description: "락 걸린 오라클 세션을 확인한 후 강제종료(Kill) 조치하는 방법"
 keywords: []
 tags: ["database", "oracle"]

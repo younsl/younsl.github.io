@@ -2,7 +2,6 @@
 title: "Karpenter 설치"
 date: 2023-02-28T19:29:15+09:00
 lastmod: 2023-09-09T12:43:33+09:00
-slug: ""
 description: "기존에 생성된 클러스터에 Karpenter 설치하는 방법을 소개합니다."
 keywords: []
 tags: ["devops", "kubernetes", "karpenter"]

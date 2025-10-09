@@ -2,7 +2,6 @@
 title: "SonarQube EC2 설치"
 date: 2022-10-20T00:15:15+09:00
 lastmod: 2022-10-23T16:51:25+09:00
-slug: ""
 description: "AWS EC2 서버에 Docker Compose 기반 SonarQube 서버를 설치하고 구축하는 가이드입니다."
 keywords: []
 tags: ["devops", "aws"]

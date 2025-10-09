@@ -2,7 +2,6 @@
 title: "Celery task의 queue 라우팅"
 date: 2022-04-21T23:33:00+09:00
 lastmod: 2022-04-22T21:44:33+09:00
-slug: ""
 description: "Celery 다루는 방법을 소개하는 글 (작성중)"
 keywords: []
 tags: ["python", "celery"]

@@ -2,7 +2,6 @@
 title: "calico iptables conflict"
 date: 2025-06-17T15:38:15+09:00
 lastmod: 2025-06-17T23:09:25+09:00
-slug: ""
 description: "iptables confliction between calico and kube-proxy"
 keywords: []
 tags: []

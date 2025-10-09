@@ -2,7 +2,6 @@
 title: "hugo found no layout file 에러"
 date: 2022-03-22T19:57:12+09:00
 lastmod: 2022-03-22T20:14:22+09:00
-slug: ""
 description: "hugo found no layout file 에러를 해결하는 방법"
 keywords: []
 tags: ["hugo", "github"]

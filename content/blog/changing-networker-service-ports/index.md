@@ -2,7 +2,6 @@
 title: "Networker 서비스 포트 범위 변경"
 date: 2022-01-06T20:38:30+09:00
 lastmod: 2023-10-01T01:07:35+09:00
-slug: ""
 description: "EMC Networker 관리서버에서 제공하는 서비스 포트 범위를 확인하고 nsrports 명령어로 변경하는 절차를 소개합니다."
 keywords: []
 tags: ["storage", "backup"]

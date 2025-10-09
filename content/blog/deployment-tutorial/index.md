@@ -2,7 +2,6 @@
 title: "쿠버네티스 deployment 실습"
 date: 2021-11-10T00:00:15+09:00
 lastmod: 2023-07-01T19:34:33+09:00
-slug: ""
 description: "minikube 기반의 쿠버네티스 환경에서 deployment를 생성하고 제어하는 실습을 해본다."
 keywords: []
 tags: ["devops", "kubernetes", "minikube"]

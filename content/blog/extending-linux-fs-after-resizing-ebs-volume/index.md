@@ -2,7 +2,6 @@
 title: "EC2 EBS Volume 용량 증설"
 date: 2022-04-15T18:37:30+09:00
 lastmod: 2023-01-31T23:51:33+09:00
-slug: ""
 description: "디스크 여유공간이 부족한 상황일 때 Linux EC2의 EBS 볼륨을 늘리는 방법을 알려주는 문서"
 keywords: []
 tags: ["os", "linux", "aws"]

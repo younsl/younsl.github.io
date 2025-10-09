@@ -2,7 +2,6 @@
 title: "s3 native locking"
 date: 2025-01-23T19:35:04+09:00
 lastmod: 2025-01-23T19:35:04+09:00
-slug: ""
 description: "Terraform 1.10.0 버전부터는 DynamoDB 없이 S3만 사용해서 상태파일(tfstate)의 Lock 파일을 관리할 수 있습니다."
 keywords: []
 tags: ["aws", "terraform"]
@@ -100,7 +99,7 @@ Default version (when not overridden by .terraform-version or TFENV_TERRAFORM_VE
 terraform version
 ```
 
-```bash {hl_lines="1"}
+```bash,hl_lines=1
 Terraform v1.10.4
 on darwin_arm64
 + provider registry.terraform.io/hashicorp/aws v5.84.0
@@ -119,7 +118,7 @@ on darwin_arm64
 
 > **주의사항**: `use_lockfile` 옵션은 2025년 1월 22일 기준으로 실험 단계(Experimental)이므로 추후 큰 변경사항이 있을 수 있습니다.
 
-```hcl {hl_lines="11"}
+```hcl,hl_lines=11
 # backend.tf
 terraform {
   backend "s3" {
@@ -176,7 +175,7 @@ aws s3 ls s3://<REDACTED-BUCKET-NAME>/dev/ap-northeast-2/eks/<REDACTED-CLUSTER-N
 
 &nbsp;
 
-```bash {hl_lines="3"}
+```bash,hl_lines=3
 2024-10-22 12:06:19          0
 2025-01-13 17:49:35     364547 terraform.tfstate
 2025-01-22 15:39:27        258 terraform.tfstate.tflock

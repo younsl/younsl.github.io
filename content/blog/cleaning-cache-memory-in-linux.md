@@ -2,7 +2,6 @@
 title: "리눅스 캐시 메모리 비우기"
 date: 2021-10-28T18:31:20+09:00
 lastmod: 2022-08-13T22:24:10+09:00
-slug: ""
 description: "리눅스 서버에서 명령어를 통해 캐시 메모리를 비우고 여유 메모리를 확보하는 방법을 설명합니다."
 keywords: []
 tags: ["os", "linux", "hardware"]

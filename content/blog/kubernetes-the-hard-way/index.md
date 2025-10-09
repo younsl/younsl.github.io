@@ -2,7 +2,6 @@
 title: "Kubernetes the hard way"
 date: 2022-08-18T20:01:05+09:00
 lastmod: 2022-08-18T21:20:05+09:00
-slug: ""
 description: "온프레미스 환경에서 쿠버네티스 구축하기"
 keywords: []
 tags: ["devops", "kubernetes"]

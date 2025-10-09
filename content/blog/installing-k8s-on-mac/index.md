@@ -2,7 +2,6 @@
 title: "Kubernetes 설치"
 date: 2021-11-07T17:19:30+09:00
 lastmod: 2023-03-31T00:10:25+09:00
-slug: ""
 description: "macOS에서 kubernetes 설치, 구축, 테스트하는 방법을 설명합니다."
 keywords: []
 tags: ["devops", "kubernetes"]

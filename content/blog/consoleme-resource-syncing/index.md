@@ -2,7 +2,6 @@
 title: "ConsoleMe 리소스 동기화"
 date: 2022-05-25T23:26:10+09:00
 lastmod: 2022-05-26T00:42:15+09:00
-slug: ""
 description: "ConsoleMe Central Account가 다른 Spoke Account에 있는 IAM 리소스를 수집하도록 설정하는 방법을 소개한다"
 keywords: []
 tags: ["aws"]

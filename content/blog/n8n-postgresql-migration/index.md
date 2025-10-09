@@ -2,7 +2,6 @@
 title: "n8n postgresql migration"
 date: 2025-08-27T23:17:00+09:00
 lastmod: 2025-08-27T23:18:00+09:00
-slug: ""
 description: "n8n DB를 sqlite에서 postgresql로 마이그레이션하는 여정"
 keywords: []
 tags: ["devops", "kubernetes", "n8n", "postgresql"]

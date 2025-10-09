@@ -2,7 +2,6 @@
 title: "Pod 접속 불가 관련 RoleBinding 설정"
 date: 2022-07-27T15:30:40+09:00
 lastmod: 2022-07-27T16:00:20+09:00
-slug: ""
 description: "RoleBinding과 aws-auth ConfigMap 설정 변경을 통해, 개발자가 특정 Pod에 접근하지 못한 문제를 해결한 기록입니다."
 keywords: []
 tags: ["dev", "kubernetes"]

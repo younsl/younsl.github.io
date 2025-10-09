@@ -2,7 +2,6 @@
 title: "metrics-server helm"
 date: 2023-02-09T00:13:00+09:00
 lastmod: 2023-03-26T05:26:05+09:00
-slug: ""
 description: "helm v3를 사용해서 metrics-server를 설치하고 업그레이드하는 방법"
 keywords: []
 tags: ["devops", "kubernetes"]

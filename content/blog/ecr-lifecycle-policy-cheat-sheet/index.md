@@ -2,7 +2,6 @@
 title: "ECR Lifecycle Policy 설정 가이드"
 date: 2022-12-19T17:27:15+09:00
 lastmod: 2023-07-26T22:15:25+09:00
-slug: ""
 description: "ECR Lifecycle Policy 설정 시에 참고할만한 가이드 문서"
 keywords: []
 tags: ["aws", "docker"]

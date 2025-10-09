@@ -2,7 +2,6 @@
 title: "AIX CPU 정보 및 전체 코어수 확인"
 date: 2021-10-15T13:39:10+09:00
 lastmod: 2023-08-12T14:26:15+09:00
-slug: ""
 description: "IBM AIX 운영체제에서 CPU 관련 상세정보를 확인하는 방법"
 keywords: []
 tags: ["os", "unix", "aix", "hardware"]

@@ -2,7 +2,6 @@
 title: "WebtoB 라이센스 교체"
 date: 2021-10-08T07:22:30+09:00
 lastmod: 2022-05-08T21:35:55+09:00
-slug: ""
 description: "WebtoB 라이센스를 교체하는 방법을 설명합니다."
 keywords: []
 tags: ["webtob"]

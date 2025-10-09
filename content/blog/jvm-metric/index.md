@@ -2,7 +2,6 @@
 title: "jvm metric"
 date: 2024-12-18T09:21:00+09:00
 lastmod: 2024-12-18T09:21:00+09:00
-slug: ""
 description: "Spring Actuator 의 Prometheus 엔드포인트를 통해 JVM 메트릭을 수집하는 방법을 정리한다."
 keywords: []
 tags: ["kubernetes", "prometheus", "spring"]

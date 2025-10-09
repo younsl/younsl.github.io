@@ -2,7 +2,6 @@
 title: "Github Enterprise MSSQL replication 오류"
 date: 2022-12-18T18:58:10+09:00
 lastmod: 2022-12-25T21:36:15+09:00
-slug: ""
 description: "Github Enterprise Server 사용중 발생한 MSSQL Replication 오류 해결하기"
 keywords: []
 tags: ["os", "linux", "aws"]

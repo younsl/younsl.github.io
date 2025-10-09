@@ -2,7 +2,6 @@
 title: "mysql operator"
 date: 2024-01-11T09:27:40+09:00
 lastmod: 2024-11-11T09:27:40+09:00
-slug: ""
 description: "MySQL Operator 설치 및 운영하기"
 keywords: []
 tags: ["devops", "kubernetes", "mysql", "operator"]

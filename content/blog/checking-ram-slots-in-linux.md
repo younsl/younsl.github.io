@@ -2,7 +2,6 @@
 title: "리눅스 메인보드 메모리 슬롯 확인"
 date: 2021-09-29T19:28:30+09:00
 lastmod: 2022-09-03T17:30:33+09:00
-slug: ""
 description: "리눅스 서버에서 메인보드의 메모리 슬롯 정보를 확인하는 방법"
 keywords: []
 tags: ["os", "linux", "hardware"]

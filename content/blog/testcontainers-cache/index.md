@@ -2,7 +2,6 @@
 title: "testcontainers cache"
 date: 2025-09-12T12:17:00+09:00
 lastmod: 2025-09-12T12:17:00+09:00
-slug: ""
 description: "testcontainers에서 사용하는 도커 컨테이너를 Action Cache로 캐싱해서 빌드타임을 47% 개선한 경험을 공유합니다."
 keywords: []
 tags: ["devops", "iac", "terraform"]
@@ -35,7 +34,7 @@ Actions Runner가 testcontainers에서 사용하는 이미지 2개(mysql, valkey
 
 코틀린 코드에 포함되어 있는 testcontainers 설정은 다음과 같습니다.
 
-```java {hl_lines=[6,11]}
+```java,hl_lines=6 11
 @Testcontainers
 class PropertyOverrideContextInitializer: ApplicationContextInitializer<ConfigurableApplicationContext> {
 

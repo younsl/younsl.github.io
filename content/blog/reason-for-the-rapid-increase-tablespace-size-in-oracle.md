@@ -2,7 +2,6 @@
 title: "Oracle 테이블스페이스 용량 급증의 원인"
 date: 2021-12-29T22:22:10+09:00
 lastmod: 2021-12-29T22:22:15+09:00
-slug: ""
 description: "Oracle 테이블스페이스의 용량이 급증한 원인을 찾아보자."
 keywords: []
 tags: ["os", "linux", "database", "oracle"]

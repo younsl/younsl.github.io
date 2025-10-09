@@ -2,7 +2,6 @@
 title: "hpa tolerance"
 date: 2025-07-03T10:01:15+09:00
 lastmod: 2025-07-03T10:01:22+09:00
-slug: ""
 description: "어째서 81% / 75%인데 HPA가 동작하지 않았는가에 대한 분석글"
 keywords: []
 tags: ["devops", "kubernetes", "autoscaling"]

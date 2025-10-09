@@ -2,7 +2,6 @@
 title: "오라클 데이터 파일 옮기기"
 date: 2021-09-08T20:32:15+09:00
 lastmod: 2023-04-20T21:30:30+09:00
-slug: ""
 description: "파일시스템 Full로 인한 서비스 장애를 방지하기 위해서 테이블스페이스 데이터 파일 경로 이동시키는 방법"
 keywords: []
 tags: ["linux", "database", "oracle"]

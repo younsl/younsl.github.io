@@ -2,7 +2,6 @@
 title: "zsh 플러그인 설치"
 date: 2021-11-08T12:45:30+09:00
 lastmod: 2023-07-10T23:30:25+09:00
-slug: ""
 description: "Homebrew 패키지 관리자를 이용해 autojump와 neofetch를 설치하고 zsh에 적용하는 방법을 설명합니다."
 keywords: []
 tags: ["dev"]

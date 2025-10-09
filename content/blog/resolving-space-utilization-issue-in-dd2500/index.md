@@ -2,7 +2,6 @@
 title: "DD2500 용량 부족시 Filesystem cleaning"
 date: 2022-01-05T21:00:30+09:00
 lastmod: 2022-01-05T21:21:22+09:00
-slug: ""
 description: "EMC사의 VTL 장비인 DD2500에서 디스크 여유공간이 부족할 경우 Filesystem cleaning을 통한 용량 확보 방법을 설명합니다."
 keywords: []
 tags: ["storage", "backup"]

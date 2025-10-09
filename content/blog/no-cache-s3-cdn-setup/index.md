@@ -2,7 +2,6 @@
 title: no-cache s3 cdn
 date: 2025-03-18T22:05:40+09:00
 lastmod: 2025-03-18T22:05:45+09:00
-slug: ""
 description: S3에 업로드한 정적 파일을 캐싱 없이 서빙하는 방법을 소개합니다.
 keywords: []
 tags: ["aws", "s3", "cdn", "cloudfront"]

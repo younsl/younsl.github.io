@@ -1,9 +1,0 @@
-{{ define "main" }}
-<p>{{ .Title }}</p>
-{{ .Content }}
-{{ range .Pages }}
-<p class="post-item">
-<time>{{ .Date.Format "2006-01-02" }}</time> <a href="{{ .Permalink }}">{{ .Title }}</a>
-</p>
-{{ end }}
-{{ end }}

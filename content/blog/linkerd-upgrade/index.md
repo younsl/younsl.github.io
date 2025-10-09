@@ -2,7 +2,6 @@
 title: "linkerd upgrade"
 date: 2024-07-29T09:26:45+09:00
 lastmod: 2024-07-29T09:26:45+09:00
-slug: ""
 description: "Linkerd 버전 업그레이드 가이드"
 keywords: []
 tags: ["devops", "kubernetes", "linkerd"]

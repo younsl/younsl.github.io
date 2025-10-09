@@ -2,7 +2,6 @@
 title: "VPC CNI netpol"
 date: 2023-09-08T02:33:40+09:00
 lastmod: 2023-09-08T04:31:45+09:00
-slug: ""
 description: "VPC CNI로 netpol 사용하기"
 keywords: []
 tags: ["devops", "kubernetes", "karpenter"]

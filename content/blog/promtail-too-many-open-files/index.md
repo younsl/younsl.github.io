@@ -2,7 +2,6 @@
 title: "promtail too many open files"
 date: 2024-08-08T23:18:40+09:00
 lastmod: 2024-08-24T16:23:45+09:00
-slug: ""
 description: ""
 keywords: []
 tags: ["devops", "kubernetes", "monitoring", "observability", "promtail"]

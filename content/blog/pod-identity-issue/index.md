@@ -2,7 +2,6 @@
 title: "pod identity issue"
 date: 2025-02-05T00:00:00+09:00
 lastmod: 2025-02-05T00:00:00+09:00
-slug: ""
 description: "EKS Addon의 권한 획득 방식을 IRSA에서 EKS Pod Identity로 전환하는 과정에서 발생한 문제점과 해결 방법을 정리합니다."
 keywords: []
 tags: ["kubernetes", "aws", "iam", "irsa", "pod-identity"]

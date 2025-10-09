@@ -2,7 +2,6 @@
 title: "terraform state lock 해제"
 date: 2022-11-25T12:34:15+09:00
 lastmod: 2023-08-21T23:11:25+09:00
-slug: ""
 description: "terraform state lock 해제 가이드"
 keywords: []
 tags: ["terraform"]

@@ -2,7 +2,6 @@
 title: "configmap auto reload"
 date: 2024-08-09T17:06:40+09:00
 lastmod: 2024-08-09T17:55:40+09:00
-slug: ""
 description: "쿠버네티스 configMap이 변경되면 파드가 자동으로 재시작되도록 하는 방법"
 keywords: []
 tags: ["devops", "kubernetes", "helm"]

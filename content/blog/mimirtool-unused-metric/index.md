@@ -2,7 +2,6 @@
 title: "mimirtool unused metric"
 date: 2025-05-01T01:42:25+09:00
 lastmod: 2025-05-01T01:42:25+09:00
-slug: ""
 description: "mimirtool을 사용하여 사용하지 않는 메트릭을 정리하는 방법"
 keywords: []
 tags: ["devops", "kubernetes", "prometheus", "mimirtool"]

@@ -2,7 +2,6 @@
 title: "podman"
 date: 2025-01-16T00:51:30+09:00
 lastmod: 2025-01-16T00:51:35+09:00
-slug: ""
 description: "docker desktop을 대체할 수 있는 대표적인 대안인 podman을 설치하고 사용하는 방법을 설명합니다."
 keywords: []
 tags: ["dev", "docker", "podman"]

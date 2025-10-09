@@ -2,7 +2,6 @@
 title: "minikube에 Argo Workflows 헬름 설치"
 date: 2022-07-10T17:50:40+09:00
 lastmod: 2022-07-10T21:00:45+09:00
-slug: ""
 description: "Argo Workflows를 헬름으로 설치하고 직접 작성한 워크플로우를 실행하는 방법을 안내합니다."
 keywords: []
 tags: ["devops", "kubernetes", "minikube"]

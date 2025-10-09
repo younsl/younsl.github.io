@@ -2,7 +2,6 @@
 title: "Extend Prometheus PV"
 date: 2023-11-10T15:22:40+09:00
 lastmod: 2024-07-31T09:30:45+09:00
-slug: ""
 description: "Prometheus Server Pod의 no space left on device 에러를 해결하기 위해 PersistentVolume을 증설하여 해결한 트러블슈팅 기록"
 keywords: []
 tags: ["devops", "kubernetes", "prometheus", "monitoring"]

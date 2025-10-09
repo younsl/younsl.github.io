@@ -2,7 +2,6 @@
 title: "Jenkins Container with awscli"
 date: 2023-04-26T23:13:15+09:00
 lastmod: 2023-04-26T23:45:25+09:00
-slug: ""
 description: "Jenkins 컨테이너에 AWS CLI 설치"
 keywords: []
 tags: []

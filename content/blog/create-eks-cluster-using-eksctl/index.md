@@ -2,7 +2,6 @@
 title: "EKS Cluster 생성"
 date: 2022-05-30T23:00:15+09:00
 lastmod: 2022-08-29T03:10:33+09:00
-slug: ""
 description: "eksctl을 사용해서 나만의 EKS Cluster를 만들어봅니다."
 keywords: []
 tags: ["aws", "kubernetes"]

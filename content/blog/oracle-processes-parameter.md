@@ -2,7 +2,6 @@
 title: "Oracle processes 파라미터 변경"
 date: 2021-10-06T23:48:09+09:00
 lastmod: 2022-08-25T12:35:05+09:00
-slug: ""
 description: "ORA-12516 에러를 해결하기 위해 Oracle processes 값을 변경하고 적용하는 방법을 설명합니다."
 keywords: []
 tags: ["database", "oracle"]

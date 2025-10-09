@@ -2,7 +2,6 @@
 title: "fluentd exclude"
 date: 2024-12-24T10:55:30+09:00
 lastmod: 2024-12-24T10:55:55+09:00
-slug: ""
 description: "fluentd v1.3.3에서 특정 컨테이너 로그 수집 제외하기"
 keywords: []
 tags: ["kubernetes", "fluentd"]

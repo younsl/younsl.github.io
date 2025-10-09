@@ -2,7 +2,6 @@
 title: "도커 파일시스템 정리"
 date: 2022-03-16T13:07:20+09:00
 lastmod: 2022-08-31T10:03:10+09:00
-slug: ""
 description: "쿠버네티스 워커 노드가 파일시스템 사용률이 높을 때, docker system prune 명령어를 실행해서 Docker 오브젝트를 정리하여 파일시스템 공간을 확보할 수 있다."
 keywords: []
 tags: ["os", "linux", "docker"]

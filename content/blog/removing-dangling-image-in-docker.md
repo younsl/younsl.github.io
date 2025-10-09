@@ -2,7 +2,6 @@
 title: "Docker dangling 이미지 삭제"
 date: 2022-01-05T04:18:20+09:00
 lastmod: 2022-06-07T21:15:40+09:00
-slug: ""
 description: "도커에서 태그가 <none>으로 표기된 dangling 이미지를 명령어로 확인하고 삭제하는 방법을 소개합니다."
 keywords: []
 tags: ["devops", "docker"]

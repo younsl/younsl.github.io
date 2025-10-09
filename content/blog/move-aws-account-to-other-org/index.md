@@ -2,7 +2,6 @@
 title: "AWS 계정 Organization 옮기기"
 date: 2022-12-22T22:34:15+09:00
 lastmod: 2022-12-22T00:00:25+09:00
-slug: ""
 description: "AWS 계정 Organization 옮기는 방법을 안내합니다."
 keywords: []
 tags: ["aws"]

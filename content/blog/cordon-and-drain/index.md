@@ -2,7 +2,6 @@
 title: "Cordon and drain"
 date: 2021-11-14T15:26:40+09:00
 lastmod: 2022-07-28T22:12:40+09:00
-slug: ""
 description: "쿠버네티스 노드의 pod 스케줄링을 제어하는 명령어인 cordon, drain, uncordon에 대해 자세히 알아봅니다."
 keywords: []
 tags: ["devops", "kubernetes"]

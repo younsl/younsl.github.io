@@ -2,7 +2,6 @@
 title: "datadog flare"
 date: 2024-09-28T01:10:15+09:00
 lastmod: 2024-09-28T12:59:33+09:00
-slug: ""
 description: "EKS 환경에서 Datadog Agent의 flare 생성 및 전송 방법 가이드"
 keywords: []
 tags: ["devops", "operation", "kubernetes", "datadog"]

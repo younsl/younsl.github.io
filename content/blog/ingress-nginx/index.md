@@ -2,7 +2,6 @@
 title: "Ingress nginx controller"
 date: 2024-05-16T09:06:00+09:00
 lastmod: 2025-02-26T01:29:00+09:00
-slug: ""
 description: "Ingress Nginx Controller with NLB"
 keywords: []
 tags: ["devops", "kubernetes"]

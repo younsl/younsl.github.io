@@ -2,7 +2,6 @@
 title: "필수 쿠버네티스 관리 툴"
 date: 2022-03-21T23:34:40+09:00
 lastmod: 2025-03-17T08:33:00+09:00
-slug: ""
 description: "쿠버네티스를 쉽고 효율적으로 관리하기 위해 k9s, kubecolor 등의 유틸리티 툴을 설치하고 사용하는 방법을 안내합니다."
 keywords: []
 tags: ["dev", "kubernetes", "krew"]

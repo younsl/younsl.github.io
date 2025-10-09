@@ -2,7 +2,6 @@
 title: "CKA 합격 후기와 가이드"
 date: 2022-09-05T00:24:15+09:00
 lastmod: 2022-11-13T01:04:25+09:00
-slug: ""
 description: "2022년 9월 버전의 CKA 취득후기 및 가이드"
 keywords: []
 tags: ["certification", "dev", "kubernetes"]

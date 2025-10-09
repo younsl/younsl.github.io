@@ -2,7 +2,6 @@
 title: "테라폼으로 EC2 Instance 생성하기 데모"
 date: 2022-02-22T01:34:00+09:00
 lastmod: 2023-07-17T23:14:00+09:00
-slug: ""
 description: "테라폼을 이용해서 인프라 자동화를 구현해보자. 이 데모를 통해 서울 리전에 EC2 Instance 배포 후 삭제를 직접 진행한다."
 keywords: []
 tags: ["devops", "iac", "terraform"]

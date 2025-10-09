@@ -2,7 +2,6 @@
 title: "viz websocket close error"
 date: 2024-05-21T19:36:40+09:00
 lastmod: 2024-05-21T20:42:45+09:00
-slug: ""
 description: "viz websocket close error"
 keywords: []
 tags: ["devops", "kubernetes", "viz", "linkerd", "service-mesh"]

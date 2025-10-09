@@ -2,7 +2,6 @@
 title: "EC2에서 ECR로 도커 이미지 푸시"
 date: 2022-05-05T23:01:10+09:00
 lastmod: 2022-06-05T02:11:15+09:00
-slug: ""
 description: "EC2에서 ECR로 도커 이미지 푸시하는 방법을 소개하는 글"
 keywords: []
 tags: ["docker", "aws"]

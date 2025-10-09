@@ -2,7 +2,6 @@
 title: "neofetch로 터미널 꾸미기"
 date: 2022-08-03T21:04:30+09:00
 lastmod: 2023-09-30T22:17:35+09:00
-slug: ""
 description: "neofetch 설치 후 커스텀 이미지 설정하는 방법"
 keywords: []
 tags: ["dev"]

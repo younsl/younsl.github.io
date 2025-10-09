@@ -2,7 +2,6 @@
 title: "karpenter 헬름 차트 버전 업그레이드"
 date: 2023-03-06T21:33:40+09:00
 lastmod: 2023-03-06T21:33:45+09:00
-slug: ""
 description: "Karpenter chart version upgrade"
 keywords: []
 tags: ["devops", "kubernetes", "karpenter"]

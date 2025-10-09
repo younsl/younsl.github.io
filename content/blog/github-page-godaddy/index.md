@@ -2,7 +2,6 @@
 title: "github pages godaddy"
 date: 2025-03-01T16:37:00+09:00
 lastmod: 2025-03-01T16:37:00+09:00
-slug: ""
 description: "Godaddy에서 구매한 커스텀 도메인을 Github Pages에 연결하는 방법"
 keywords: []
 tags: ["git", "dev"]

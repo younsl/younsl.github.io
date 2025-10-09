@@ -2,7 +2,6 @@
 title: "docker.sock 권한 거부 에러"
 date: 2022-01-11T22:17:15+09:00
 lastmod: 2022-10-26T06:40:20+09:00
-slug: ""
 description: "Jenkins에서 파이프라인 빌드시 발생하는 dial unix /var/run/docker.sock: connect: permission denied 오류를 해결하는 방법."
 keywords: []
 tags: ["os", "linux", "docker", "jenkins", "devops"]

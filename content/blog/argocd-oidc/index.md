@@ -2,7 +2,6 @@
 title: "argocd oidc"
 date: 2024-11-26T00:44:30+09:00
 lastmod: 2024-11-26T00:44:35+09:00
-slug: ""
 description: "argocd oidc"
 keywords: []
 tags: ["kubernetes", "argocd", "oidc"]

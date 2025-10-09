@@ -2,7 +2,6 @@
 title: "Spot Interruption Notification"
 date: 2023-06-06T21:44:30+09:00
 lastmod: 2023-06-10T15:35:35+09:00
-slug: ""
 description: "스팟 인스턴스 중단 알림 자동화"
 keywords: []
 tags: ["aws", "devops", "automation"]

@@ -2,7 +2,6 @@
 title: "prometheus hot reload"
 date: 2025-02-28T18:02:20+09:00
 lastmod: 2025-02-28T18:02:20+09:00
-slug: ""
 description: "Prometheus Server의 Trigger Reload 과정에서 403 Forbidden 에러가 발생하는 경우의 해결 방법을 정리한 문서입니다."
 keywords: []
 tags: ["prometheus"]

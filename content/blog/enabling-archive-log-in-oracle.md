@@ -2,7 +2,6 @@
 title: "오라클 아카이브 로그 활성화 설정"
 date: 2021-10-25T00:11:25+09:00
 lastmod: 2022-03-22T20:15:10+09:00
-slug: ""
 description: "Oracle Database에서 Archive Log를 활성화하는 방법을 설명합니다."
 keywords: []
 tags: ["database", "oracle"]

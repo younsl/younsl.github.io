@@ -2,7 +2,6 @@
 title: "리눅스 history에 시간 표시"
 date: 2021-07-31T02:27:10+09:00
 lastmod: 2022-08-11T21:09:10+09:00
-slug: ""
 description: "history 명령어에 시간을 표시하는 방법"
 keywords: []
 tags: ["os", "linux"]

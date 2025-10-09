@@ -2,7 +2,6 @@
 title: "hugo 댓글기능 추가(Utterances)"
 date: 2021-10-31T23:43:09+09:00
 lastmod: 2021-11-01T00:03:35+09:00
-slug: ""
 description: "Hugo 블로그에서 Utterances 플러그인을 추가해 댓글 기능을 구현하는 방법을 설명합니다."
 keywords: []
 tags: ["hugo"]

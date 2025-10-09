@@ -2,7 +2,6 @@
 title: "리눅스에서 EMC Networker 에이전트 설치"
 date: 2021-07-31T14:39:52+09:00
 lastmod: 2023-04-25T04:34:35+09:00
-slug: ""
 description: "리눅스 서버에 EMC Networker 백업 에이전트를 설치하는 방법"
 keywords: []
 tags: ["linux", "os"]

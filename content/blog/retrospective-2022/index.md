@@ -2,7 +2,6 @@
 title: "Retrospective 2022"
 date: 2022-12-31T10:31:00+09:00
 lastmod: 2022-12-31T11:43:35+09:00
-slug: ""
 description: "2022년 회고"
 keywords: []
 tags: ["retrospective"]

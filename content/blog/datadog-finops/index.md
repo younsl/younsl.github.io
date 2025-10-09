@@ -2,7 +2,6 @@
 title: "datadog finops"
 date: 2025-04-24T01:10:15+09:00
 lastmod: 2025-04-24T12:59:33+09:00
-slug: ""
 description: "datadog finops"
 keywords: []
 tags: ["devops", "operation", "kubernetes", "datadog"]

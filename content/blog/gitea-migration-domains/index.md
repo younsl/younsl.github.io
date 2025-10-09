@@ -2,7 +2,6 @@
 title: "gitea migration domains"
 date: 2025-06-30T13:54:15+09:00
 lastmod: 2025-06-30T13:54:25+09:00
-slug: ""
 description: "Gitea의 allowed domain 설정"
 keywords: ["gitea", "migration", "repository", "allowed-domains", "github", "gitlab", "pull-mirroring", "helm", "kubernetes", "vcs"]
 tags: ["git", "dev", "gitea"]

@@ -2,7 +2,6 @@
 title: "eck kibana behind ingress-nginx"
 date: 2025-04-23T22:58:05+09:00
 lastmod: 2025-04-23T02:39:20+09:00
-slug: ""
 description: "eck kibana behind ingress-nginx"
 keywords: []
 tags: ["devops", "container", "kubernetes", "eck", "kibana", "ingress-nginx"]

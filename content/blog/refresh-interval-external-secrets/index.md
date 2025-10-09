@@ -2,7 +2,6 @@
 title: "external secret의 최초 동기화 실패 해결방법"
 date: 2022-08-08T17:22:40+09:00
 lastmod: 2022-08-08T22:01:45+09:00
-slug: ""
 description: "External Secrets v0.4.4에서 최초 1회 동기화 실패하는 버그가 있습니다. 이를 해결하기 위해 External Secret의 설정을 변경해 조치하는 법을 소개합니다."
 keywords: []
 tags: ["devops", "kubernetes", "aws"]

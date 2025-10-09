@@ -2,7 +2,6 @@
 title: "lambda slack mention"
 date: 2024-01-19T17:55:20+09:00
 lastmod: 2024-01-19T17:55:20+09:00
-slug: ""
 description: "Lambda function을 ECR 레포지터리에 연동하는 방법과 권한 문제가 발생했을 때 해결하는 법을 소개합니다."
 keywords: []
 tags: ["aws"]

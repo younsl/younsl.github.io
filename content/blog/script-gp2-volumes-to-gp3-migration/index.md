@@ -2,7 +2,6 @@
 title: "gp2 to gp3 마이그레이션 스크립트"
 date: 2022-06-03T22:44:30+09:00
 lastmod: 2023-04-04T20:52:35+09:00
-slug: ""
 description: "gp2 타입의 EBS 볼륨 전체를 gp3로 마이그레이션하는 AWS CLI 스크립트를 소개합니다."
 keywords: []
 tags: ["aws"]

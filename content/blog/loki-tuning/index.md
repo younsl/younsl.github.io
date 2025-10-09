@@ -2,7 +2,6 @@
 title: "loki tuning"
 date: 2024-12-14T00:00:00+09:00
 lastmod: 2024-12-14T00:00:00+09:00
-slug: ""
 description: "loki 튜닝 모범사례"
 keywords: []
 tags: ["devops", "kubernetes", "loki"]
@@ -245,7 +244,7 @@ loki:
 
 로그 보관주기(retention) 기능은 인덱스 기간(`index.period`)이 24시간인 경우에만 가능합니다. 단일 저장소 TSDB와 단일 저장소 BoltDB는 24시간 인덱스 기간이 필요합니다.
 
-```yaml {hl_lines=[11]}
+```yaml,hl_lines=11
 # charts/loki/values.yaml (loki v3.3.1)
 loki:
   schemaConfig:

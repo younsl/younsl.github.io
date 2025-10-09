@@ -2,7 +2,6 @@
 title: "DD4500 디스크 교체와 spare disk 설정"
 date: 2022-01-08T07:22:30+09:00
 lastmod: 2022-01-08T20:27:25+09:00
-slug: ""
 description: "DD4500 백업장치의 폴트 디스크 교체 작업 시, 인적실수를 방지하고 안전하게 교체하는 정식 절차를 소개합니다."
 keywords: []
 tags: ["storage", "backup"]

@@ -2,7 +2,6 @@
 title: "vSphere 네트워크 이중화 알람 끄기"
 date: 2021-12-20T23:14:30+09:00
 lastmod: 2023-03-05T22:36:20+09:00
-slug: ""
 description: "vSphere HA 구성시 발생하는 네트워크 이중화 관련 알람을 파라미터 설정을 통해 강제로 끄는 방법을 소개합니다."
 keywords: []
 tags: ["os", "vmware"]

@@ -2,7 +2,6 @@
 title: "ArgoCD on minikube"
 date: 2022-07-06T23:56:40+09:00
 lastmod: 2022-07-06T23:57:05+09:00
-slug: ""
 description: "minikube 환경에서 ArgoCD 설치하고 운영해보는 가이드 문서."
 keywords: []
 tags: ["devops", "kubernetes", "minikube"]

@@ -2,7 +2,6 @@
 title: "transfer family via terraform"
 date: 2025-03-02T22:00:00+09:00
 lastmod: 2025-03-02T22:00:00+09:00
-slug: ""
 description: "테라폼을 사용해서 AWS Transfer Family의 SFTP 서버를 구축하는 방법을 소개합니다."
 keywords: []
 tags: ["aws", "terraform"]

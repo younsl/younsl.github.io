@@ -2,7 +2,6 @@
 title: "Amazon Linux 2에 nginx 설치"
 date: 2022-11-22T00:27:15+09:00
 lastmod: 2022-11-28T23:17:25+09:00
-slug: ""
 description: "Amazon Linux 2에 nginx 설치"
 keywords: []
 tags: ["linux", "aws"]

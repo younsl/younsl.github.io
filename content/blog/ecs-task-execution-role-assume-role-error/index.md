@@ -2,7 +2,6 @@
 title: "ECS Service 생성시 IAM Role 에러"
 date: 2023-01-04T00:02:15+09:00
 lastmod: 2022-01-04T00:43:25+09:00
-slug: ""
 description: "ECS Fargate에서 Service 생성시 ecsTaskExecutionRole을 수임하지 못하는 문제를 해결하는 가이드"
 keywords: []
 tags: ["aws", "ecs", "container", "docker"]

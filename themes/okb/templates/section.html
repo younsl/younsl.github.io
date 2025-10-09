@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<nav><a href="/">←</a></nav>
+<h1>{{ section.title }}</h1>
+{% if section.content %}{{ section.content | safe }}{% endif %}
+{% for page in section.pages %}
+<p class="post-item">
+{% if page.date %}<time>{{ page.date | date(format="%Y-%m") }}</time> {% endif %}<a href="{{ page.permalink }}">{{ page.title }}</a>
+</p>
+{% endfor %}
+{% endblock content %}

@@ -2,7 +2,6 @@
 title: "Ingress nginx controller 400 bad request"
 date: 2024-05-26T09:06:00+09:00
 lastmod: 2024-07-28T21:02:00+09:00
-slug: ""
 description: "Ingress nginx controller의 400 bad request 해결방법"
 keywords: []
 tags: ["devops", "kubernetes", "ingress"]

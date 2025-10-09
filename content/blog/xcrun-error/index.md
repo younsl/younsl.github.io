@@ -2,7 +2,6 @@
 title: "xcrun error"
 date: 2021-10-27T01:13:09+09:00
 lastmod: 2024-12-02T21:11:05+09:00
-slug: ""
 description: "macOS 업데이트 이후 git 명령어 실행시 발생하는 xcrun: error: invalid active developer path 에러 해결하기"
 keywords: []
 tags: ["dev", "terminal", "macos"]

@@ -2,7 +2,6 @@
 title: "coredns ndots"
 date: 2022-08-04T19:24:40+09:00
 lastmod: 2025-03-14T12:59:00+09:00
-slug: ""
 description: "CoreDNS의 ndots 설정을 최적화하는 방법을 소개합니다."
 keywords: []
 tags: ["dev", "kubernetes"]

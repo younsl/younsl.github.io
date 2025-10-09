@@ -2,7 +2,6 @@
 title: "url parameter is not allowed"
 date: 2025-08-12T19:56:30+09:00
 lastmod: 2025-08-12T19:56:35+09:00
-slug: ""
 description: "next.js 14.2.5에서 발생한 400 Bad Request 해결하기"
 keywords: []
 tags: ["frontend", "nextjs"]

@@ -2,7 +2,6 @@
 title: "multi-architecture ECR"
 date: 2023-10-17T23:35:15+09:00
 lastmod: 2023-10-19T23:52:25+09:00
-slug: ""
 description: "multi-architecture ECR 구성 가이드"
 keywords: []
 tags: ["aws", "docker", "ecr"]

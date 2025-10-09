@@ -2,7 +2,6 @@
 title: "argocd password reset"
 date: 2025-05-12T23:16:00+09:00
 lastmod: 2025-05-12T23:16:00+09:00
-slug: ""
 description: "argocd password reset"
 keywords: []
 tags: ["kubernetes", "argocd"]

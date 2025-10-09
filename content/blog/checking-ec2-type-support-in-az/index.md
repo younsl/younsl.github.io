@@ -2,7 +2,6 @@
 title: "EC2 인스턴스 타입이 지원하는 AZ 확인"
 date: 2022-05-09T19:56:48+09:00
 lastmod: 2022-08-11T22:00:44+09:00
-slug: ""
 description: "특정 EC2 인스턴스 타입이 어디 가용영역(Availiability Zone)에서 지원하는지 AWS CLI 명령어를 통해 확인하는 방법"
 keywords: []
 tags: ["aws"]

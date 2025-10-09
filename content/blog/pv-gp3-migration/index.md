@@ -2,7 +2,6 @@
 title: "pv gp3 migration"
 date: 2025-01-17T12:05:15+09:00
 lastmod: 2025-01-17T12:05:15+09:00
-slug: ""
 description: "EKS 클러스터에서 gp2 타입의 PV를 gp3 타입으로 마이그레이션"
 keywords: []
 tags: ["aws", "eks"]

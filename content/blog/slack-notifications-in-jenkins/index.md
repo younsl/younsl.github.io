@@ -2,7 +2,6 @@
 title: "Jenkins와 Slack webhook 연동"
 date: 2022-01-02T12:01:40+09:00
 lastmod: 2022-01-02T13:21:50+09:00
-slug: ""
 description: "Jenkins 서버와 slack inbound webhooks을 연동해보자."
 keywords: []
 tags: ["devops", "jenkins"]

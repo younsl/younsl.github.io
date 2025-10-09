@@ -2,7 +2,6 @@
 title: "eks module v17 to v18"
 date: 2024-10-31T09:04:05+09:00
 lastmod: 2024-10-31T09:04:20+09:00
-slug: ""
 description: "EKS 모듈을 v17에서 v18로 업그레이드하는 가이드"
 keywords: []
 tags: ["devops", "container", "kubernetes", "terraform"]

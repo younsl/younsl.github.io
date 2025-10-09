@@ -2,7 +2,6 @@
 title: eks module v20 to v21
 date: 2025-09-04T09:09:40+09:00
 lastmod: 2025-09-04T09:09:45+09:00
-slug: ""
 description: Terraform EKS 모듈 v20에서 v21로 업그레이드하는 절차입니다. 
 keywords: []
 tags: ["devops", "kubernetes", "terraform"]

@@ -2,7 +2,6 @@
 title: "Github Enterprise EC2 이중화 설정"
 date: 2023-02-15T02:01:15+09:00
 lastmod: 2023-02-15T02:01:25+09:00
-slug: ""
 description: "Github Enterprise 이중화를 구성하고 해제하는 방법을 설명하는 가이드입니다"
 keywords: []
 tags: ["aws", "ghe"]

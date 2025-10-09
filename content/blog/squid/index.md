@@ -2,7 +2,6 @@
 title: "squid"
 date: 2025-06-11T21:00:45+09:00
 lastmod: 2025-06-11T23:10:45+09:00
-slug: ""
 description: "포워드 프록시 서버를 kubernetes 기반의 squid 서버로 옮기기"
 keywords: []
 tags: ["kubernetes", "forward-proxy", "proxy", "squid"]

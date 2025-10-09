@@ -2,7 +2,6 @@
 title: "curated essentials"
 date: 2025-03-07T22:53:00+09:00
 lastmod: 2025-03-12T12:04:00+09:00
-slug: ""
 description: "Curated essentials for Site Reliability Engineers"
 keywords: []
 tags: ["essential"]

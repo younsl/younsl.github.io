@@ -2,7 +2,6 @@
 title: "Actions Runner Controller 구성"
 date: 2023-07-13T02:41:15+09:00
 lastmod: 2023-08-03T22:44:22+09:00
-slug: ""
 description: "EKS 환경에서 Actions Runner Controller와 Actions Runner를 설치하고 구성하기"
 keywords: []
 tags: ["devops", "kubernetes", "github"]

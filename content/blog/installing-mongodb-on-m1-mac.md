@@ -2,7 +2,6 @@
 title: "mongodb 설치"
 date: 2021-11-27T01:52:09+09:00
 lastmod: 2021-11-27T10:32:03+09:00
-slug: ""
 description: "M1 칩셋을 사용하는 macOS 환경에서 homebrew를 이용해 mongodb community edition 5.0을 설치하는 메뉴얼"
 keywords: []
 tags: ["database", "mongodb"]

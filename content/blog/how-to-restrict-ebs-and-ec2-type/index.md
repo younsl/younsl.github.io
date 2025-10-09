@@ -2,7 +2,6 @@
 title: "특정 EC2 인스턴스 타입 사용금지 설정"
 date: 2022-12-29T03:54:15+09:00
 lastmod: 2022-12-29T03:54:25+09:00
-slug: ""
 description: "AWS Organization의 SCP를 사용해 특정 EC2 타입과 EBS 타입 사용을 제한합니다."
 keywords: []
 tags: ["aws"]

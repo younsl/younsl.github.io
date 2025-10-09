@@ -2,7 +2,6 @@
 title: "argocd hpa degraded"
 date: 2025-08-01T23:14:00+09:00
 lastmod: 2025-08-01T23:14:00+09:00
-slug: ""
 description: "ArgoCD가 자꾸 HPA를 degraded로 오탐한다"
 keywords: []
 tags: ["devops", "kubernetes"]
