@@ -203,6 +203,31 @@ spec:
 - `backend.service.name`: 조건부 라우팅에서는 actions 어노테이션 이름과 일치해야 함
 - `backend.service.port.name: use-annotation`: 어노테이션에 정의된 액션을 참조
 
+#### IngressClass 설정 주의사항
+
+Ingress 리소스에서 Kubernetes 1.18 이상부터는 `kubernetes.io/ingress.class` 어노테이션 대신 `spec.ingressClassName` 필드를 사용해야 합니다. 어노테이션 방식은 deprecated 되었습니다.
+
+**권장하지 않는 방식** (Deprecated):
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: alb  # Deprecated
+```
+
+**권장하는 방식**:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+spec:
+  ingressClassName: alb  # 권장
+```
+
+자세한 내용은 [Kubernetes Ingress 공식 문서](https://kubernetes.io/docs/concepts/services-networking/ingress/#deprecated-annotation)를 참고하세요.
+
 ### 완성된 설정
 
 위의 모든 설정을 통합한 완전한 Ingress 리소스 정의입니다.
