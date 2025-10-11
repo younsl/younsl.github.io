@@ -29,6 +29,8 @@ EKS 클러스터에서 `gp2` 타입으로 생성된 PersistentVolume을 `gp3` �
 
 EKS 클러스터에서 gp2에서 gp3로 볼륨 타입을 마이그레이션할 때는 **VolumeSnapshot 방식보다 VolumeAttributesClass(VAC) 방식을 권장**합니다.
 
+![VAC 아키텍처 관계도](1.png)
+
 ### VAC 방식의 장점
 
 - **무중단 마이그레이션**: 애플리케이션 다운타임 없이 실시간으로 볼륨 타입 변경
