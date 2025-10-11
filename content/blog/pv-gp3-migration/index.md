@@ -25,6 +25,29 @@ EKS 클러스터에서 `gp2` 타입으로 생성된 PersistentVolume을 `gp3` �
 
 &nbsp;
 
+## VolumeAttributesClass 방식 권장
+
+EKS 클러스터에서 gp2에서 gp3로 볼륨 타입을 마이그레이션할 때는 **VolumeSnapshot 방식보다 VolumeAttributesClass(VAC) 방식을 권장**합니다.
+
+### VAC 방식의 장점
+
+- **무중단 마이그레이션**: 애플리케이션 다운타임 없이 실시간으로 볼륨 타입 변경
+- **쿠버네티스 네이티브**: `VolumeAttributeClass` 리소스를 사용하는 선언적 방식
+- **간소화된 절차**: VolumeSnapshot 방식 대비 작업 단계가 훨씬 간단함
+
+### VolumeSnapshot 방식의 한계
+
+- 파드 스케일다운과 PVC 재생성으로 인한 **다운타임 발생**
+- EBS 스냅샷 생성 후 VolumeSnapshotClass, VolumeSnapshotContent, VolumeSnapshot 리소스를 순차적으로 생성해야 하는 **복잡한 수동 절차**
+
+자세한 내용은 AWS 블로그 포스트 [Modify Amazon EBS volumes on Kubernetes with Volume Attributes Classes](https://aws.amazon.com/ko/blogs/containers/modify-amazon-ebs-volumes-on-kubernetes-with-volume-attributes-classes/)를 참고하세요.
+
+**이 문서에서 다루는 내용**: 이 글은 VAC가 정식 지원되기 이전에 작성된 레거시 VolumeSnapshot 방식을 다루고 있습니다. 실제 프로덕션 환경에서는 VAC 방식을 사용하시고, 이 문서는 학습 목적이나 특수한 상황(VAC를 사용할 수 없는 구버전 환경 등)에서만 참고하시기 바랍니다.
+
+**업데이트**: 2025년 10월 현재, EKS에서는 VolumeAttributesClass(VAC)를 통한 무중단 볼륨 마이그레이션을 공식 지원합니다.
+
+&nbsp;
+
 ## 환경
 
 - EBS CSI Snapshot Controller v8.2.0
@@ -460,5 +483,9 @@ pvc-cbd219d2-441f-4d19-b3ae-b4996bd4a1a8   10Gi       RWO            Delete     
 
 - [EBS CSI Snapshot Controller](https://github.com/kubernetes-csi/external-snapshotter)
 - [EBS CSI Snapshot Controller 문서](https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/csi-snapshot-controller.html)
+
+AWS Blog:
+
 - [Migrating Amazon EKS clusters from gp2 to gp3 EBS volumes](https://aws.amazon.com/ko/blogs/containers/migrating-amazon-eks-clusters-from-gp2-to-gp3-ebs-volumes/): AWS Blog
-- [Amazon EBS 볼륨을 gp2에서 gp3으로 마이그레이션하고 최대 20% 비용 절감하기](https://aws.amazon.com/ko/blogs/korea/migrate-your-amazon-ebs-volumes-from-gp2-to-gp3-and-save-up-to-20-on-costs/): AWS Blog
+- [Amazon EBS 볼륨을 gp2에서 gp3으로 마이그레이션하고 최대 20% 비용 절감하기](https://aws.amazon.com/ko/blogs/korea/migrate-your-amazon-ebs-volumes-from-gp2-to-gp3-and-save-up-to-20-on-costs/)
+- [Modify Amazon EBS volumes on Kubernetes with Volume Attributes Classes](https://aws.amazon.com/ko/blogs/containers/modify-amazon-ebs-volumes-on-kubernetes-with-volume-attributes-classes/)
