@@ -9,9 +9,9 @@ tags: ["aws", "eks"]
 
 ## 개요
 
-이 가이드는 Kubernetes 환경에서 EBS gp3 볼륨을 io2로 마이그레이션하는 절차를 설명합니다. 처음 두 방법은 파드 재시작이나 PV 재생성 없이 in-place 마이그레이션을 지원하여 무중단으로 볼륨 타입과 스펙(IOPS, Throughput)을 변경할 수 있습니다:
+이 가이드는 Kubernetes 환경에서 VolumeAttributesClass를 사용해 EBS gp3 볼륨을 io2로 마이그레이션하는 절차를 설명합니다. 처음 두 방법은 파드 재시작이나 PV 재생성 없이 in-place 마이그레이션을 지원하여 무중단으로 볼륨 타입과 스펙(IOPS, Throughput)을 변경할 수 있습니다:
 
-1. **Volume Attributes Class (VAC)** - 선언적 방식 (권장)
+1. [**Volume Attributes Class (VAC)**](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/tree/master/examples/kubernetes/modify-volume#volume-modification-via-volumeattributesclass) - 선언적 방식 (권장)
 2. **PVC Annotation** - 명령형 방식
 3. **VolumeSnapshot** - 레거시 방식 (⚠️ 파드 재시작 필요)
 
@@ -204,7 +204,7 @@ Events:
   Normal  VolumeModifySuccessful  4m49s  external-resizer ebs.csi.aws.com                                                         external resizer modified volume ebs-claim with vac io2-migration successfully
 ```
 
-이벤트 로그에서 주요 단계를 확인할 수 있습니다:
+PVC에 기록된 이벤트 로그에서 VAC에 의한 볼륨 변경 과정을 확인할 수 있습니다:
 
 1. **WaitForFirstConsumer**: 파드가 생성되어 PVC를 사용할 때까지 대기합니다.
 2. **Provisioning**: EBS CSI 드라이버가 볼륨 프로비저닝을 시작합니다.
@@ -214,5 +214,9 @@ Events:
 
 ## 관련자료 
 
-- [Kubernetes Storage Volume Attributes Classes](https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/)
-- [Migrating Amazon EKS clusters from gp2 to gp3 EBS volumes](https://aws.amazon.com/ko/blogs/containers/migrating-amazon-eks-clusters-from-gp2-to-gp3-ebs-volumes/)
+- [Kubernetes Storage Volume Attributes Classes](https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/) - Kubernetes Official Docs
+- [Migrating Amazon EKS clusters from gp2 to gp3 EBS volumes](https://aws.amazon.com/ko/blogs/containers/migrating-amazon-eks-clusters-from-gp2-to-gp3-ebs-volumes/) - AWS Blog
+
+Github (kubernetes-sigs/aws-ebs-csi-driver):
+
+- [Volume Modification via VolumeAttributesClass](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/tree/master/examples/kubernetes/modify-volume#volume-modification-via-volumeattributesclass)
