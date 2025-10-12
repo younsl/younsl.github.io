@@ -1,5 +1,5 @@
 ---
-title: "pv control vac"
+title: "pv modification vac"
 date: 2025-10-12T12:05:15+09:00
 lastmod: 2025-10-12T12:05:15+09:00
 description: "EKS 클러스터에서 gp2 타입의 PV를 gp3 타입으로 마이그레이션"
