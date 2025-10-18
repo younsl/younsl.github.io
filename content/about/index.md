@@ -5,9 +5,13 @@ extra:
   showAdvertisement: false
 ---
 
+![PIXELATED KISSES wallpaper](./1.jpg)
+
+DevOps Engineer, Rustacean.
+
 [Resume](./resume.pdf), [Github](https://github.com/younsl)
 
-**Slides**
+**Slides**:
 
 - [Admission Policy](/slides/admission-policy.pdf)
 - [EKS Security Enhancement](/slides/eks-security-enhancement.pdf)
