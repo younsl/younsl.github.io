@@ -5,7 +5,7 @@ extra:
   showAdvertisement: false
 ---
 
-DevOps Engineer, Rustacean.
+[DevOps Engineer](https://roadmap.sh/devops), Rustacean.
 
 [Resume](./resume.pdf), [Github](https://github.com/younsl)
 
