@@ -1,0 +1,13 @@
+name = "okb"
+description = "Ultra-lightweight (1kb) dark theme for Zola"
+license = "MIT"
+homepage = "https://younsl.github.io"
+min_version = "0.18.0"
+demo = "https://younsl.github.io"
+
+[author]
+name = "younsl"
+homepage = "https://younsl.github.io"
+
+[extra]
+# Theme specific configuration

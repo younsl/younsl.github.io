@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {# Site description #}
+  {% if config.description %}
+    <p>{{ config.description }}</p>
+  {% endif %}
+
+  {# Section content #}
+  {% if section.content %}
+    {{ section.content | safe }}
+  {% endif %}
+
+  {# Blog post list #}
+  {% set blog_section = get_section(path="blog/_index.md") %}
+  {% for page in blog_section.pages %}
+    <p class="post-item">
+      {% if page.date %}
+        <time>{{ page.date | date(format="%Y-%m") }}</time>
+      {% endif %}
+      <a href="{{ page.permalink }}">{{ page.title }}</a>
+    </p>
+  {% endfor %}
+{% endblock content %}

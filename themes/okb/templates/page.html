@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% import "macros.html" as macros %}
+
+{% block content %}
+  {# Navigation #}
+  <nav>
+    <a href="/">back</a>
+  </nav>
+
+  {# Article content #}
+  <article>
+    {# Post header #}
+    <p>
+      {% if page.date %}
+        <span class="post-date">{{ page.date | date(format="%Y-%m-%d") }}</span>
+      {% endif %}
+      {{ page.title }}
+    </p>
+
+    <p class="post-meta">
+      <a href="{{ config.extra.author_link }}">{{ config.title }}</a>
+    </p>
+
+    {# Advertisement settings #}
+    {% if page.extra.showAdvertisement is defined %}
+      {% set show_ads = page.extra.showAdvertisement %}
+    {% else %}
+      {% set show_ads = true %}
+    {% endif %}
+
+    {# Top advertisement #}
+    {% if show_ads %}
+      {{ macros::adsense() }}
+    {% endif %}
+
+    {# Main content #}
+    {{ page.content | safe }}
+
+    {# Bottom advertisement #}
+    {% if show_ads %}
+      {{ macros::adsense() }}
+    {% endif %}
+  </article>
+{% endblock content %}
