@@ -136,9 +136,13 @@ article {
 /* Post List Items */
 .post-item {
   margin-bottom: 0.8rem;
-  
+
   time {
     color: #999;
+  }
+
+  a {
+    text-decoration: none;
   }
 }
 
