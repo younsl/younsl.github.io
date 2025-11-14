@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% if config.description %}
+    <p>{{ config.description }}</p>
+  {% endif %}
+
+  {% if section.content %}
+    {{ section.content | safe }}
+  {% endif %}
+
+  {% set about_page = get_page(path="about/index.md") %}
+  {% if about_page and about_page.extra.pinnedToTop %}
+    <p class="post-item">
+      {% if about_page.date %}
+        <time>{{ about_page.date | date(format="%Y-%m") }}</time>
+      {% endif %}
+      <a href="{{ about_page.permalink }}">{{ about_page.title }}</a>
+    </p>
+  {% endif %}
+
+  {% set blog_section = get_section(path="blog/_index.md") %}
+  {% for page in blog_section.pages %}
+    {% if page.extra.pinnedToTop %}
+      <p class="post-item">
+        {% if page.date %}
+          <time>{{ page.date | date(format="%Y-%m") }}</time>
+        {% endif %}
+        <a href="{{ page.permalink }}">{{ page.title }}</a>
+      </p>
+    {% endif %}
+  {% endfor %}
+
+  {% for page in blog_section.pages %}
+    {% if not page.extra.pinnedToTop %}
+      <p class="post-item">
+        {% if page.date %}
+          <time>{{ page.date | date(format="%Y-%m") }}</time>
+        {% endif %}
+        <a href="{{ page.permalink }}">{{ page.title }}</a>
+      </p>
+    {% endif %}
+  {% endfor %}
+{% endblock content %}

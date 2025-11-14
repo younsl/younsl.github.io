@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% import "macros.html" as macros %}
+
+{% block content %}
+  <nav>
+    <a href="/">back</a>
+  </nav>
+
+  <article>
+    <p>
+      {% if page.date %}
+        <span class="post-date">{{ page.date | date(format="%Y-%m-%d") }}</span>
+      {% endif %}
+      {{ page.title }}
+    </p>
+
+    {% set show_ads = page.extra.showAdvertisement | default(value=true) %}
+
+    {% if show_ads %}
+      {{ macros::adsense() }}
+    {% endif %}
+
+    {{ page.content | safe }}
+
+    {% if show_ads %}
+      {{ macros::adsense() }}
+    {% endif %}
+  </article>
+{% endblock content %}
