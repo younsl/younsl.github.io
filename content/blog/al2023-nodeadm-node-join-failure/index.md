@@ -13,6 +13,8 @@ EKS 1.32에서 1.34로 업그레이드 후 Self-Managed Node Group의 신규 노
 
 AL2023은 워커 노드 부트스트랩에 [nodeadm](https://awslabs.github.io/amazon-eks-ami/nodeadm/)이라는 새로운 방식을 도입했습니다. 이전 Amazon Linux 2가 bootstrap.sh 스크립트로 노드를 초기화했다면, AL2023은 nodeadm이 User Data의 NodeConfig YAML을 읽어 노드를 초기화하고 클러스터에 조인시킵니다. 이러한 변경으로 인해 특정 설정이 새 버전의 nodeadm과 호환 문제를 일으킬 수 있습니다.
 
+![Self Managed Node Groups 아키텍처](1.png)
+
 이 글은 문제의 근본 원인을 찾고 해결한 과정을 기록합니다.
 
 ## 환경
