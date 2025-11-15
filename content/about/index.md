@@ -25,6 +25,5 @@ You can check out my operations automation tools at [o](https://github.com/youns
 Slides I've shared at work and meetups.
 
 - [Admission Policy](/slides/admission-policy.pdf)
-- [EKS Security Enhancement](/slides/eks-security-enhancement.pdf)
 - [Gateway API Inference](/slides/gateway-api-inference.pdf)
 - [Infrastructure for Sales](/slides/infrastructure-for-sales.pdf)
