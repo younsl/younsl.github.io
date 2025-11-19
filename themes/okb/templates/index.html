@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {# Load blog posts and about page #}
+  {% set blog_section = get_section(path="blog/_index.md") %}
+  {% set about_page = get_page(path="about/index.md") %}
+
+  {# Combine all pages: about page (if exists) + blog posts #}
+  {% set_global all_pages = blog_section.pages %}
+  {% if about_page %}
+    {% set_global all_pages = [about_page] | concat(with=blog_section.pages) %}
+  {% endif %}
+
+  {# Display posts: pinned posts first, then regular posts #}
+  {% for is_pinned in [true, false] %}
+    {% for page in all_pages %}
+      {% set pinned = page.extra.pinnedToTop | default(value=false) %}
+
+      {% if pinned == is_pinned %}
+        <p class="post-item">
+          {% if page.date %}
+            <time>{{ page.date | date(format="%Y-%m") }}</time>
+          {% endif %}
+          <a href="{{ page.permalink }}">{{ page.title }}</a>
+        </p>
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% endblock content %}
