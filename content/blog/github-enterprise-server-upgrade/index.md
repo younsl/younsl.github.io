@@ -181,6 +181,24 @@ Target root partition: /dev/xvda2
 Proceed with installation? [y/N]
 ```
 
+**루트 볼륨 파티션 구조:**
+
+GHES는 업그레이드 시 루트 볼륨을 2개의 파티션으로 나누어 사용합니다. `/dev/xvda1`에 구 버전이 실행 중이고, `/dev/xvda2`에 새 버전을 설치한 후 재부팅하면서 파티션이 교체됩니다. 이러한 이중 파티션 구조로 인해 400GB 루트 볼륨도 실제 사용 가능한 용량은 약 200GB입니다.
+
+파티션 구조 확인:
+
+```bash
+lsblk
+```
+
+```
+NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+xvda    202:0    0  400G  0 disk
+├─xvda1 202:1    0  200G  0 part /          (현재 버전)
+└─xvda2 202:2    0  200G  0 part            (업그레이드 대상)
+xvdb    202:16   0  200G  0 disk /data
+```
+
 - 약 30~40분 소요
 - 이 과정에서 EC2의 자동 리부팅이 발생합니다
 
