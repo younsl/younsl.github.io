@@ -86,7 +86,7 @@ A curated collection of learning resources for Site Reliability Engineers (SRE) 
 - [Contributing to Complex Projects](https://mitchellh.com/writing/contributing-to-complex-projects) by [Mitchell Hashimoto](https://mitchellh.com/)
 - [CNCF Landscape](https://landscape.cncf.io/)
 - [roadmap.sh devops](https://roadmap.sh/devops)
-- [12 Factor App](https://12factor.net/)
+- [12 Factor App](https://12factor.net/) - Methodology for building modern, scalable, and maintainable software-as-a-service applications
 - [DevOps Exercises](https://github.com/bregman-arie/devops-exercises)
 - [DevOps is bullshit](https://www.massdriver.cloud/blogs/devops-is-bullshit)
 - [Product and Platform Engineers](https://leerob.io/blog/product-engineers)
