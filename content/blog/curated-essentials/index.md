@@ -45,6 +45,7 @@ A curated collection of learning resources for Site Reliability Engineers (SRE) 
 
 **Blog**:
 
+- [Mat Klad](https://matklad.github.io/)
 - [Antirez](https://antirez.com): Creator of Redis
 - [Mitchell Hashimoto](https://mitchellh.com/): Co-founder x-@HashiCorp
 - [Kevin Cox](https://kevincox.ca/): Founding Engineer, x-Plato
