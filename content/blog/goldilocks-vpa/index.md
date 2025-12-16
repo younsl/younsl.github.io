@@ -51,38 +51,93 @@ Before you install Goldilocks, you need:
 - Kubernetes cluster v1.21+
 - Helm v3+
 - metrics-server installed (VPA Recommender needs this to collect CPU and memory usage)
-- VPA installed (recommender only is enough)
 
-## Install VPA
+## Install
 
-First, install VPA. You only need the recommender part:
+VPA is included as a subchart of Goldilocks. You can install both with a single Helm release.
+
+Installed charts:
+
+- **goldilocks**: Main chart (controller + dashboard)
+- **vpa**: Subchart (recommender only)
 
 ```bash
 helm repo add fairwinds-stable https://charts.fairwinds.com/stable
 helm repo update
 ```
 
-```bash
-helm install vpa fairwinds-stable/vpa \
-  --namespace vpa \
-  --create-namespace \
-  --set recommender.enabled=true \
-  --set updater.enabled=false \
-  --set admissionController.enabled=false \
-  --set metrics-server.enabled=false
+### Checkpoint mode (default)
+
+Stores recommendation data in memory. Simple setup but has limitations:
+
+- Max 8 days of history
+- Data lost on VPA Recommender pod restart
+- Recommendations reset after cluster upgrade
+
+```yaml
+# values.yaml
+vpa:
+  enabled: true
+  recommender:
+    extraArgs:
+      v: "4"
+      storage: checkpoint
+      pod-recommendation-min-cpu-millicores: 15
+      pod-recommendation-min-memory-mb: 100
+  updater:
+    enabled: false
+  admissionController:
+    enabled: false
 ```
 
-The updater and admission controller are disabled. This setup only provides CPU and memory recommendations, not auto-updates. metrics-server is also disabled because it is already installed as a separate chart.
+### Prometheus mode (recommended)
 
-Check if VPA is running. The `vpa-recommender` pod analyzes pod resource usage from metrics-server and generates CPU and memory recommendations:
+Uses Prometheus as history provider. Better for production:
+
+- Data survives pod restarts
+- History length follows Prometheus retention setting (not limited to 8 days)
+- Better recommendations for workloads with weekly patterns
+- Recommendations available immediately after cluster upgrade
+
+```yaml
+# values.yaml
+vpa:
+  enabled: true
+  recommender:
+    extraArgs:
+      v: "4"
+      storage: prometheus
+      prometheus-address: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+      pod-recommendation-min-cpu-millicores: 15
+      pod-recommendation-min-memory-mb: 100
+  updater:
+    enabled: false
+  admissionController:
+    enabled: false
+```
+
+### Run install
+
+Install Goldilocks with VPA subchart:
 
 ```bash
-kubectl get pods -n vpa
+helm install goldilocks fairwinds-stable/goldilocks \
+  --namespace goldilocks \
+  --create-namespace \
+  -f values.yaml
+```
+
+Check if pods are running:
+
+```bash
+kubectl get pods -n goldilocks
 ```
 
 ```bash
 NAME                                        READY   STATUS    RESTARTS   AGE
-vpa-recommender-5c4f8d8b9f-xxxxx            1/1     Running   0          1m
+goldilocks-controller-xxxxx-xxxxx           1/1     Running   0          1m
+goldilocks-dashboard-xxxxx-xxxxx            1/1     Running   0          1m
+goldilocks-vpa-recommender-xxxxx-xxxxx      1/1     Running   0          1m
 ```
 
 ### VPA Recommender storage mode
@@ -133,28 +188,6 @@ For all available flags, see [VPA flags.md](https://github.com/kubernetes/autosc
 - `--recommendation-margin-fraction`: 0.15
 - `--target-cpu-percentile`: 0.9
 - `--target-memory-percentile`: 0.9
-
-## Install Goldilocks
-
-Now install Goldilocks:
-
-```bash
-helm install goldilocks fairwinds-stable/goldilocks \
-  --namespace goldilocks \
-  --create-namespace
-```
-
-Check if Goldilocks is running:
-
-```bash
-kubectl get pods -n goldilocks
-```
-
-```bash
-NAME                                        READY   STATUS    RESTARTS   AGE
-goldilocks-controller-xxxxx-xxxxx           1/1     Running   0          1m
-goldilocks-dashboard-xxxxx-xxxxx            1/1     Running   0          1m
-```
 
 ## Enable namespace
 
@@ -316,25 +349,20 @@ kubectl get pods -n goldilocks -l app.kubernetes.io/component=dashboard
 
 ## Clean up
 
-To remove Goldilocks:
+To remove Goldilocks and VPA:
 
 ```bash
 helm uninstall goldilocks -n goldilocks
 kubectl delete namespace goldilocks
 ```
 
-To remove VPA:
-
-```bash
-helm uninstall vpa -n vpa
-kubectl delete namespace vpa
-```
-
-Remove labels from namespaces:
+Remove labels from namespaces.
 
 ```bash
 kubectl label namespace <your-namespace> goldilocks.fairwinds.com/enabled-
 ```
+
+If Goldilocks is still running, removing the label triggers automatic deletion of VPA objects in that namespace.
 
 ## Summary
 
