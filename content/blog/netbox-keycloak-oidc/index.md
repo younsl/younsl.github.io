@@ -38,6 +38,7 @@ References:
 - [python-social-auth](https://python-social-auth.readthedocs.io/)
 - [python-social-auth Keycloak Backend](https://python-social-auth.readthedocs.io/en/latest/backends/keycloak.html)
 - [social-core keycloak.py](https://github.com/python-social-auth/social-core/blob/master/social_core/backends/keycloak.py)
+- [NetBox SSO Group Sync Discussion](https://github.com/netbox-community/netbox/discussions/9635) - Community discussion about group synchronization limitations with SSO
 
 ## Prerequisites
 
@@ -220,11 +221,23 @@ Note: `groupSyncEnabled`, `superuserGroups`, `staffGroups` settings are included
 
 ## Troubleshooting
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `InvalidAudienceError` | Missing audience mapper | Add Audience mapper in Keycloak |
-| `sequence item 1: NoneType` | Missing groups claim or name fields | Add Groups mapper, ensure user has first/last name |
-| Login works but no superuser | Custom pipeline not loaded | Check extraVolumeMounts path and ConfigMap |
+### InvalidAudienceError
+
+Missing audience mapper in Keycloak client configuration.
+
+Add Audience mapper in Keycloak: Clients → netbox → Client Scopes → netbox-dedicated → Mappers → Add Audience mapper.
+
+### sequence item 1: NoneType
+
+Missing groups claim or user name fields in the token.
+
+Add Groups mapper in Keycloak and ensure the user has first/last name set in their Keycloak profile.
+
+### Login works but no superuser
+
+NetBox's built-in `groupSyncEnabled` and `superuserGroups` only work with HTTP header-based authentication. For python-social-auth (direct OAuth), a custom pipeline is required to read groups from the token and assign permissions.
+
+The custom pipeline must be mounted at `/opt/netbox/netbox/netbox/sso_pipeline.py`. Check extraVolumeMounts path and verify the ConfigMap is created in the correct namespace. You can verify the file is mounted by exec into the netbox pod and checking the file exists.
 
 ## Conclusion
 
