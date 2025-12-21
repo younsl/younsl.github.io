@@ -85,29 +85,11 @@ curl -s https://<keycloak>/realms/<realm> | jq -r '.public_key'
 
 You can also get the public key from Keycloak Admin Console: Realm settings → Keys → RS256 → Public key button.
 
-## Create extraDeploy Template
-
-The netbox-operator chart doesn't process extraDeploy by default.
-
-This template is required to:
-
-- Deploy ConfigMap containing custom pipeline that reads groups claim from Keycloak token and assigns NetBox permissions (superuser/staff)
-- Mount it to netbox-app pod via extraVolumes/extraVolumeMounts
-
-**templates/extra-deploy.yaml:**
-
-```yaml
-{{- range (index .Values "netbox-operator").extraDeploy }}
----
-{{ . }}
-{{- end }}
-```
-
 ## Values Configuration
 
 Configure netbox's helm chart values file to enable Keycloak OIDC authentication with custom pipeline.
 
-The custom pipeline script is declared as a ConfigMap and mounted to the netbox-app pod at `/opt/netbox/netbox/netbox/sso_pipeline.py`. This allows NetBox to import and execute it as a Python module (`netbox.sso_pipeline.set_superuser`) during the authentication process.
+The custom pipeline script is deployed as a ConfigMap via netbox subchart's `extraDeploy` and mounted to the netbox-app pod at `/opt/netbox/netbox/netbox/sso_pipeline.py`. This allows NetBox to import and execute it as a Python module (`netbox.sso_pipeline.set_superuser`) during the authentication process.
 
 ```yaml
 netbox-operator:
@@ -123,31 +105,6 @@ The group names in the script (`administrator`, `developer`) must match your Key
 
 ```yaml
 netbox-operator:
-  # Custom pipeline ConfigMap
-  extraDeploy:
-    - |
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: netbox-sso-pipeline
-        namespace: <namespace>
-      data:
-        sso_pipeline.py: |
-          def set_superuser(backend, user, response, *args, **kwargs):
-              groups = response.get('groups', [])
-              normalized = [g.lstrip('/') for g in groups]
-
-              if 'administrator' in normalized:
-                  user.is_superuser = True
-                  user.is_staff = True
-              elif 'developer' in normalized:
-                  user.is_staff = True
-              else:
-                  user.is_superuser = False
-                  user.is_staff = False
-
-              user.save()
-
   netbox:
     enabled: true
 
@@ -207,6 +164,29 @@ netbox-operator:
       - name: sso-pipeline
         mountPath: /opt/netbox/netbox/netbox/sso_pipeline.py
         subPath: sso_pipeline.py
+
+    # Custom pipeline ConfigMap
+    extraDeploy:
+      - apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: netbox-sso-pipeline
+        data:
+          sso_pipeline.py: |
+            def set_superuser(backend, user, response, *args, **kwargs):
+                groups = response.get('groups', [])
+                normalized = [g.lstrip('/') for g in groups]
+
+                if 'administrator' in normalized:
+                    user.is_superuser = True
+                    user.is_staff = True
+                elif 'developer' in normalized:
+                    user.is_staff = True
+                else:
+                    user.is_superuser = False
+                    user.is_staff = False
+
+                user.save()
 ```
 
 Note: `groupSyncEnabled`, `superuserGroups`, `staffGroups` settings are included but only work with HTTP header-based authentication. For python-social-auth (direct OAuth), the custom pipeline handles group mapping.
