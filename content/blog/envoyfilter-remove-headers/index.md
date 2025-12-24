@@ -80,6 +80,8 @@ spec:
         - server
 ```
 
+EnvoyFilter is placed in `istio-system` where Istio Gateway runs. This is the recommended pattern to apply the filter to all Gateways cluster-wide.
+
 ### Configuration Details
 
 - `applyTo: VIRTUAL_HOST`: Apply the patch at the Virtual Host level
