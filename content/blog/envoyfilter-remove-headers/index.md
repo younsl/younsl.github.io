@@ -91,43 +91,26 @@ spec:
 
 You can use the [istio-envoyfilters](https://github.com/younsl/charts/tree/main/charts/istio-envoyfilters) Helm chart to manage EnvoyFilter resources.
 
-When managing EnvoyFilter with Helm chart:
+Example `values.yaml` for istio-envoyfilters chart:
 
 ```yaml
 # values.yaml
 envoyFilters:
-  removeHeaders:
+  # Remove unnecessary headers from gateway responses
+  istio-gateway-remove-headers:
     enabled: true
-    name: istio-gateway-remove-headers
-    namespace: istio-system
-    headers:
-      - x-envoy-upstream-service-time
-      - server
-```
-
-```yaml
-# templates/envoyfilter.yaml
-{{- if .Values.envoyFilters.removeHeaders.enabled }}
-apiVersion: networking.istio.io/v1alpha3
-kind: EnvoyFilter
-metadata:
-  name: {{ .Values.envoyFilters.removeHeaders.name }}
-  namespace: {{ .Values.envoyFilters.removeHeaders.namespace }}
-  labels:
-    {{- include "chart.labels" . | nindent 4 }}
-spec:
-  configPatches:
-  - applyTo: VIRTUAL_HOST
-    match:
-      context: GATEWAY
-    patch:
-      operation: MERGE
-      value:
-        response_headers_to_remove:
-        {{- range .Values.envoyFilters.removeHeaders.headers }}
-        - {{ . }}
-        {{- end }}
-{{- end }}
+    annotations:
+      description: "Removes x-envoy-upstream-service-time and server headers from gateway responses for security"
+    configPatches:
+      - applyTo: VIRTUAL_HOST
+        match:
+          context: GATEWAY
+        patch:
+          operation: MERGE
+          value:
+            response_headers_to_remove:
+              - x-envoy-upstream-service-time
+              - server
 ```
 
 ## Deployment
