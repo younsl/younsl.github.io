@@ -15,6 +15,11 @@
       {% if page %}{{ page.title }} - {% endif %}{{ config.title }}
     </title>
 
+    {# Google Fonts - Montserrat #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+
     {# Stylesheet #}
     {% set css_path = get_url(path="main.css", trailing_slash=false) %}
     <link rel="stylesheet" href="{{ css_path }}">
