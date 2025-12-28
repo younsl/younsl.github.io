@@ -11,13 +11,15 @@ tags: ["devops", "container", "kubernetes", "eck", "logstash", "prometheus"]
 
 When running Logstash on ECK (Elastic Cloud on Kubernetes), you can add [logstash-exporter](https://github.com/kuskoman/logstash-exporter) as a sidecar container to collect Prometheus metrics. This guide explains how to configure logstash-exporter with Logstash 8.17.0.
 
+## Why ECK for Logstash
+
+Elastic directs users to ECK for Kubernetes deployments. The official [Running Logstash on Kubernetes](https://www.elastic.co/docs/reference/logstash/running-logstash-kubernetes) documentation points to ECK rather than providing standalone Kubernetes deployment instructions.
+
 ## Environment
 
 - ECK Operator
 - Logstash 8.17.0
 - logstash-exporter v1.9.1
-
-> Running Logstash on ECK is compatible only with Logstash 8.7+. See [ECK Logstash documentation](https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-logstash.html) for details.
 
 ## Symptom
 
@@ -87,6 +89,8 @@ Key settings to disable SSL on the Logstash API:
 ## Full Example
 
 Below is a complete Logstash 8.17.0 resource with SSL settings configured for logstash-exporter.
+
+> Running Logstash on ECK is compatible only with Logstash 8.7+. See [ECK Logstash documentation](https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-logstash.html) for details.
 
 > **Note**: This example uses a custom Logstash image hosted on Amazon ECR. The custom image was built to include the [OpenSearch output plugin](https://github.com/opensearch-project/logstash-output-opensearch), which is not included in the official Logstash image by default.
 
