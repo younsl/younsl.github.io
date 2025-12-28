@@ -1,0 +1,36 @@
+{% import "macros.html" as macros %}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    {# Page description for SEO #}
+    {% if page and page.summary %}
+      <meta name="description" content="{{ page.summary | striptags }}">
+    {% endif %}
+
+    {# Page title #}
+    <title>
+      {% if page %}{{ page.title }} - {% endif %}{{ config.title }}
+    </title>
+
+    {# Google Fonts - Montserrat #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+
+    {# Stylesheet #}
+    {% set css_path = get_url(path="main.css", trailing_slash=false) %}
+    <link rel="stylesheet" href="{{ css_path }}">
+  </head>
+
+  <body>
+    <div class="w">
+      {% block content %}{% endblock %}
+    </div>
+
+    {# Mermaid diagram support #}
+    {{ macros::mermaid_script() }}
+  </body>
+</html>

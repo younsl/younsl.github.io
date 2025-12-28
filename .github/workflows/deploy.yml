@@ -1,0 +1,63 @@
+name: Deploy Zola site to Github Pages
+run-name: 🚀 Deploy Zola site to Github Pages
+
+on:
+  push:
+    branches: ["main"]
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Zola
+        env:
+          ZOLA_VERSION: 0.21.0
+        run: |
+          ARCH=${{ runner.arch == 'X64' && 'x86_64' || 'aarch64' }}
+          wget -O ${{ runner.temp }}/zola.tar.gz \
+            https://github.com/getzola/zola/releases/download/v${ZOLA_VERSION}/zola-v${ZOLA_VERSION}-${ARCH}-unknown-linux-gnu.tar.gz
+          tar xzf ${{ runner.temp }}/zola.tar.gz -C ${{ runner.temp }}
+          sudo mv ${{ runner.temp }}/zola /usr/local/bin/
+          zola --version
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Build with Zola
+        run: |
+          zola build --base-url "${{ steps.pages.outputs.base_url }}"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./public
+
+  deploy:
+    environment:
+      name: gh-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
