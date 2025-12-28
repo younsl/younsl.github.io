@@ -24,6 +24,7 @@ Personal tech blog built with Zola v0.21.0 and hosted on GitHub Pages at [younsl
 The custom "okb" theme in `themes/okb/` provides:
 - Ultra-lightweight design focused on minimal footprint and maximum performance
 - Dark appearance by default (#0f0e0e background, #fafafa text)
+- Typography: Montserrat font (16px base size, 1.6 line height) with sans-serif fallback
 - Support for Mermaid diagrams via macro
 - Syntax highlighting with gray-matter-dark theme
 - Template files use Tera templating engine
