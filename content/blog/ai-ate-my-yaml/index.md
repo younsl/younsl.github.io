@@ -153,7 +153,7 @@ The value of coding ability is declining, but the value of these skills is risin
 
 **1. Expand into Platform Engineering**
 
-The next step after DevOps is Platform Engineering. Building Internal Developer Platforms (IDP) and improving Developer Experience (DX) are roles AI struggles to replace.
+DevOps automated repetitive ops tasks through CI/CD pipelines, IaC, and configuration management. Platform Engineering takes this further by productizing that automation—treating internal tools as products with developers as customers. It requires deep understanding of organizational workflows, team dynamics, and developer pain points—context that AI cannot acquire on its own. Building Internal Developer Platforms (IDP) and improving Developer Experience (DX) are roles AI struggles to replace.
 
 ```
 DevOps Engineer
