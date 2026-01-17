@@ -21,16 +21,6 @@
       {{ page.title }}
     </p>
 
-    {% set show_ads = page.extra.showAdvertisement | default(value=true) %}
-
-    {% if show_ads %}
-      {{ macros::adsense() }}
-    {% endif %}
-
     {{ page.content | safe }}
-
-    {% if show_ads %}
-      {{ macros::adsense() }}
-    {% endif %}
   </article>
 {% endblock content %}
