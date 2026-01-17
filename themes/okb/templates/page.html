@@ -14,9 +14,9 @@
   </nav>
 
   <article>
-    <p>
+    <p class="post-item">
       {% if page.date %}
-        <span class="post-date">{{ page.date | date(format="%Y-%m-%d") }}</span>
+        <time>{{ page.date | date(format="%Y-%m-%d") }}</time>
       {% endif %}
       {{ page.title }}
     </p>

@@ -1,4 +1,46 @@
-/* Montserrat font (self-hosted) */
+// =============================================================================
+// Variables
+// =============================================================================
+
+:root {
+  // Colors
+  --color-bg: #0f0e0e;
+  --color-text: #fafafa;
+  --color-muted: #999;
+  --color-muted-dark: #888;
+  --color-border: #333;
+  --color-border-light: #444;
+  --color-code-bg: #111;
+  --color-highlight-bg: #2a2a2a;
+
+  // Typography
+  --font-family: 'Montserrat', sans-serif;
+  --font-size-base: 16px;
+  --font-size-small: 0.9rem;
+  --line-height: 1.6;
+  --line-height-heading: 1.2;
+
+  // Spacing
+  --spacing-xs: 0.3rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  // Layout
+  --content-width: 550px;
+  --content-width-narrow: 500px;
+  --border-radius: 4px;
+
+  // Post list
+  --date-width-short: 4.5rem;  // YYYY-MM
+  --date-width-long: 6rem;     // YYYY-MM-DD
+}
+
+// =============================================================================
+// Font Face
+// =============================================================================
+
 @font-face {
   font-family: 'Montserrat';
   font-style: normal;
@@ -7,59 +49,67 @@
   src: url('/fonts/montserrat-latin.woff2') format('woff2');
 }
 
-/* Base Elements */
+// =============================================================================
+// Base Elements
+// =============================================================================
+
 html {
   height: 100%;
 }
 
 body {
-  font: 16px/1.6 'Montserrat', sans-serif;
-  max-width: 550px;
+  font: var(--font-size-base)/var(--line-height) var(--font-family);
+  max-width: var(--content-width);
   margin: 0 auto;
-  padding: 2rem 1rem;
-  color: #fafafa;
-  background: #0f0e0e;
+  padding: var(--spacing-xl) var(--spacing-md);
+  color: var(--color-text);
+  background: var(--color-bg);
   overflow-wrap: break-word;
 }
 
-/* Links */
+// =============================================================================
+// Typography
+// =============================================================================
+
 a {
-  color: #fafafa;
+  color: var(--color-text);
   text-decoration: underline;
-  text-decoration-color: #999;
-  
+  text-decoration-color: var(--color-muted);
+
   &:hover {
-    color: #999;
-    text-decoration-color: #999;
+    color: var(--color-muted);
   }
 }
 
-/* Headings */
 h1, h2, h3, h4, h5, h6 {
-  line-height: 1.2;
-  margin: 1.5rem 0 0.5rem;
+  line-height: var(--line-height-heading);
+  margin: var(--spacing-lg) 0 var(--spacing-sm);
 }
 
-/* Code Blocks */
-pre {
-  overflow-x: auto;
-  padding: 1rem;
-  background: #111;
-  border-radius: 4px;
+blockquote {
+  border-left: 3px solid var(--color-border-light);
+  margin: var(--spacing-md) 0;
+  padding-left: var(--spacing-md);
+}
 
-  code {
-    background: none;
-    padding: 0;
+hr {
+  text-align: center;
+  border: 0;
+  margin: var(--spacing-xl) 0;
+
+  &:before {
+    content: '/////';
   }
 
-  /* Highlighted lines */
-  mark, .highlighted {
-    background: #2a2a2a;
-    color: #ffffff;
+  &:after {
+    content: attr(data-content) '/////';
   }
 }
 
-/* Fixes iOS font sizing anomaly */
+// =============================================================================
+// Code
+// =============================================================================
+
 code {
   text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
@@ -67,14 +117,27 @@ code {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Blockquotes */
-blockquote {
-  border-left: 3px solid #444;
-  margin: 1rem 0;
-  padding-left: 1rem;
+pre {
+  overflow-x: auto;
+  padding: var(--spacing-md);
+  background: var(--color-code-bg);
+  border-radius: var(--border-radius);
+
+  code {
+    background: none;
+    padding: 0;
+  }
+
+  mark, .highlighted {
+    background: var(--color-highlight-bg);
+    color: var(--color-text);
+  }
 }
 
-/* Images */
+// =============================================================================
+// Media
+// =============================================================================
+
 img {
   max-width: 100%;
   height: auto;
@@ -82,72 +145,62 @@ img {
   margin: 0 auto;
 }
 
-/* Tables */
+// =============================================================================
+// Tables
+// =============================================================================
+
 table {
   width: 100%;
   border-collapse: collapse;
 }
 
 th, td {
-  border: 1px solid #333;
-  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  padding: var(--spacing-sm);
   text-align: left;
 }
 
-/* Horizontal Rules */
-hr {
-  text-align: center;
-  border: 0;
-  margin: 2rem 0;
-  
-  &:before {
-    content: '/////';
-  }
-  
-  &:after {
-    content: attr(data-content) '/////';
-  }
-}
+// =============================================================================
+// Layout Components
+// =============================================================================
 
-/* Navigation */
-nav {
-  a {
-    color: #888;
-    
-    &:hover {
-      color: #fff;
-    }
-  }
-}
-
-/* Article */
-article {
-  margin: 2rem 0;
-}
-
-/* Layout Components */
 .w {
-  max-width: 500px;
+  max-width: var(--content-width-narrow);
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: var(--spacing-xl) var(--spacing-md);
 }
 
-/* Post Metadata */
+nav a {
+  color: var(--color-muted-dark);
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+article {
+  margin: var(--spacing-xl) 0;
+}
+
+// =============================================================================
+// Post Components
+// =============================================================================
+
 .post-meta {
-  color: #888;
-  font-size: 0.9rem;
+  color: var(--color-muted-dark);
+  font-size: var(--font-size-small);
 }
 
-.post-date {
-  color: #999999;
-}
-
-/* Post List Items */
 .post-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-xs);
   margin-bottom: 0.8rem;
 
   time {
-    color: #999;
+    color: var(--color-muted);
+    flex-shrink: 0;
+    width: var(--date-width-short);
   }
 
   a {
@@ -155,9 +208,16 @@ article {
   }
 }
 
-/* Mermaid Diagrams */
+article .post-item time {
+  width: var(--date-width-long);
+}
+
+// =============================================================================
+// Mermaid Diagrams
+// =============================================================================
+
 .mermaid {
-  background: #0f0e0e;
-  padding: 1rem;
-  margin: 1rem 0;
+  background: var(--color-bg);
+  padding: var(--spacing-md);
+  margin: var(--spacing-md) 0;
 }
