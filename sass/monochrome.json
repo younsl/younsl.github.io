@@ -34,7 +34,7 @@
 		}
 	],
 	"colors": {
-		"editor.background": "#0f0e0e",
+		"editor.background": "#000000",
 		"editor.foreground": "#CCCCCC"
 	}
 }

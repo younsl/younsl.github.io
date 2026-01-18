@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-Personal tech blog built with Zola v0.21.0 and hosted on GitHub Pages at [younsl.github.io](https://younsl.github.io). The blog uses a custom "okb" (1kb) theme created by the author.
+Personal tech blog built with Zola v0.22.0 and hosted on GitHub Pages at [younsl.github.io](https://younsl.github.io).
 
 ## Architecture
 
@@ -13,20 +13,17 @@ Personal tech blog built with Zola v0.21.0 and hosted on GitHub Pages at [younsl
 - **content/**: Site content
   - `blog/`: Blog posts, each in its own directory with `index.md` and assets
   - `about/`: About page content
-- **themes/okb/**: Custom ultra-lightweight Zola theme (1kb)
-  - `templates/`: Tera template files (base.html, page.html, index.html, etc.)
-  - `sass/`: SCSS stylesheets (main.scss)
-  - `static/`: Theme static assets
-- **static/**: Site-level static assets served directly
+- **templates/**: Tera template files (base.html, page.html, index.html, etc.)
+- **sass/**: SCSS stylesheets (main.scss) and syntax highlighting theme (monochrome.json)
+- **static/**: Static assets (fonts, images, etc.)
 - **public/**: Generated site output (git-ignored)
 
-### Theme Architecture
-The custom "okb" theme in `themes/okb/` provides:
+### Design
 - Ultra-lightweight design focused on minimal footprint and maximum performance
-- Dark appearance by default (#0f0e0e background, #fafafa text)
+- Dark appearance by default (#000 background, #fafafa text)
 - Typography: Montserrat font (16px base size, 1.6 line height) with sans-serif fallback
 - Support for Mermaid diagrams via macro
-- Syntax highlighting with gray-matter-dark theme
+- Syntax highlighting with custom Monochrome theme
 - Template files use Tera templating engine
 
 ### Template Structure
@@ -67,17 +64,16 @@ podman run --rm -p 1111:1111 -v $(pwd):/app zola-blog
 
 ### Zola Configuration (config.toml)
 - **Base URL**: https://younsl.github.io
-- **Theme**: okb (custom, ultra-lightweight)
 - **Markdown renderer**: Built-in with syntax highlighting enabled
-- **Syntax highlighting theme**: gray-matter-dark
+- **Syntax highlighting theme**: Monochrome (custom, defined in sass/monochrome.json)
 - **SASS compilation**: Enabled (compile_sass = true)
 - **HTML minification**: Enabled (minify_html = true)
 
 ### Syntax Highlighting
 - Highlighted lines use `mark` or `.highlighted` class
 - Background color: #2a2a2a
-- Text color: #ffffff (white)
-- Code blocks background: #111
+- Text color: #ccc (comments: #666)
+- Code blocks background: #000
 
 ### Container Support
 - Dockerfile provided for local development
@@ -108,10 +104,9 @@ podman run --rm -p 1111:1111 -v $(pwd):/app zola-blog
 The repository uses GitHub Actions for automated deployment:
 
 - **deploy.yml**: Triggers on pushes to `main`, builds and deploys to GitHub Pages
-  - Uses Zola v0.21.0
+  - Uses Zola v0.22.0
   - Builds with `zola build --base-url`
   - Deploys to `gh-pages` environment
 
 - **broken-link-finder.yml**: Daily broken link checks using DeadFinder
-- **release-theme-okb.yml**: Theme release automation (triggered by version tags)
 - **close-pull-request.yml**: Automatically closes PRs (personal repository, no contributions accepted)

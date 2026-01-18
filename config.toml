@@ -5,8 +5,6 @@ base_url = "https://younsl.github.io"
 title = "younsl"
 description = ""
 
-# The theme to use
-theme = "okb"
 
 # The default language
 default_language = "en"
@@ -41,7 +39,7 @@ smart_punctuation = false
 # Syntax highlighting with custom monochrome theme
 [markdown.highlighting]
 enabled = true
-extra_themes = ["themes/monochrome.json"]
+extra_themes = ["sass/monochrome.json"]
 theme = "Monochrome"
 
 # Configuration of the link checker.
