@@ -60,24 +60,29 @@ podman run --rm -p 1111:1111 -v $(pwd):/app zola-blog
 - Images and assets stored alongside in same directory
 - Posts appear chronologically on homepage
 
-## Configuration Notes
+### Blog Post Frontmatter
+```toml
+---
+title: "post title"
+date: 2024-11-23T02:41:15+09:00
+lastmod: 2024-11-23T23:34:22+09:00  # optional
+description: "Brief description"
+keywords: []
+tags: ["tag1", "tag2"]
+---
+```
 
-### Zola Configuration (config.toml)
-- **Base URL**: https://younsl.github.io
-- **Markdown renderer**: Built-in with syntax highlighting enabled
-- **Syntax highlighting theme**: Monochrome (custom, defined in sass/monochrome.json)
-- **SASS compilation**: Enabled (compile_sass = true)
-- **HTML minification**: Enabled (minify_html = true)
-
-### Syntax Highlighting
-- Highlighted lines use `mark` or `.highlighted` class
-- Background color: #2a2a2a
-- Text color: #ccc (comments: #666)
-- Code blocks background: #000
+### Creating a New Post
+```bash
+# Create post directory and file
+mkdir -p content/blog/my-new-post
+touch content/blog/my-new-post/index.md
+# Add frontmatter and content, then place images in same directory
+```
 
 ### Container Support
 - Dockerfile provided for local development
-- Alpine Linux 3.21 base with Zola installed via apk
+- Alpine Linux 3.22 base with Zola installed via apk
 - Default port: 1111
 - Live reload enabled
 
