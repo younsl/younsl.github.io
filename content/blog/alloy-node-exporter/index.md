@@ -135,6 +135,8 @@ RPM package automatically creates systemd service, `alloy` user/group, and direc
 
 `prometheus.exporter.unix "node" {}` with empty block enables all default collectors (cpu, diskstats, filesystem, loadavg, meminfo, netdev, etc.). See [Custom Collectors](#custom-collectors) section to enable specific collectors only.
 
+> **Note**: Alloy uses [HCL-like syntax](https://grafana.com/docs/alloy/latest/get-started/configuration-syntax/). Comments use `//` (not `#`), and fields in blocks like `external_labels` require commas between entries.
+
 ```bash
 cat <<'EOF' | sudo tee /etc/alloy/config.alloy > /dev/null
 prometheus.exporter.unix "node" {}
@@ -147,14 +149,14 @@ prometheus.scrape "node" {
 
 prometheus.remote_write "default" {
   endpoint {
-    # Replace with your Prometheus server URL
+    // Replace with your Prometheus server URL
     url = "https://prometheus.example.com/api/v1/write"
   }
   external_labels = {
     instance      = constants.hostname,
     environment   = "prd",
     app           = "my-app",
-    instance_name = "my-app-ec2"
+    instance_name = "my-app-ec2",
   }
 }
 EOF
@@ -186,8 +188,7 @@ sudo journalctl -u alloy -n 100  # Last 100 lines
 ### Config Validation
 
 ```bash
-alloy fmt /etc/alloy/config.alloy  # Syntax check
-alloy run /etc/alloy/config.alloy  # Test run
+alloy validate /etc/alloy/config.alloy
 ```
 
 ### Health Check
@@ -227,9 +228,9 @@ count by (instance) (up{job="integrations/node_exporter"})
 ```bash
 sudo systemctl reload alloy   # Reload config
 sudo systemctl restart alloy  # Restart
-sudo systemctl stop alloy     # Stop
-alloy --version               # Version
-alloy fmt /etc/alloy/config.alloy  # Format config
+sudo systemctl stop alloy              # Stop
+alloy --version                        # Version
+alloy validate /etc/alloy/config.alloy # Validate config
 ```
 
 ## Troubleshooting
