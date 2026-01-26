@@ -162,6 +162,14 @@ prometheus.remote_write "default" {
 EOF
 ```
 
+Config Validation:
+
+```bash
+alloy validate /etc/alloy/config.alloy
+```
+
+If the configuration is valid, no output is returned.
+
 ### Start Service
 
 ```bash
@@ -183,12 +191,6 @@ sudo systemctl status alloy
 ```bash
 sudo journalctl -u alloy -f      # Real-time
 sudo journalctl -u alloy -n 100  # Last 100 lines
-```
-
-### Config Validation
-
-```bash
-alloy validate /etc/alloy/config.alloy
 ```
 
 ### Health Check
