@@ -2,21 +2,26 @@
 title: "job4 retro"
 date: 2026-01-27T00:10:00+09:00
 lastmod: 2026-01-27T00:10:00+09:00
-description: "A retrospective on my 2.5 years as a DevOps Engineer at job4"
+description: "A retrospective on my 2 years and 6 months as a DevOps Engineer at job4"
 draft: false
 keywords: []
 tags: ["retrospective", "devops", "career"]
 ---
 
+![Silhouette of a person walking with a laptop](1.jpg)
+<small>Photo by [Sebastian Schuster](https://unsplash.com/photos/silhouette-of-a-person-walking-with-a-laptop-UsMUD005Fbk) on Unsplash</small>
+
 ## Overview
 
-I worked as a DevOps Engineer at job4 for 2.5 years, from May 2023 to December 2025.
+It's been almost 3 years since my [last retrospective](/blog/retrospective-2022/) in December 2022. Time flies, but memories linger with mixed emotions.
+
+I worked as a DevOps Engineer at job4 for 2 years and 6 months, from May 2023 to December 2025.
 
 I learned a lot and grew, but I also have regrets. Here's an honest look at what went well, what I learned, and what didn't work out.
 
 ## Duration and Background
 
-**Period**: May 2023 - December 2025 (2.5 years)
+**Period**: May 2023 - December 2025 (2 years and 6 months)
 
 **Role**: DevOps Engineer
 
@@ -90,7 +95,7 @@ This wasn't just one case. It was the culture. Short-term savings mattered more 
 
 ## Conclusion
 
-My 2.5 years at job4 helped me grow technically. But I also learned hard lessons about culture and management.
+My 2 years and 6 months at job4 helped me grow technically. But I also learned hard lessons about culture and management.
 
 I cleaned up legacy systems and got better at solving problems. But politics, poor treatment of employees, and endless tech debt held me back.
 
