@@ -12,7 +12,7 @@ Personal tech blog built with Zola v0.22.0 and hosted on GitHub Pages at [younsl
 - **config.toml**: Main Zola configuration
 - **content/**: Site content
   - `blog/`: Blog posts, each in its own directory with `index.md` and assets
-  - `about/`: About page content
+  - `about/`: About page (index.md, resume.html, resume.pdf)
 - **templates/**: Tera template files (base.html, page.html, index.html, etc.)
 - **sass/**: SCSS stylesheets (main.scss) and syntax highlighting theme (monochrome.json)
 - **static/**: Static assets (fonts, images, etc.)
@@ -69,6 +69,9 @@ lastmod: 2024-11-23T23:34:22+09:00  # optional
 description: "Brief description"
 keywords: []
 tags: ["tag1", "tag2"]
+
+[extra]
+pinnedToTop = true  # optional: pins post to top of homepage
 ---
 ```
 
