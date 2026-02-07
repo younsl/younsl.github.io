@@ -91,3 +91,4 @@ GSS uses the Slack [Canvases API](https://api.slack.com/methods?query=canvases) 
 ## References
 
 - [GSS source code](https://github.com/younsl/o/tree/main/box/kubernetes/gss)
+- [Scheduled Github Action stops working if last committer deletes their accounts #109354](https://github.com/orgs/community/discussions/109354)
