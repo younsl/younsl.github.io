@@ -17,7 +17,7 @@ tags: ["devops", "kubernetes", "github", "ci/cd", "observability", "slack"]
 
 ### GSS란?
 
-[GSS(GHES Schedule Scanner)](https://github.com/younsl/gss)는 GitHub Enterprise Server의 스케줄된 워크플로우를 모니터링하고 분석하는 Kubernetes 애드온입니다. DevOps 및 SRE 팀이 CI/CD 워크플로우를 효율적으로 관리할 수 있도록 설계되었습니다.
+[GSS(GHES Schedule Scanner)](https://github.com/younsl/o/tree/main/box/kubernetes/gss)는 GitHub Enterprise Server의 스케줄된 워크플로우를 모니터링하고 분석하는 Kubernetes 애드온입니다. DevOps 및 SRE 팀이 CI/CD 워크플로우를 효율적으로 관리할 수 있도록 설계되었습니다.
 
 ### 주요 기능
 
@@ -94,4 +94,4 @@ GSS가 cronJob 스케줄에 맞춰 슬랙 캔버스에 Scheduled Workflow 기록
 
 Github:
 
-- [GSS](https://github.com/younsl/gss)
+- [GSS](https://github.com/younsl/o/tree/main/box/kubernetes/gss)
