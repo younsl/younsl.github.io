@@ -2,61 +2,67 @@
 title: gss
 date: 2025-09-01T23:02:00+09:00
 lastmod: 2025-09-01T23:02:00+09:00
-description: "Kubernetes 기반 GitHub Enterprise Server 스케줄 워크플로우 모니터링 도구 GSS(GHES Schedule Scanner) 소개"
+description: "GSS: Kubernetes addon that scans scheduled workflows in GitHub Enterprise Server"
 keywords: ["gss", "ghes", "github enterprise", "ci/cd", "workflow", "kubernetes", "slack canvas"]
 tags: ["devops", "kubernetes", "github", "ci/cd", "observability", "slack"]
 ---
 
-## 개요
+## Overview
 
-이 문서는 GitHub Enterprise Server 환경에서 수백 개의 리포지토리에 분산된 스케줄 워크플로우를 효율적으로 모니터링하기 위해 개발한 오픈소스 도구 GSS(GHES Schedule Scanner)를 소개합니다.
+[GSS](https://github.com/younsl/o/tree/main/box/kubernetes/gss) is a Kubernetes addon that scans scheduled workflows across GitHub Enterprise Server. It runs as a [CronJob](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/) and posts results to console or Slack Canvas.
 
-레포지터리 개수가 960개 넘는 대규모 조직에서 CI/CD 워크플로우를 중앙 관리하며 겪은 성능 문제를 Go의 동시성으로 해결한 경험과 Kubernetes CronJob 및 Slack Canvas API를 활용한 자동화 구현 사례를 공유합니다.
+## Why GSS exists
 
-## 배경지식
+GitHub has a [known behavior](https://github.com/orgs/community/discussions/109354): when a GHES user is deleted (e.g., after leaving the company), all scheduled workflows last committed by that user stop running silently. No warning, no alert, no error — they just stop.
 
-### GSS란?
+In a large org with 960+ repos, this leads to hidden CI/CD outages that are hard to trace. GSS makes this risk visible by scanning all scheduled workflows and tracking their last committer, so teams can fix at-risk workflows before they break.
 
-[GSS(GHES Schedule Scanner)](https://github.com/younsl/o/tree/main/box/kubernetes/gss)는 GitHub Enterprise Server의 스케줄된 워크플로우를 모니터링하고 분석하는 Kubernetes 애드온입니다. DevOps 및 SRE 팀이 CI/CD 워크플로우를 효율적으로 관리할 수 있도록 설계되었습니다.
+## Features
 
-### 주요 기능
+- **Org-wide scan**: Scans all repos in a GHES organization
+- **Fast**: Scans 900+ repos in about 20 seconds using async tasks
+- **Status tracking**: Shows run status, last run time, and last committer per workflow
+- **Timezone**: Auto UTC/KST conversion
+- **Output**: Console or Slack Canvas
 
-- **조직 전체 워크플로우 스캐닝**: GitHub Enterprise Server의 모든 조직 리포지토리 스캔
-- **고성능 병렬 처리**: Go 루틴을 활용하여 900개 이상의 리포지토리를 20-22초 내에 스캔
-- **워크플로우 상태 모니터링**: 각 워크플로우의 실행 상태, 마지막 실행 시간, 커미터 정보 수집
-- **타임존 지원**: UTC/KST 자동 변환
-- **다양한 출력 형식**: 콘솔 출력 또는 Slack Canvas로 결과 발행
+## Tech Stack
 
-## 기술 스택
+GSS was first built in Go, then ported to [Rust](https://www.rust-lang.org/) in November 2025 to match the team's Rust-based Kubernetes tooling. The rewrite brought:
 
-### 개발 언어
+- Smaller binary (~3.8MB vs ~12MB)
+- Lower memory usage (~40MB vs ~80MB)
+- No null pointer crashes thanks to compile-time safety
 
-Go 1.25.0으로 개발되어 높은 성능과 동시성을 제공합니다. 컨테이너화되어 Kubernetes CronJob으로 주기적으로 실행되며, 매 시간 또는 원하는 스케줄에 따라 자동으로 워크플로우를 스캔합니다.
+Async work is handled by Tokio.
 
-![](./1.png)
+## Setup
 
-## 세부 정보
+### Secret
 
-### 헬름 차트 지원
-
-Kubernetes 배포를 위한 헬름 차트를 제공하여 쉽게 설치하고 관리할 수 있습니다.
-
-![](./2.png)
-
-OCI 레지스트리에서 헬름 차트를 다운로드하고 설치할 수 있습니다:
+Create a secret for the GitHub token:
 
 ```bash
-# 사용 가능한 차트 버전 확인
-crane ls ghcr.io/younsl/charts/ghes-schedule-scanner
-
-# 헬름 차트 다운로드 및 압축 해제
-helm pull oci://ghcr.io/younsl/charts/ghes-schedule-scanner --version 0.6.1 --untar
-
-# 헬름 차트 설치
-helm install ghes-schedule-scanner ./ghes-schedule-scanner --namespace gss --create-namespace
+kubectl create secret generic gss-secret \
+  --namespace gss \
+  --from-literal=GITHUB_TOKEN=ghp_xxxxxxxxxxxx
 ```
 
-### Slack canvases API
+### Helm Chart
+
+GHES and Slack settings are managed through the chart's `configMap.data` values. The Slack Canvas publisher needs `SLACK_TOKEN` (`xoxb-` bot token), `SLACK_CHANNEL_ID`, and `SLACK_CANVAS_ID`. See [values.yaml](https://github.com/younsl/o/tree/main/box/kubernetes/gss/charts/gss/values.yaml) for all options.
+
+```bash
+# Check available versions
+crane ls ghcr.io/younsl/charts/gss
+
+# Pull chart
+helm pull oci://ghcr.io/younsl/charts/gss --version 0.1.0 --untar
+
+# Install
+helm install gss ./gss --namespace gss --create-namespace
+```
+
+### Slack Canvases API
 
 ```mermaid
 ---
@@ -64,7 +70,7 @@ title: System architecture for GSS
 ---
 flowchart LR
     subgraph k8s["Kubernetes"]
-        subgraph "Pod GSS" 
+        subgraph "Pod GSS"
             p1["`canvas
             component`"]
         end
@@ -80,18 +86,8 @@ flowchart LR
     style p1 fill: darkorange, color: white
 ```
 
-슬랙에서 제공하는 [Canvases API](https://api.slack.com/methods?query=canvases)로 캔버스 페이지를 CRUD 가능
+GSS uses the Slack [Canvases API](https://api.slack.com/methods?query=canvases) to write scan results to a canvas page on each CronJob run.
 
-### Scanning Output
+## References
 
-GSS가 cronJob 스케줄에 맞춰 슬랙 캔버스에 Scheduled Workflow 기록
-
-## 관련자료
-
-개발할 때 참고할 만한 모범사례
-
-- [Go Standard Project](https://github.com/golang-standards/project-layout)
-
-Github:
-
-- [GSS](https://github.com/younsl/o/tree/main/box/kubernetes/gss)
+- [GSS source code](https://github.com/younsl/o/tree/main/box/kubernetes/gss)
