@@ -1,5 +1,5 @@
 ---
-title: "cloudwatch exporter yace"
+title: "prometheus yace"
 date: 2026-02-05T16:00:00+09:00
 lastmod: 2026-02-05T16:00:00+09:00
 description: "Bridging AWS CloudWatch metrics into Prometheus with YACE for unified observability"
