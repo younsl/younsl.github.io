@@ -6,8 +6,6 @@ extra:
   showAdvertisement: false
 ---
 
-![Hopium for claude sonnet 5](./1.png)
-
 ## Links
 
 [Resume](./resume.pdf), [Github](https://github.com/younsl)
