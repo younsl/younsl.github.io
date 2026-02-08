@@ -1,0 +1,42 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.6 Chrome/140.0.7339.249 Electron/38.8.0 Safari/537.36" version="29.3.6">
+  <diagram name="Ralph Loop" id="ralph-loop">
+    <mxGraphModel dx="1018" dy="656" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="500" background="#000000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#888888;fontColor=#fafafa;fontSize=14;fontStyle=1;" value="PROMPT.md" vertex="1">
+          <mxGeometry height="60" width="160" x="120" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#888888;fontColor=#fafafa;fontSize=14;fontFamily=Courier New;" value="cat PROMPT.md&lt;br&gt;| claude-code" vertex="1">
+          <mxGeometry height="60" width="200" x="380" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#888888;fontColor=#fafafa;fontSize=14;" value="Agent writes code" vertex="1">
+          <mxGeometry height="60" width="180" x="680" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="5" edge="1" parent="1" source="2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;strokeColor=#888888;fontColor=#fafafa;fontSize=12;" target="3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6" edge="1" parent="1" source="3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;strokeColor=#888888;fontColor=#fafafa;fontSize=12;" target="4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7" edge="1" parent="1" source="4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;strokeColor=#888888;fontColor=#aaaaaa;fontSize=12;curved=1;entryX=0.5;entryY=0;exitX=0.5;exitY=0;" target="2" value="loop (fresh context)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="770" y="130" />
+              <mxPoint x="200" y="130" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a1a1a;strokeColor=#555555;fontColor=#aaaaaa;fontSize=12;dashed=1;dashPattern=8 8;" value="Human reviews output&lt;br&gt;and tunes PROMPT.md" vertex="1">
+          <mxGeometry height="50" width="240" x="340" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="9" edge="1" parent="1" source="8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;strokeColor=#555555;fontColor=#aaaaaa;fontSize=12;dashed=1;dashPattern=8 8;" target="2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="10" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;fillColor=none;strokeColor=none;fontColor=#666666;fontSize=11;fontFamily=Courier New;" value="while :; do ... done" vertex="1">
+          <mxGeometry height="30" width="150" x="410" y="100" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

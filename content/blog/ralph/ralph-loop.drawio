@@ -1,0 +1,51 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Ralph Loop" id="ralph-loop">
+    <mxGraphModel dx="800" dy="500" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="760" pageHeight="340" background="#000000">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <!-- PROMPT.md -->
+        <mxCell id="2" value="PROMPT.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#888888;fontColor=#fafafa;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="140" width="150" height="50" as="geometry" />
+        </mxCell>
+        <!-- cat | claude-code -->
+        <mxCell id="3" value="cat PROMPT.md&lt;br&gt;| claude-code" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#888888;fontColor=#fafafa;fontSize=14;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="280" y="140" width="190" height="50" as="geometry" />
+        </mxCell>
+        <!-- Agent writes code -->
+        <mxCell id="4" value="Agent writes code" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#888888;fontColor=#fafafa;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="540" y="140" width="170" height="50" as="geometry" />
+        </mxCell>
+        <!-- Arrow: PROMPT.md -> cat | claude-code -->
+        <mxCell id="5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;strokeColor=#888888;fontColor=#fafafa;fontSize=12;" edge="1" source="2" target="3" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Arrow: cat | claude-code -> Agent writes code -->
+        <mxCell id="6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;strokeColor=#888888;fontColor=#fafafa;fontSize=12;" edge="1" source="3" target="4" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Loop back arrow -->
+        <mxCell id="7" value="loop (fresh context)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;strokeColor=#888888;fontColor=#aaaaaa;fontSize=12;curved=1;entryX=0.5;entryY=0;exitX=0.5;exitY=0;" edge="1" source="4" target="2" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="625" y="80" />
+              <mxPoint x="135" y="80" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <!-- Human -->
+        <mxCell id="8" value="Human reviews output&lt;br&gt;and tunes PROMPT.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a1a1a;strokeColor=#555555;fontColor=#aaaaaa;fontSize=12;dashed=1;dashPattern=8 8;" vertex="1" parent="1">
+          <mxGeometry x="260" y="250" width="230" height="45" as="geometry" />
+        </mxCell>
+        <!-- Arrow: Human -> PROMPT.md -->
+        <mxCell id="9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;strokeColor=#555555;fontColor=#aaaaaa;fontSize=12;dashed=1;dashPattern=8 8;" edge="1" source="8" target="2" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- while :; do ... done label -->
+        <mxCell id="10" value="while :; do ... done" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;fillColor=none;strokeColor=none;fontColor=#666666;fontSize=11;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="310" y="55" width="150" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
