@@ -15,7 +15,7 @@ tags: ["ai", "dev"]
 [Ralph](https://ghuntley.com/ralph/) is a way to build software by running an AI coding agent in a bash loop. Geoffrey Huntley made it popular. The idea is simple:
 
 ```bash
-while :; do cat PROMPT.md | claude-code ; done
+while :; do cat PROMPT.md | claude ; done
 ```
 
 Write a prompt. Feed it to an AI agent. Let the agent write code. Loop. Repeat.
@@ -212,7 +212,7 @@ Other lessons from the hackathon:
 - **Use an alias.** The original Ralph is just a bash one-liner. Adding an alias to your shell config makes it easier to run from any project root.
 
 ```bash
-echo "alias ralph='while :; do cat PROMPT.md | claude-code ; done'" | tee -a ~/.zshrc
+echo "alias ralph='while :; do cat PROMPT.md | claude ; done'" | tee -a ~/.zshrc
 source ~/.zshrc
 ```
 
