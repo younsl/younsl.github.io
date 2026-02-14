@@ -117,4 +117,3 @@ The repository uses GitHub Actions for automated deployment:
   - Deploys to `gh-pages` environment
 
 - **broken-link-finder.yml**: Daily broken link checks using DeadFinder
-- **close-pull-request.yml**: Automatically closes PRs (personal repository, no contributions accepted)
