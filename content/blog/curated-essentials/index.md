@@ -93,3 +93,4 @@ A curated collection of learning resources for Site Reliability Engineers (SRE) 
 - [Product and Platform Engineers](https://leerob.io/blog/product-engineers)
 - [Terraform Best Practices](https://www.terraform-best-practices.com/) 🏷️ terraform
 - [Hacking the cloud](https://hackingthe.cloud/) 🏷️ security
+- [o11y news](https://o11y.news/) 🏷️ observability
