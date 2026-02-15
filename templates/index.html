@@ -1,19 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {# Load blog posts and about page #}
+  {# Load blog section #}
   {% set blog_section = get_section(path="blog/_index.md") %}
-  {% set about_page = get_page(path="about/index.md") %}
 
-  {# Combine all pages: about page (if exists) + blog posts #}
-  {% set_global all_pages = blog_section.pages %}
-  {% if about_page %}
-    {% set_global all_pages = [about_page] | concat(with=blog_section.pages) %}
-  {% endif %}
+  {# Navigation #}
+  <nav>
+    <a href="/news/">📰 news</a>
+  </nav>
 
   {# Display posts: pinned posts first, then regular posts #}
   {% for is_pinned in [true, false] %}
-    {% for page in all_pages %}
+    {% for page in blog_section.pages %}
       {% set pinned = page.extra.pinnedToTop | default(value=false) %}
 
       {% if pinned == is_pinned %}

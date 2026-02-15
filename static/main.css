@@ -173,6 +173,10 @@ th, td {
   padding: var(--spacing-xl) var(--spacing-md);
 }
 
+nav {
+  text-align: right;
+}
+
 nav a {
   color: var(--color-muted-dark);
 }

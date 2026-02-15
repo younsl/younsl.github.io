@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <nav>
+    <a href="/">back</a>
+  </nav>
+
+  {% for page in section.pages %}
+    <p class="post-item">
+      <a href="{{ page.permalink }}">{{ page.title }}</a>
+    </p>
+  {% endfor %}
+{% endblock content %}
