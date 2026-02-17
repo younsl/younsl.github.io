@@ -1,0 +1,26 @@
+base_url = "https://younsl.github.io"
+title = "younsl"
+default_language = "en"
+build_search_index = false
+generate_feeds = false
+minify_html = true
+ignored_content = ["**/README.md"]
+
+[markdown]
+external_links_target_blank = true
+
+[markdown.highlighting]
+enabled = true
+extra_themes = ["static/monochrome.json"]
+theme = "Monochrome"
+
+[link_checker]
+internal_level = "warn"
+external_level = "warn"
+
+[extra]
+env = "production"
+date_format = "%Y-%m-%d"
+nav = [
+  { name = "news", url = "/news/" },
+]

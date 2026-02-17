@@ -1,0 +1,51 @@
+{% macro mermaid_script() %}
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('Mermaid init: Looking for diagrams...');
+
+  // Find shortcode-based mermaid elements
+  const mermaidElements = document.querySelectorAll('.mermaid');
+  console.log('Found .mermaid elements:', mermaidElements.length);
+
+  // Find all code blocks
+  const allCodeBlocks = document.querySelectorAll('pre code, pre > code, code');
+  console.log('Found code blocks:', allCodeBlocks.length);
+
+  const convertedElements = [];
+
+  allCodeBlocks.forEach((code) => {
+    const text = code.textContent.trim();
+    console.log('Checking code block:', text.substring(0, 50));
+
+    // Check if it looks like mermaid syntax
+    // Also check for mermaid frontmatter (---)
+    if (text.match(/^(---|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|journey|gantt|pie|gitGraph|flowchart|mindmap|timeline|quadrantChart|requirement|C4Context)/)) {
+      console.log('Found mermaid diagram!');
+      const pre = code.closest('pre') || code.parentElement;
+      const newPre = document.createElement('pre');
+      newPre.className = 'mermaid';
+      newPre.textContent = text;
+      pre.replaceWith(newPre);
+      convertedElements.push(newPre);
+    }
+  });
+
+  console.log('Converted elements:', convertedElements.length);
+
+  // Combine both shortcode and converted elements
+  const allMermaidElements = [...mermaidElements, ...convertedElements];
+  console.log('Total mermaid elements:', allMermaidElements.length);
+
+  if (allMermaidElements.length > 0) {
+    await mermaid.run({
+      nodes: allMermaidElements
+    });
+    console.log('Mermaid rendering complete!');
+  }
+});
+</script>
+{% endmacro %}
