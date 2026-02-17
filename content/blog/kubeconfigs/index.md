@@ -1,5 +1,5 @@
 ---
-title: "switching kubeconfigs"
+title: "kubeconfigs"
 date: 2026-02-17T23:00:00+09:00
 description: "Why I switched from kubectx/kubens to kubeswitch for Kubernetes context management"
 keywords: []
@@ -24,7 +24,7 @@ DevOps Engineers and SREs manage a lot of [Kubernetes](https://kubernetes.io) cl
 
 ### kubie
 
-[kubie](https://github.com/sbstp/kubie) takes a different approach. Instead of shell functions, it spawns a new subshell with the right KUBECONFIG set. Simpler setup, but the subshell breaks zsh history sharing between sessions.
+[kubie](https://github.com/sbstp/kubie) takes a different approach. Instead of shell functions, it spawns a new subshell with the right KUBECONFIG set. Simpler setup, but the subshell breaks zsh history sharing between sessions. Also, the original maintainer [stopped actively maintaining the project](https://github.com/sbstp/kubie/issues/385) since 2020 and is looking for new maintainers, which raises long-term sustainability concerns.
 
 So, these days, I just use kubeswitch. I uninstalled kubectx and kubens from both Homebrew and krew.
 
