@@ -58,6 +58,8 @@ Without compdef _switcher switch, tab completion does not work for the switch co
 ```bash
 switch                   # Select context with fuzzy search
 switch set-context dev   # Switch to a specific context
-switch ns                # Select namespace
+switch ns                # Select namespace with fuzzy search
 s                        # Alias for switch
 ```
+
+`switch` is for switching between Kubernetes contexts (clusters). `switch ns` is for switching between namespaces within the current context.
