@@ -38,17 +38,17 @@ A high-impact Kubernetes security issue was [publicly disclosed](https://edera.d
 
 [Datadog's LLM Observability](https://www.infoq.com/news/2026/02/datadog-google-llm-observability/) now provides automatic instrumentation for applications built with Google's Agent Development Kit (ADK). The integration enables teams to visualize agent decision paths, trace tool calls, measure token usage and latency per workflow branch, and identify unexpected loops or misrouted steps — all without code changes.
 
-## AKS managed GPU profiles in public preview
+## Grafana Loki Helm chart migrates to community repository on March 16
 
-**azure** **kubernetes** **gpu**
+**grafana** **observability** **breaking-change**
 
-[Azure AKS](https://github.com/Azure/AKS/releases) announced managed GPU profiles in public preview (API version 2026-01-02-preview), enabling one-step GPU node pool creation with NVIDIA GPU driver, device plugin, and DCGM metrics exporter installed by default. Additionally, Windows Server 2019 is scheduled for retirement on March 1, 2026, requiring transition to Windows Server 2022+.
+Effective March 16, 2026, the [Grafana Loki Helm chart](https://grafana.com/docs/loki/latest/release-notes/v3-6/) will be forked from the Loki monorepo to the new [grafana-community/helm-charts](https://github.com/grafana-community/helm-charts) repository. The chart in the Loki repository will continue to be maintained for GEL (Grafana Enterprise Logs) users only. Loki 3.6 also deprecates Simple Scalable Deployment (SSD) mode before Loki 4.0, and moves the built-in UI to a separate [Grafana plugin](https://github.com/grafana/loki-operational-ui). Additionally, four legacy Helm charts — `lgtm-distributed`, `loki-canary`, `loki-distributed`, and `loki-simple-scalable` — are now deprecated.
 
-## Dragonfly v2.4.0 introduces Vortex protocol for 50% faster P2P downloads
+## OpenTelemetry Collector Docker images move from DockerHub to GHCR
 
-**cncf** **performance** **container-registry**
+**opentelemetry** **observability** **breaking-change**
 
-[Dragonfly v2.4.0](https://www.cncf.io/blog/2026/02/05/dragonfly-v2-4-0-is-released/) introduces the Vortex transfer protocol, a lightweight TLV (Tag-Length-Value) based protocol replacing gRPC for peer-to-peer data transfer. TCP-based Vortex reduces large file download time by 50% and QUIC-based Vortex by 40% compared to gRPC, while significantly lowering peak memory consumption. The release also adds a load-aware scheduling algorithm combining central and node-level scheduling, and migrates from a deprecated Go client to a Rust client for improved stability.
+The OpenTelemetry project has [migrated its Collector Docker images](https://github.com/open-telemetry/opentelemetry-collector-releases) from DockerHub to GitHub Container Registry (GHCR). The previous image paths `otel/opentelemetry-collector` and `otel/opentelemetry-collector-contrib` are replaced by `ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector` and the corresponding `-contrib` variant. Some versions may still be published to both registries, but relying on DockerHub will eventually break. Users must update image references in Kubernetes manifests, Helm values, and Docker Compose files.
 
 ## OpenTelemetry Collector batch processor headed for deprecation
 
