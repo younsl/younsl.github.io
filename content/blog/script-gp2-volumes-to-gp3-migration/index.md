@@ -61,6 +61,14 @@ NAME            PROVISIONER       RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVO
 gp3 (default)   ebs.csi.aws.com   Delete          WaitForFirstConsumer   false                  55d
 ```
 
+gp3 StorageClass를 기본으로 사용하는 경우, 기존 gp2 StorageClass의 default 어노테이션을 제거합니다.
+
+```bash
+kubectl annotate sc gp2 storageclass.kubernetes.io/is-default-class-
+```
+
+> [EKS v1.30](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions-extended.html)부터는 gp2 StorageClass에 default 어노테이션이 자동으로 설정되지 않으므로 위 작업이 불필요합니다.
+
 더 자세한 설명은 AWS Korea 블로그의 [Migrating Amazon EKS clusters from gp2 to gp3 EBS volumes](https://aws.amazon.com/ko/blogs/containers/migrating-amazon-eks-clusters-from-gp2-to-gp3-ebs-volumes/)를 참고하세요.
 
 &nbsp;
