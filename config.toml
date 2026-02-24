@@ -21,6 +21,4 @@ external_level = "warn"
 [extra]
 env = "production"
 date_format = "%Y-%m-%d"
-nav = [
-  { name = "news", url = "/news/" },
-]
+nav = []

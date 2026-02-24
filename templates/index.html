@@ -9,15 +9,27 @@
     {% endfor %}
   </nav>
 
+  {% set_global last_year = 0 %}
+  {% set_global pinned_separator_shown = false %}
   {% for is_pinned in [true, false] %}
     {% for page in blog_section.pages %}
       {% set pinned = page.extra.pinnedToTop | default(value=false) %}
 
       {% if pinned == is_pinned %}
-        <p class="post-item">
-          {% if page.date %}
-            <time>{{ page.date | date(format="%Y-%m") }}</time>
+        {% if not is_pinned %}
+          {% if not pinned_separator_shown %}
+            <hr>
+            {% set_global pinned_separator_shown = true %}
           {% endif %}
+          {% if page.date %}
+            {% set year = page.date | date(format="%Y") | int %}
+            {% if year != last_year %}
+              <h2 class="year-header">{{ year }}</h2>
+              {% set_global last_year = year %}
+            {% endif %}
+          {% endif %}
+        {% endif %}
+        <p class="post-item">
           <a href="{{ page.permalink }}">{{ page.title }}</a>
         </p>
       {% endif %}

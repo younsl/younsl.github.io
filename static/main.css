@@ -82,17 +82,17 @@ blockquote {
 }
 
 hr {
-  text-align: center;
+  text-align: left;
   border: 0;
-  margin: var(--spacing-xl) 0;
+  margin: var(--spacing-sm) 0;
 }
 
 hr:before {
-  content: '/////';
+  content: '---';
 }
 
 hr:after {
-  content: attr(data-content) '/////';
+  content: none;
 }
 
 /* =============================================================================
@@ -185,6 +185,18 @@ article {
 .post-meta {
   color: var(--color-muted-dark);
   font-size: var(--font-size-small);
+}
+
+.year-header {
+  color: var(--color-muted);
+  font-size: var(--font-size-base);
+  font-weight: normal;
+  margin: var(--spacing-lg) 0 var(--spacing-sm);
+  border: none;
+}
+
+.year-header:first-of-type {
+  margin-top: var(--spacing-sm);
 }
 
 .post-item {
