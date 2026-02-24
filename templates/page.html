@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% import "macros.html" as macros %}
+
+{% block scripts %}
+  {# Load Mermaid only when page contains mermaid diagrams #}
+  {% if page.content is containing("mermaid") or page.content is containing("graph ") or page.content is containing("sequenceDiagram") or page.content is containing("flowchart") %}
+    {{ macros::mermaid_script() }}
+  {% endif %}
+{% endblock scripts %}
+
+{% block content %}
+  <nav>
+    {% set parent = get_section(path=page.ancestors | last) %}
+    <a href="{{ parent.permalink }}">back</a>
+  </nav>
+
+  <article>
+    <p class="post-item">
+      {% if page.date %}
+        <time>{{ page.date | date(format="%Y-%m-%d") }}</time>
+      {% endif %}
+      {{ page.title }}
+    </p>
+
+    {{ page.content | safe }}
+  </article>
+{% endblock content %}

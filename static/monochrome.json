@@ -1,0 +1,40 @@
+{
+	"name": "Monochrome",
+	"type": "dark",
+	"author": "younsl",
+	"description": "Minimal monochrome theme with dimmed comments",
+	"tokenColors": [
+		{
+			"name": "Comments",
+			"scope": [
+				"comment",
+				"punctuation.definition.comment"
+			],
+			"settings": {
+				"foreground": "#666666"
+			}
+		},
+		{
+			"name": "All other tokens",
+			"scope": [
+				"keyword",
+				"storage",
+				"string",
+				"constant",
+				"variable",
+				"entity",
+				"support",
+				"punctuation",
+				"meta",
+				"source"
+			],
+			"settings": {
+				"foreground": "#CCCCCC"
+			}
+		}
+	],
+	"colors": {
+		"editor.background": "#000000",
+		"editor.foreground": "#CCCCCC"
+	}
+}

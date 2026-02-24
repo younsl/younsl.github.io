@@ -1,0 +1,219 @@
+/* =============================================================================
+   Variables
+   ============================================================================= */
+
+:root {
+  /* Colors */
+  --color-bg: #000;
+  --color-text: #fafafa;
+  --color-muted: #999;
+  --color-muted-dark: #888;
+  --color-border: #333;
+  --color-border-light: #444;
+  --color-code-bg: #000;
+  --color-highlight-bg: #2a2a2a;
+
+  /* Typography */
+  --font-family: 'IBM Plex Sans KR', sans-serif;
+  --font-size-base: 18px;
+  --font-size-small: 0.9rem;
+  --line-height: 1.6;
+  --line-height-heading: 1.2;
+
+  /* Spacing */
+  --spacing-xs: 0.3rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Layout */
+  --content-width: 550px;
+  --content-width-narrow: 500px;
+  --border-radius: 4px;
+
+  /* Post list */
+  --date-width-short: 5.0rem;  /* YYYY-MM */
+  --date-width-long: 6.5rem;   /* YYYY-MM-DD */
+}
+
+/* =============================================================================
+   Base Elements
+   ============================================================================= */
+
+html {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font: var(--font-size-base)/var(--line-height) var(--font-family);
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--spacing-xl) var(--spacing-md);
+  color: var(--color-text);
+  background: var(--color-bg);
+  overflow-wrap: break-word;
+}
+
+/* =============================================================================
+   Typography
+   ============================================================================= */
+
+a {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-decoration-color: var(--color-muted);
+}
+
+a:hover {
+  color: var(--color-muted);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  line-height: var(--line-height-heading);
+  margin: var(--spacing-lg) 0 var(--spacing-sm);
+}
+
+blockquote {
+  border-left: 3px solid var(--color-border-light);
+  margin: var(--spacing-md) 0;
+  padding-left: var(--spacing-md);
+}
+
+hr {
+  text-align: center;
+  border: 0;
+  margin: var(--spacing-xl) 0;
+}
+
+hr:before {
+  content: '/////';
+}
+
+hr:after {
+  content: attr(data-content) '/////';
+}
+
+/* =============================================================================
+   Code
+   ============================================================================= */
+
+code {
+  font-size: 16px;
+  text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+pre {
+  overflow-x: auto;
+  padding: var(--spacing-md);
+  background: var(--color-code-bg);
+  border-radius: var(--border-radius);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+pre mark, pre .highlighted {
+  background: var(--color-highlight-bg);
+  color: var(--color-text);
+}
+
+/* =============================================================================
+   Media
+   ============================================================================= */
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* =============================================================================
+   Tables
+   ============================================================================= */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+th, td {
+  border: 1px solid var(--color-border);
+  padding: var(--spacing-sm);
+  text-align: left;
+  word-wrap: break-word;
+}
+
+/* =============================================================================
+   Layout Components
+   ============================================================================= */
+
+.w {
+  max-width: var(--content-width-narrow);
+  margin: 0 auto;
+  padding: var(--spacing-xl) var(--spacing-md);
+}
+
+nav {
+  text-align: left;
+}
+
+nav a {
+  color: var(--color-muted-dark);
+}
+
+nav a:hover {
+  color: var(--color-text);
+}
+
+article {
+  margin: var(--spacing-xl) 0;
+}
+
+/* =============================================================================
+   Post Components
+   ============================================================================= */
+
+.post-meta {
+  color: var(--color-muted-dark);
+  font-size: var(--font-size-small);
+}
+
+.post-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-xs);
+  margin-bottom: 0.8rem;
+}
+
+.post-item time {
+  color: var(--color-muted);
+  flex-shrink: 0;
+  width: var(--date-width-short);
+}
+
+.post-item a {
+  text-decoration: none;
+}
+
+article .post-item time {
+  width: var(--date-width-long);
+}
+
+/* =============================================================================
+   Mermaid Diagrams
+   ============================================================================= */
+
+.mermaid {
+  background: var(--color-bg);
+  padding: var(--spacing-md);
+  margin: var(--spacing-md) 0;
+}

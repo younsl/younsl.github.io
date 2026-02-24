@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <nav>
+    <a href="/">back</a>
+  </nav>
+
+  {% if section.description %}
+    <p>{{ section.description }}</p>
+  {% endif %}
+
+  {% if section.content %}
+    {{ section.content | safe }}
+  {% endif %}
+
+  {% for page in section.pages %}
+    <p class="post-item">
+      <a href="{{ page.permalink }}">{{ page.title }}</a>
+    </p>
+  {% endfor %}
+{% endblock content %}
