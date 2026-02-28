@@ -77,14 +77,14 @@ The auto prop triggers login on page load, and enableExperimentalRedirectFlow sw
 
 ## Scope
 
-enableExperimentalRedirectFlow only affects the auto sign-in path. It does not apply to the manual button click path, which still uses popup via OAuthRequestDialog.
+enableExperimentalRedirectFlow applies to both the auto sign-in path and the manual button click path. When enabled, all authentication flows use in-window redirect instead of popup.
 
 | Trigger | Redirect applied | Behavior |
 |---------|:----------------:|----------|
 | auto prop (page load) | Yes | Redirect |
-| Button click (fallback) | No | Popup |
+| Sign in button click (fallback) | Yes | Redirect |
 
-In practice, users rarely see the button since auto fires immediately on page load. The button only appears when auto sign-in fails (e.g., Keycloak outage), where popup-based retry is a reasonable fallback.
+In practice, users rarely see the sign-in button since auto fires immediately on page load. The button only appears when auto sign-in fails (e.g., Keycloak outage), and in that case clicking the sign-in button also redirects to Keycloak without a popup.
 
 ## Alternatives considered
 
@@ -112,7 +112,7 @@ Works for all cases but risks infinite redirect loops on Keycloak outage and byp
 
 | Approach | Redirect scope | Official | On failure |
 |----------|---------------|:--------:|------------|
-| `enableExperimentalRedirectFlow` | auto only | Yes | Button fallback |
+| `enableExperimentalRedirectFlow` | All | Yes | Button fallback (redirect) |
 | `ProxiedSignInPage` | All | Yes | 400 error (OIDC incompatible) |
 | Custom redirect | All | No | Infinite redirect loop risk |
 
