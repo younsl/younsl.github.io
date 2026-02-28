@@ -146,18 +146,21 @@ h3 {
   
   /* Job header styling for print */
   .job-header {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: baseline !important;
     margin-bottom: var(--spacing-sm) !important;
     margin-top: var(--spacing-xl) !important;
   }
-  
+
+  .job-header-line {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: baseline !important;
+  }
+
   .date {
-    color: var(--color-text-muted) !important;
+    color: var(--color-text-light) !important;
     white-space: nowrap !important;
   }
-  
+
   /* Certification styling for print */
   .cert-item {
     display: flex !important;
@@ -250,7 +253,6 @@ h3 {
   }
 }
 
-.job-header,
 .cert-item {
   display: flex;
   justify-content: space-between;
@@ -263,14 +265,28 @@ h3 {
   margin-top: var(--spacing-xl);
 }
 
-h3 + .job-header,
-h3 + * .job-header:first-child {
+.job-header-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+h3 + .job-header {
   margin-top: 0;
+}
+
+.job-detail {
+  font-size: 0.9em;
+}
+
+.resume-content ul {
+  padding-left: 1.25em;
 }
 
 /* ===== DATE STYLES ===== */
 .date {
-  color: var(--color-text-muted);
+  color: var(--color-text-light);
+  font-size: 0.85em;
   white-space: nowrap;
 }
 
@@ -375,18 +391,18 @@ h3 + * .job-header:first-child {
     font-size: 15px;
   }
   
-  /* Stack job headers vertically on mobile */
-  .job-header {
+  /* Stack job header lines vertically on mobile */
+  .job-header-line {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.3em;
   }
-  
-  .job-header .date {
+
+  .job-header-line .date {
     font-size: 0.9em;
     margin-top: 0;
   }
-  
+
   /* Stack certification items vertically */
   .cert-item {
     flex-direction: column;
@@ -416,7 +432,7 @@ h3 + * .job-header:first-child {
   
   /* Adjust list indentation */
   ul, ol {
-    padding-left: 1.5em;
+    padding-left: 1.25em;
   }
   
   /* Make links more touch-friendly */
@@ -439,7 +455,7 @@ h3 + * .job-header:first-child {
   }
   
   ul, ol {
-    padding-left: 1.2em;
+    padding-left: 1em;
   }
   
   /* Stack controls vertically on very small screens */
@@ -472,16 +488,17 @@ h3 + * .job-header:first-child {
   <h3>Experience</h3>
 
   <div class="job-header">
-    <div><strong>DevOps Engineer (L5)</strong>, <a href="https://www.musinsapayments.com">Musinsa Payments</a></div>
-    <div class="date">
-      <span class="lang-ko active">2025년 12월 8일 ― 현재 (3개월)</span>
-      <span class="lang-en">Dec 8, 2025 ― Present (3 mos)</span>
+    <div><strong><a href="https://www.musinsapayments.com">Musinsa Payments</a></strong></div>
+    <div class="job-header-line">
+      <div>DevOps Engineer (L5)</div>
+      <div class="date">
+        <span class="lang-ko active">2025년 12월 8일 ― 현재 (3개월)</span>
+        <span class="lang-en">Dec 8, 2025 ― Present (3 mos)</span>
+      </div>
     </div>
   </div>
 
-  <div>AWS, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops</div>
-
-  <div class="lang-ko active">
+  <div class="lang-ko active job-detail">
   <ul>
   <li>Kubernetes Upgrade Operator를 직접 개발하여 EKS 클러스터 업그레이드를 자동화하고 운영 오버헤드 절감</li>
   <li>Blackbox Exporter와 YACE를 도입하여 엔드포인트 헬스체크 및 AWS 리소스 메트릭 통합 모니터링 체계 구축</li>
@@ -490,7 +507,7 @@ h3 + * .job-header:first-child {
   </ul>
   </div>
 
-  <div class="lang-en">
+  <div class="lang-en job-detail">
   <ul>
   <li>Developed Kubernetes Upgrade Operator to centralize EKS cluster upgrade management and reduce operational overhead</li>
   <li>Established unified monitoring system for endpoint health checks and AWS resource metrics using Blackbox Exporter and YACE</li>
@@ -500,16 +517,17 @@ h3 + * .job-header:first-child {
   </div>
 
   <div class="job-header">
-    <div><strong>DevOps Engineer</strong>, <a href="https://coinone.co.kr">Coinone</a></div>
-    <div class="date">
-      <span class="lang-ko active">2023년 5월 30일 ― 2025년 12월 3일 (2년 6개월)</span>
-      <span class="lang-en">May 30, 2023 ― Dec 3, 2025 (2 yrs 6 mo)</span>
+    <div><strong><a href="https://coinone.co.kr">Coinone</a></strong></div>
+    <div class="job-header-line">
+      <div>DevOps Engineer</div>
+      <div class="date">
+        <span class="lang-ko active">2023년 5월 30일 ― 2025년 12월 3일 (2년 6개월)</span>
+        <span class="lang-en">May 30, 2023 ― Dec 3, 2025 (2 yrs 6 mo)</span>
+      </div>
     </div>
   </div>
 
-  <div>AWS, GCP, Kubernetes, Observability, CI/CD, Terraform, Infrastructure Ops</div>
-
-  <div class="lang-ko active">
+  <div class="lang-ko active job-detail">
   <ul>
   <li>960개 레포지토리의 GitHub Actions 워크플로 모니터링을 중앙화하는 Go 기반 TUI 도구인 cocd(Chaos Of Continuous Deployment)를 개발하여 배포 승인 소요시간 30% 단축</li>
   <li>GPU Operator를 사용하여 ML 워크로드용 Kubernetes GPU 노드 프로비저닝 및 관리</li>
@@ -523,7 +541,7 @@ h3 + * .job-header:first-child {
   </ul>
   </div>
 
-  <div class="lang-en">
+  <div class="lang-en job-detail">
   <ul>
   <li>Developed cocd (Chaos Of Continuous Deployment), a Go-based TUI tool to centralize GitHub Actions workflow monitoring across 960 repositories, reducing deployment approval time by 30%</li>
   <li>Provisioned and managed Kubernetes GPU nodes with NVIDIA GPU Operator for ML workloads</li>
@@ -538,23 +556,24 @@ h3 + * .job-header:first-child {
   </div>
 
   <div class="job-header">
-    <div><strong>DevOps Engineer</strong>, <a href="https://seedglobal.co">Greenlabs Financial</a></div>
-    <div class="date">
-      <span class="lang-ko active">2022년 9월 5일 ― 2023년 4월 7일 (7개월)</span>
-      <span class="lang-en">Sep 5, 2022 ― Apr 7, 2023 (7 mos)</span>
+    <div><strong><a href="https://seedglobal.co">Greenlabs Financial</a></strong></div>
+    <div class="job-header-line">
+      <div>DevOps Engineer</div>
+      <div class="date">
+        <span class="lang-ko active">2022년 9월 5일 ― 2023년 4월 7일 (7개월)</span>
+        <span class="lang-en">Sep 5, 2022 ― Apr 7, 2023 (7 mos)</span>
+      </div>
     </div>
   </div>
 
-  <div>AWS, Kubernetes, Istio, Observability, CI/CD, Terraform, MLOps, Infrastructure Ops</div>
-
-  <div class="lang-ko active">
+  <div class="lang-ko active job-detail">
   <ul>
   <li>전자금융업 라이센스 #2022-483 취득을 위한 멀티 계정 AWS 인프라를 3개월 내에 구축</li>
   <li>2개의 EKS 클러스터(v1.24-v1.25) 관리 및 인프라 최적화를 통해 월간 AWS 비용 30% 절감</li>
   </ul>
   </div>
 
-  <div class="lang-en">
+  <div class="lang-en job-detail">
   <ul>
   <li>Built multi-account AWS infrastructure for electronic finance business license #2022-483 in 3 months</li>
   <li>Managed 2 EKS clusters (v1.24-v1.25) and optimized infrastructure, reducing monthly AWS costs by 30%</li>
@@ -562,38 +581,40 @@ h3 + * .job-header:first-child {
   </div>
 
   <div class="job-header">
-    <div><strong>Cloud Engineer</strong>, <a href="https://watcha.team">Watcha</a></div>
-    <div class="date">
-      <span class="lang-ko active">2022년 2월 14일 ― 2022년 8월 5일 (6개월)</span>
-      <span class="lang-en">Feb 14, 2022 ― Aug 5, 2022 (6 mos)</span>
+    <div><strong><a href="https://watcha.team">Watcha</a></strong></div>
+    <div class="job-header-line">
+      <div>Cloud Engineer</div>
+      <div class="date">
+        <span class="lang-ko active">2022년 2월 14일 ― 2022년 8월 5일 (6개월)</span>
+        <span class="lang-en">Feb 14, 2022 ― Aug 5, 2022 (6 mos)</span>
+      </div>
     </div>
   </div>
 
-  <div>AWS, Kubernetes, CI/CD, Terraform, Infrastructure Ops</div>
-
-  <div class="lang-ko active">
+  <div class="lang-ko active job-detail">
   <ul>
   <li>Terraform을 사용하여 OTT 플랫폼을 위한 AWS 기반 Kubernetes 인프라 구현</li>
   </ul>
   </div>
 
-  <div class="lang-en">
+  <div class="lang-en job-detail">
   <ul>
   <li>Implemented Kubernetes-based infrastructure on AWS for OTT platform using Terraform</li>
   </ul>
   </div>
 
   <div class="job-header">
-    <div><strong>System Engineer</strong>, <a href="https://kdn.com">KDN</a></div>
-    <div class="date">
-      <span class="lang-ko active">2013년 12월 16일 ― 2022년 2월 11일 (8년 2개월)</span>
-      <span class="lang-en">Dec 16, 2013 ― Feb 11, 2022 (8 yrs 2 mos)</span>
+    <div><strong><a href="https://kdn.com">KDN</a></strong></div>
+    <div class="job-header-line">
+      <div>System Engineer</div>
+      <div class="date">
+        <span class="lang-ko active">2013년 12월 16일 ― 2022년 2월 11일 (8년 2개월)</span>
+        <span class="lang-en">Dec 16, 2013 ― Feb 11, 2022 (8 yrs 2 mos)</span>
+      </div>
     </div>
   </div>
 
-  <div>On-premise, Linux administration, VMware Cluster administration, Storage administration, Backup and Recovery</div>
-
-  <div class="lang-ko active">
+  <div class="lang-ko active job-detail">
   <ul>
   <li>미션 크리티컬한 에너지 인프라를 위해 150개 이상의 Linux VM을 갖춘 VMware 클러스터(30개 이상 호스트) 관리</li>
   <li>Python/Bash를 활용한 운영 업무 자동화 및 고가용성 구성 구현</li>
@@ -601,7 +622,7 @@ h3 + * .job-header:first-child {
   </ul>
   </div>
 
-  <div class="lang-en">
+  <div class="lang-en job-detail">
   <ul>
   <li>Managed VMware clusters (30+ hosts) with 150+ Linux VMs for mission-critical energy infrastructure</li>
   <li>Automated operational tasks with Python/Bash and implemented high availability configurations</li>
@@ -611,7 +632,7 @@ h3 + * .job-header:first-child {
 
   <h3>Projects</h3>
 
-  <div class="lang-ko active">
+  <div class="lang-ko active job-detail">
   <h4>운영 자동화</h4>
   <ul>
   <li><strong><a href="https://github.com/younsl/o/tree/main/box/kubernetes/kubernetes-upgrade-operator">kubernetes-upgrade-operator</a></strong>: EKS 클러스터 업그레이드 자동화 Kubernetes Operator</li>
@@ -623,13 +644,11 @@ h3 + * .job-header:first-child {
 
   <h4>DevOps 도구</h4>
   <ul>
-  <li><strong><a href="https://github.com/younsl/o/tree/main/box/tools/cocd">cocd</a></strong>: Go로 개발된 GitHub Actions 배포 관리 TUI 도구</li>
-  <li><strong><a href="https://github.com/younsl/o/tree/main/box/kubernetes/kup">kup</a></strong>: EKS 클러스터 업그레이드 자동화 CLI 도구</li>
   <li><strong><a href="https://github.com/younsl/charts/">charts</a></strong>: 직접 개발 및 유지보수하는 프로덕션용(production-ready) kubernetes helm 차트 저장소</li>
   </ul>
   </div>
 
-  <div class="lang-en">
+  <div class="lang-en job-detail">
   <h4>Operations Automation</h4>
   <ul>
   <li><strong><a href="https://github.com/younsl/o/tree/main/box/kubernetes/kubernetes-upgrade-operator">kubernetes-upgrade-operator</a></strong>: EKS cluster upgrade automation Kubernetes Operator</li>
@@ -641,8 +660,6 @@ h3 + * .job-header:first-child {
 
   <h4>DevOps Tools</h4>
   <ul>
-  <li><strong><a href="https://github.com/younsl/o/tree/main/box/tools/cocd">cocd</a></strong>: Go-based TUI tool for GitHub Actions deployment management</li>
-  <li><strong><a href="https://github.com/younsl/o/tree/main/box/kubernetes/kup">kup</a></strong>: EKS cluster upgrade automation CLI tool</li>
   <li><strong><a href="https://github.com/younsl/charts/">charts</a></strong>: Production-ready Kubernetes Helm charts repository, developed and maintained</li>
   </ul>
   </div>
@@ -650,10 +667,13 @@ h3 + * .job-header:first-child {
   <h3>Education</h3>
 
   <div class="job-header">
-    <div><strong>BSE, ICT Applied</strong>, <a href="https://www3.chosun.ac.kr/chosun/index.do">Chosun University</a></div>
-    <div class="date">
-      <span class="lang-ko active">2018년 3월 ― 2022년 2월</span>
-      <span class="lang-en">Mar 2018 ― Feb 2022</span>
+    <div><strong><a href="https://www3.chosun.ac.kr/chosun/index.do">Chosun University</a></strong></div>
+    <div class="job-header-line">
+      <div>BSE, ICT Applied</div>
+      <div class="date">
+        <span class="lang-ko active">2018년 3월 ― 2022년 2월</span>
+        <span class="lang-en">Mar 2018 ― Feb 2022</span>
+      </div>
     </div>
   </div>
 
