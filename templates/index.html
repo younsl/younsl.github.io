@@ -18,7 +18,6 @@
       {% if pinned == is_pinned %}
         {% if not is_pinned %}
           {% if not pinned_separator_shown %}
-            <hr>
             {% set_global pinned_separator_shown = true %}
           {% endif %}
           {% if page.date %}
